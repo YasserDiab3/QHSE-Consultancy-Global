@@ -1,0 +1,108 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  password      String
+  role          String    @default("CLIENT")
+  language      String    @default("en")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  client        Client?
+  activityLogs  ActivityLog[]
+  reports       Report[]  @relation("ConsultantReports")
+
+  @@index([email])
+}
+
+model Client {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName   String
+  companyNameAr String?
+  contactInfo   String?
+  phone         String?
+  address       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  reports       Report[]
+
+  @@index([userId])
+}
+
+model Report {
+  id            String         @id @default(uuid())
+  clientId      String
+  client        Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  date          DateTime
+  siteName      String
+  siteNameAr    String?
+  category      String
+  consultantId  String?
+  consultant    User?          @relation("ConsultantReports", fields: [consultantId], references: [id])
+  notes         String?
+  notesAr       String?
+  status        String         @default("OPEN")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  observations  Observation[]
+
+  @@index([clientId])
+  @@index([date])
+}
+
+model Observation {
+  id            String         @id @default(uuid())
+  reportId      String
+  report        Report         @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  title         String
+  titleAr       String?
+  description   String?
+  descriptionAr String?
+  riskLevel     String
+  status        String         @default("OPEN")
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  images        Image[]
+
+  @@index([reportId])
+}
+
+model Image {
+  id             String   @id @default(uuid())
+  observationId  String
+  observation    Observation @relation(fields: [observationId], references: [id], onDelete: Cascade)
+  type           String
+  url            String
+  originalName   String?
+  mimeType       String?
+  size           Int?
+  createdAt      DateTime @default(now())
+
+  @@index([observationId])
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action      String
+  entityType  String?
+  entityId    String?
+  details     String?
+  ipAddress   String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
