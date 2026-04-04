@@ -324,8 +324,13 @@ export async function listReportRecords(options: ListReportOptions = {}) {
     return mapped
   }
 
+  const acceptedRiskLevels = options.riskLevel
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+
   return mapped.filter((report) =>
-    report.observations.some((observation) => observation.riskLevel === options.riskLevel)
+    report.observations.some((observation) => acceptedRiskLevels.includes(observation.riskLevel))
   )
 }
 

@@ -46,8 +46,13 @@ const createInitialFormData = () => ({
 
 export default function AdminReports({
   onDataChanged,
+  filterPreset,
 }: {
   onDataChanged?: () => void | Promise<void>
+  filterPreset?: {
+    status?: string
+    riskLevel?: string
+  } | null
 }) {
   const { t, language } = useLanguage()
   const [reports, setReports] = useState<Report[]>([])
@@ -66,8 +71,16 @@ export default function AdminReports({
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
+      const reportParams = new URLSearchParams()
+      if (filterPreset?.status) {
+        reportParams.set('status', filterPreset.status)
+      }
+      if (filterPreset?.riskLevel) {
+        reportParams.set('riskLevel', filterPreset.riskLevel)
+      }
+
       const [reportsRes, clientsRes] = await Promise.all([
-        fetch('/api/reports'),
+        fetch(`/api/reports${reportParams.toString() ? `?${reportParams.toString()}` : ''}`),
         fetch('/api/clients'),
       ])
       if (reportsRes.ok) setReports(await reportsRes.json())
@@ -77,7 +90,7 @@ export default function AdminReports({
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [filterPreset?.riskLevel, filterPreset?.status])
 
   useEffect(() => {
     fetchData()

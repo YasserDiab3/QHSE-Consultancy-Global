@@ -18,7 +18,13 @@ type ContactRequest = {
 
 const STATUS_OPTIONS = ['NEW', 'CONTACTED', 'CLOSED'] as const
 
-export default function AdminContactRequests() {
+export default function AdminContactRequests({
+  statusFilter = 'ALL',
+  onDataChanged,
+}: {
+  statusFilter?: 'ALL' | 'NEW' | 'CONTACTED' | 'CLOSED'
+  onDataChanged?: () => void | Promise<void>
+}) {
   const { language } = useLanguage()
   const [requests, setRequests] = useState<ContactRequest[]>([])
   const [loading, setLoading] = useState(true)
@@ -91,6 +97,14 @@ export default function AdminContactRequests() {
     void fetchRequests()
   }, [fetchRequests])
 
+  const filteredRequests = useMemo(
+    () =>
+      statusFilter === 'ALL'
+        ? requests
+        : requests.filter((request) => request.status === statusFilter),
+    [requests, statusFilter]
+  )
+
   const updateStatus = async (id: string, status: string) => {
     setUpdatingId(id)
     try {
@@ -107,6 +121,7 @@ export default function AdminContactRequests() {
       setRequests((current) =>
         current.map((request) => (request.id === id ? { ...request, status } : request))
       )
+      await onDataChanged?.()
       toast.success(copy.updateSuccess)
     } catch (error) {
       console.error('Failed to update contact request:', error)
@@ -124,7 +139,7 @@ export default function AdminContactRequests() {
     )
   }
 
-  if (requests.length === 0) {
+  if (filteredRequests.length === 0) {
     return (
       <div className="card py-12 text-center">
         <MessageSquare className="mx-auto mb-4 h-16 w-16 text-gray-300" />
@@ -142,7 +157,7 @@ export default function AdminContactRequests() {
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {requests.map((request) => (
+        {filteredRequests.map((request) => (
           <div key={request.id} className="card space-y-4">
             <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
               <div>
