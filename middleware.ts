@@ -10,6 +10,10 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
+  // Public paths that don't require auth
+  const publicPaths = ['/', '/about', '/services', '/contact', '/login', '/api/auth', '/uploads', '/locales', '/_next', '/favicon']
+  const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
+
   // Dashboard routes require auth
   if (pathname.startsWith('/dashboard')) {
     if (!token) {
@@ -31,7 +35,7 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Redirect authenticated users from login page to their appropriate dashboard
+  // Redirect authenticated users from login page
   if (pathname === '/login' && token) {
     if (token.role === 'ADMIN') {
       return NextResponse.redirect(new URL('/admin', request.url))

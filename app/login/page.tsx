@@ -19,21 +19,14 @@ function LoginForm() {
     setLoading(true)
 
     try {
-      // Use redirect: true to let NextAuth handle the redirect properly
-      const result = await signIn('credentials', {
+      await signIn('credentials', {
         email,
         password,
-        redirect: true,
         callbackUrl: '/dashboard',
       })
-      
-      // If we get here, something went wrong (should have redirected)
-      if (result?.error) {
-        toast.error('Invalid email or password')
-      }
+      // If we reach here, login failed (NextAuth would have redirected on success)
     } catch (error) {
-      toast.error('An unexpected error occurred')
-    } finally {
+      toast.error('حدث خطأ غير متوقع')
       setLoading(false)
     }
   }
