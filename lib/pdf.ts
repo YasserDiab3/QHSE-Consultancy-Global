@@ -1,12 +1,3 @@
-import jsPDF from 'jspdf'
-import 'jspdf-autotable'
-
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF
-  }
-}
-
 type Report = {
   id: string
   date: string
@@ -32,143 +23,438 @@ type Observation = {
   images: any[]
 }
 
-async function loadLogoDataUrl() {
-  return new Promise<string>((resolve, reject) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    image.onload = () => {
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width = image.naturalWidth
-        canvas.height = image.naturalHeight
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
-        const context = canvas.getContext('2d')
-        if (!context) {
-          throw new Error('Canvas context unavailable')
+function formatDate(date: string, language: string) {
+  return new Intl.DateTimeFormat(language === 'ar' ? 'ar-EG' : 'en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(date))
+}
+
+function normalizeKey(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function resolveText(arabicValue: string | undefined, englishValue: string | undefined, isArabic: boolean) {
+  const value = isArabic ? arabicValue || englishValue || '' : englishValue || arabicValue || ''
+  return value.trim()
+}
+
+function getCategoryLabel(category: string, t: (key: string) => string) {
+  const key = `categories.${normalizeKey(category)}`
+  const translated = t(key)
+  return translated === key ? category.replace(/_/g, ' ') : translated
+}
+
+function getStatusLabel(status: string, t: (key: string) => string) {
+  const key = `statuses.${normalizeKey(status)}`
+  const translated = t(key)
+  return translated === key ? status.replace(/_/g, ' ') : translated
+}
+
+function getRiskLabel(riskLevel: string, t: (key: string) => string) {
+  const key = `riskLevels.${riskLevel.toLowerCase()}`
+  const translated = t(key)
+  return translated === key ? riskLevel.replace(/_/g, ' ') : translated
+}
+
+function buildObservationRows(report: Report, isArabic: boolean, t: (key: string) => string) {
+  if (report.observations.length === 0) {
+    return `
+      <tr>
+        <td colspan="4" class="empty-row">
+          ${isArabic ? 'لا توجد ملاحظات مسجلة في هذا التقرير.' : 'No observations were recorded in this report.'}
+        </td>
+      </tr>
+    `
+  }
+
+  return report.observations
+    .map((observation, index) => {
+      const title = resolveText(observation.titleAr, observation.title, isArabic)
+      const description = resolveText(observation.descriptionAr, observation.description, isArabic)
+
+      return `
+        <tr>
+          <td>${index + 1}</td>
+          <td>
+            <div class="cell-title">${escapeHtml(title || '-')}</div>
+            ${description ? `<div class="cell-description">${escapeHtml(description)}</div>` : ''}
+          </td>
+          <td>${escapeHtml(getRiskLabel(observation.riskLevel, t))}</td>
+          <td>${escapeHtml(getStatusLabel(observation.status, t))}</td>
+        </tr>
+      `
+    })
+    .join('')
+}
+
+function buildPrintMarkup(report: Report, t: (key: string) => string, language: string) {
+  const isArabic = language === 'ar'
+  const reportTitle = isArabic ? 'تقرير زيارة' : 'Visit Report'
+  const companyArabic = 'جلوبال لاستشارات الجودة والسلامة والبيئة'
+  const companyEnglish = 'QHSSE Consultancy Global'
+  const siteName = resolveText(report.siteNameAr, report.siteName, isArabic)
+  const notes = resolveText(report.notesAr, report.notes, isArabic)
+  const logoUrl = `${window.location.origin}/brand/qhsse-logo-stacked.svg`
+  const fileName = `report-${report.siteName.replace(/\s+/g, '-').toLowerCase()}-${new Date(report.date).toISOString().split('T')[0]}`
+
+  return `<!DOCTYPE html>
+  <html lang="${isArabic ? 'ar' : 'en'}" dir="${isArabic ? 'rtl' : 'ltr'}">
+    <head>
+      <meta charset="UTF-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+      <title>${escapeHtml(fileName)}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Merriweather:wght@400;700&display=swap" rel="stylesheet" />
+      <style>
+        :root {
+          color-scheme: light;
+          --blue: #2f49c5;
+          --brown: #8b4d00;
+          --text: #1f2937;
+          --muted: #6b7280;
+          --line: #d7dbe5;
         }
 
-        context.drawImage(image, 0, 0)
-        resolve(canvas.toDataURL('image/png'))
-      } catch (error) {
-        reject(error)
-      }
-    }
-    image.onerror = () => reject(new Error('Failed to load logo asset'))
-    image.src = '/brand/qhsse-logo-mark.svg'
-  })
+        * { box-sizing: border-box; }
+
+        @page {
+          size: A4;
+          margin: 18mm 14mm 18mm;
+        }
+
+        html, body {
+          margin: 0;
+          padding: 0;
+          background: #f4f6fa;
+          color: var(--text);
+          font-family: ${isArabic ? "'Cairo', sans-serif" : "'Merriweather', serif"};
+        }
+
+        body {
+          padding: 16px;
+        }
+
+        .sheet {
+          width: 100%;
+          max-width: 794px;
+          margin: 0 auto;
+          background: white;
+          min-height: calc(100vh - 32px);
+          padding: 22px 26px 42px;
+          box-shadow: 0 16px 48px rgba(15, 23, 42, 0.08);
+        }
+
+        .report-header {
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          align-items: start;
+          gap: 18px;
+          padding-bottom: 18px;
+        }
+
+        .header-side {
+          font-size: 18px;
+          line-height: 1.7;
+          color: #6a6a6a;
+          padding-top: 24px;
+        }
+
+        .header-side.left {
+          text-align: left;
+          font-weight: 700;
+        }
+
+        .header-side.right {
+          text-align: right;
+          font-weight: 600;
+          font-family: 'Cairo', sans-serif;
+        }
+
+        .logo-wrap {
+          display: flex;
+          justify-content: center;
+        }
+
+        .logo-wrap img {
+          width: 108px;
+          height: auto;
+          display: block;
+        }
+
+        .header-divider {
+          border-top: 1px solid var(--line);
+          margin-top: 12px;
+        }
+
+        .report-title-row {
+          display: flex;
+          align-items: baseline;
+          justify-content: space-between;
+          gap: 20px;
+          margin: 26px 0 10px;
+          flex-wrap: wrap;
+        }
+
+        .report-title {
+          margin: 0;
+          color: var(--blue);
+          font-size: 28px;
+          letter-spacing: 0.06em;
+          font-weight: 800;
+        }
+
+        .report-meta {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px 28px;
+          margin: 24px 0;
+        }
+
+        .meta-item {
+          border-bottom: 1px solid #eef1f6;
+          padding-bottom: 8px;
+        }
+
+        .meta-label {
+          display: block;
+          margin-bottom: 4px;
+          color: var(--muted);
+          font-size: 13px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+        }
+
+        .meta-value {
+          font-size: 18px;
+          line-height: 1.6;
+          font-family: ${isArabic ? "'Cairo', sans-serif" : "'Merriweather', serif"};
+        }
+
+        .section {
+          margin-top: 28px;
+          page-break-inside: avoid;
+        }
+
+        .section-title {
+          margin: 0 0 12px;
+          color: #111827;
+          font-size: 20px;
+          font-weight: 800;
+        }
+
+        .notes-box {
+          border: 1px solid #e5e7eb;
+          border-radius: 16px;
+          padding: 18px 20px;
+          background: #fafbfc;
+          font-size: 16px;
+          line-height: 1.9;
+          white-space: pre-wrap;
+        }
+
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 16px;
+          overflow: hidden;
+          border-radius: 16px;
+        }
+
+        thead {
+          display: table-header-group;
+        }
+
+        th {
+          background: var(--blue);
+          color: white;
+          padding: 12px 14px;
+          font-size: 14px;
+          text-align: ${isArabic ? 'right' : 'left'};
+          font-weight: 700;
+        }
+
+        td {
+          border-bottom: 1px solid #e5e7eb;
+          padding: 14px;
+          vertical-align: top;
+          font-size: 14px;
+          line-height: 1.8;
+        }
+
+        tbody tr:nth-child(even) td {
+          background: #fafbff;
+        }
+
+        .cell-title {
+          font-weight: 700;
+          color: #111827;
+          margin-bottom: 4px;
+        }
+
+        .cell-description {
+          color: #4b5563;
+          font-size: 13px;
+        }
+
+        .empty-row {
+          text-align: center;
+          color: #6b7280;
+          font-style: italic;
+        }
+
+        .report-footer {
+          position: fixed;
+          left: 26px;
+          right: 26px;
+          bottom: 16px;
+          display: grid;
+          grid-template-columns: 1fr auto 1fr;
+          gap: 12px;
+          align-items: center;
+          color: #7b7b7b;
+          font-size: 13px;
+        }
+
+        .report-footer .center {
+          text-align: center;
+        }
+
+        .report-footer .right {
+          text-align: right;
+        }
+
+        @media print {
+          body {
+            padding: 0;
+            background: white;
+          }
+
+          .sheet {
+            max-width: none;
+            min-height: auto;
+            padding: 0 0 44px;
+            box-shadow: none;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="sheet">
+        <header>
+          <div class="report-header">
+            <div class="header-side left">${escapeHtml(companyEnglish)}</div>
+            <div class="logo-wrap">
+              <img src="${logoUrl}" alt="QHSSE Consultant logo" />
+            </div>
+            <div class="header-side right">${escapeHtml(companyArabic)}</div>
+          </div>
+          <div class="header-divider"></div>
+        </header>
+
+        <section class="report-title-row">
+          <h1 class="report-title">${escapeHtml(reportTitle)}</h1>
+          <div class="meta-value">${escapeHtml(siteName)}</div>
+        </section>
+
+        <section class="report-meta">
+          <div class="meta-item">
+            <span class="meta-label">${escapeHtml(t('reports.date'))}</span>
+            <div class="meta-value">${escapeHtml(formatDate(report.date, language))}</div>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">${escapeHtml(t('reports.category'))}</span>
+            <div class="meta-value">${escapeHtml(getCategoryLabel(report.category, t))}</div>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">${escapeHtml(t('reports.status'))}</span>
+            <div class="meta-value">${escapeHtml(getStatusLabel(report.status, t))}</div>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">${escapeHtml(t('reports.consultant'))}</span>
+            <div class="meta-value">${escapeHtml(report.consultant?.name || '-')}</div>
+          </div>
+        </section>
+
+        ${
+          notes
+            ? `
+            <section class="section">
+              <h2 class="section-title">${escapeHtml(t('reports.notes'))}</h2>
+              <div class="notes-box">${escapeHtml(notes)}</div>
+            </section>
+          `
+            : ''
+        }
+
+        <section class="section">
+          <h2 class="section-title">${escapeHtml(t('reports.observations'))} (${report.observations.length})</h2>
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 58px;">#</th>
+                <th>${escapeHtml(t('reports.observation'))}</th>
+                <th style="width: 170px;">${escapeHtml(t('reports.riskLevel'))}</th>
+                <th style="width: 150px;">${escapeHtml(t('reports.status'))}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${buildObservationRows(report, isArabic, t)}
+            </tbody>
+          </table>
+        </section>
+
+        <footer class="report-footer">
+          <div>Email: Support@qhsseconsultant.onmicrosoft.com</div>
+          <div class="center">${escapeHtml(reportTitle)} | ${escapeHtml(siteName)}</div>
+          <div class="right">Mobile: +20 1117755096</div>
+        </footer>
+      </div>
+    </body>
+  </html>`
 }
 
 export async function generateReportPDF(report: Report, t: (key: string) => string, language: string) {
-  const doc = new jsPDF()
-  const isArabic = language === 'ar'
-
-  // Header
-  doc.setFillColor(248, 250, 252)
-  doc.rect(0, 0, 210, 48, 'F')
-  doc.setDrawColor(226, 232, 240)
-  doc.line(14, 46, 196, 46)
-
-  try {
-    const logoDataUrl = await loadLogoDataUrl()
-    doc.addImage(logoDataUrl, 'PNG', 14, 8, 26, 26)
-  } catch (error) {
-    console.error('Failed to load logo for PDF:', error)
+  if (typeof window === 'undefined') {
+    return
   }
 
-  doc.setTextColor(139, 77, 0)
-  doc.setFontSize(18)
-  doc.setFont('helvetica', 'bold')
-  doc.text('QHSSE CONSULTANT', 46, 18)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
-  doc.text('SINCE 2022', 46, 26)
-  doc.setTextColor(30, 64, 175)
-  doc.setFontSize(14)
-  doc.setFont('helvetica', 'bold')
-  doc.text(isArabic ? 'Visit Report / تقرير زيارة' : 'Visit Report', 196, 22, { align: 'right' })
-
-  // Report Info
-  doc.setTextColor(0, 0, 0)
-  doc.setFontSize(12)
-  doc.setFont('helvetica', 'bold')
-  let y = 56
-
-  doc.text(isArabic && report.siteNameAr ? report.siteNameAr : report.siteName, 14, y)
-  doc.setFont('helvetica', 'normal')
-
-  y += 10
-  doc.setFontSize(10)
-  doc.text(`${t('reports.date')}: ${new Date(report.date).toLocaleDateString()}`, 14, y)
-  y += 7
-  doc.text(`${t('reports.category')}: ${report.category}`, 14, y)
-  y += 7
-  doc.text(`${t('reports.status')}: ${report.status}`, 14, y)
-  y += 7
-  if (report.consultant?.name) {
-    doc.text(`${t('reports.consultant')}: ${report.consultant.name}`, 14, y)
-    y += 7
+  const printWindow = window.open('', '_blank', 'noopener,noreferrer,width=1100,height=900')
+  if (!printWindow) {
+    throw new Error('Unable to open print window')
   }
 
-  // Notes
-  if (report.notes || report.notesAr) {
-    y += 10
-    doc.setFont('helvetica', 'bold')
-    doc.text(t('reports.notes'), 14, y)
-    doc.setFont('helvetica', 'normal')
-    y += 7
-    const notes = isArabic && report.notesAr ? report.notesAr : report.notes
-    const splitNotes = doc.splitTextToSize(notes || '', 180)
-    doc.text(splitNotes, 14, y)
-    y += splitNotes.length * 5 + 10
-  }
+  const markup = buildPrintMarkup(report, t, language)
 
-  // Observations Table
-  y += 5
-  doc.setFont('helvetica', 'bold')
-  doc.text(`${t('reports.observations')} (${report.observations.length})`, 14, y)
-  doc.setFont('helvetica', 'normal')
+  printWindow.document.open()
+  printWindow.document.write(markup)
+  printWindow.document.close()
 
-  const tableData = report.observations.map((obs, index) => [
-    (index + 1).toString(),
-    isArabic && obs.titleAr ? obs.titleAr : obs.title,
-    obs.riskLevel,
-    obs.status,
-  ])
+  await new Promise<void>((resolve) => {
+    const finish = () => {
+      printWindow.focus()
+      resolve()
+    }
 
-  ;(doc as any).autoTable({
-    startY: y + 5,
-    head: [['#', t('reports.observation'), t('reports.riskLevel'), t('reports.status')]],
-    body: tableData,
-    theme: 'grid',
-    headStyles: {
-      fillColor: [30, 64, 175],
-      textColor: 255,
-      fontSize: 9,
-    },
-    bodyStyles: {
-      fontSize: 8,
-    },
-    alternateRowStyles: {
-      fillColor: [245, 247, 250],
-    },
-    margin: { left: 14, right: 14 },
+    printWindow.onload = finish
+    window.setTimeout(finish, 700)
   })
 
-  // Footer
-  const pageCount = (doc as any).internal.getNumberOfPages()
-  for (let i = 1; i <= pageCount; i++) {
-    doc.setPage(i)
-    doc.setFontSize(8)
-    doc.setTextColor(128, 128, 128)
-    doc.text(
-      `QHSSE Consultant | Page ${i} of ${pageCount}`,
-      105,
-      doc.internal.pageSize.height - 10,
-      { align: 'center' }
-    )
+  printWindow.onafterprint = () => {
+    printWindow.close()
   }
 
-  // Save
-  const fileName = `report-${report.siteName.replace(/\s+/g, '-').toLowerCase()}-${new Date(report.date).toISOString().split('T')[0]}.pdf`
-  doc.save(fileName)
+  printWindow.print()
 }
