@@ -7,25 +7,35 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public paths that don't require auth
-  const publicPaths = ['/', '/about', '/services', '/contact', '/login', '/api/auth', '/uploads', '/locales']
+  const publicPaths = ['/', '/about', '/services', '/contact', '/login', '/api/auth', '/uploads', '/locales', '/_next', '/favicon']
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
 
   // Dashboard routes require auth
-  if (pathname.startsWith('/dashboard') || pathname.startsWith('/admin')) {
+  if (pathname.startsWith('/dashboard')) {
     if (!token) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('callbackUrl', pathname)
       return NextResponse.redirect(loginUrl)
     }
+  }
 
-    // Admin routes require admin role
-    if (pathname.startsWith('/admin') && token.role !== 'ADMIN') {
+  // Admin routes require admin role
+  if (pathname.startsWith('/admin')) {
+    if (!token) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('callbackUrl', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    if (token.role !== 'ADMIN') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
 
-  // Redirect authenticated users from login page to dashboard
+  // Redirect authenticated users from login page to their appropriate dashboard
   if (pathname === '/login' && token) {
+    if (token.role === 'ADMIN') {
+      return NextResponse.redirect(new URL('/admin', request.url))
+    }
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 

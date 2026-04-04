@@ -31,14 +31,13 @@ function LoginForm() {
         if (result.error.includes('Database connection')) {
           toast.error('Database connection error. Please contact support.')
         } else {
-          toast.error(result.error === 'Invalid email or password' 
-            ? 'Invalid email or password' 
+          toast.error(result.error === 'Invalid email or password'
+            ? 'Invalid email or password'
             : 'Login failed. Please try again.')
         }
       } else {
-        toast.success('Login successful!')
-        router.push('/dashboard')
-        router.refresh()
+        // Use window.location for reliable redirect after NextAuth login
+        window.location.href = '/dashboard'
       }
     } catch (error) {
       toast.error('An unexpected error occurred')
