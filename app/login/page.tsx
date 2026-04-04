@@ -6,7 +6,8 @@ import { Suspense, useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Shield, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react'
+import BrandLogo from '@/components/BrandLogo'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -96,9 +97,11 @@ function LoginForm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 mb-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center shadow-lg">
-              <Shield className="w-8 h-8 text-white" />
-            </div>
+            <BrandLogo
+              className="justify-center"
+              textClassName="text-primary-800"
+              subtitleClassName="text-primary-500/70"
+            />
           </Link>
           <h1 className="text-2xl font-bold text-gray-900">{t('auth.loginTitle')}</h1>
           <p className="text-gray-600 mt-2">{t('auth.loginSubtitle')}</p>

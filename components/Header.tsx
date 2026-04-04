@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
 import LanguageSwitcher from './LanguageSwitcher'
-import { Menu, X, Shield, User, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucide-react'
+import { Menu, X, User, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucide-react'
+import BrandLogo from './BrandLogo'
 
 export default function Header() {
   const { t } = useLanguage()
@@ -38,17 +39,11 @@ export default function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow">
-              <Shield className="w-6 h-6 md:w-7 md:h-7 text-white" />
-            </div>
-            <div className="hidden sm:block">
-              <span className={`text-lg md:text-xl font-bold transition-colors ${scrolled ? 'text-primary-600' : 'text-white'}`}>
-                QHSSE
-              </span>
-              <span className={`text-lg md:text-xl font-light transition-colors ${scrolled ? 'text-gray-600' : 'text-white/90'}`}>
-                {' '}Consultant
-              </span>
-            </div>
+            <BrandLogo
+              className="gap-3"
+              textClassName={scrolled ? 'text-primary-700' : 'text-white'}
+              subtitleClassName={scrolled ? 'text-primary-500/80' : 'text-white/70'}
+            />
           </Link>
 
           {/* Desktop Navigation */}

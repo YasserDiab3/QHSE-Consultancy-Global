@@ -1,0 +1,65 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="28" fill="#F8FAFC"/>
+  <defs>
+    <linearGradient id="leafGradient" x1="18" y1="10" x2="110" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9BD700"/>
+      <stop offset="1" stop-color="#3E9B00"/>
+    </linearGradient>
+    <linearGradient id="trunkGradient" x1="64" y1="44" x2="64" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9C5B00"/>
+      <stop offset="1" stop-color="#6C3B00"/>
+    </linearGradient>
+  </defs>
+  <path d="M62 50C52 66 51 82 55 92C58 100 55 109 44 117C55 115 63 110 67 105C72 110 80 115 92 117C81 109 78 100 81 92C85 82 84 66 74 50C70 55 65 58 62 58C59 58 55 55 62 50Z" fill="url(#trunkGradient)"/>
+  <circle cx="64" cy="48" r="8" fill="#8A4D00"/>
+  <g transform="translate(22 37) rotate(-28) scale(0.89)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(31 22) rotate(-10) scale(1)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(48 13) rotate(8) scale(0.89)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(65 10) rotate(22) scale(1)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(84 18) rotate(34) scale(1)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(96 33) rotate(44) scale(0.89)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(100 55) rotate(58) scale(1)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(91 74) rotate(34) scale(1)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(76 86) rotate(18) scale(0.89)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(52 90) rotate(-8) scale(0.83)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(33 82) rotate(-26) scale(0.78)">
+    <path d="M0 -10C8 -10 13 -5 13 2C13 9 6 14 0 14C-8 14 -13 9 -13 2C-13 -5 -7 -10 0 -10Z" fill="url(#leafGradient)"/>
+    <path d="M-1 11C3 1 7 -4 9 -8" stroke="white" stroke-width="1.8" stroke-linecap="round"/>
+  </g>
+  <ellipse cx="18" cy="58" rx="6" ry="8" transform="rotate(-42 18 58)" fill="#4AA500"/>
+  <ellipse cx="42" cy="27" rx="6" ry="8" transform="rotate(-18 42 27)" fill="#4AA500"/>
+  <ellipse cx="78" cy="26" rx="6" ry="8" transform="rotate(12 78 26)" fill="#4AA500"/>
+  <ellipse cx="110" cy="49" rx="6" ry="8" transform="rotate(36 110 49)" fill="#4AA500"/>
+  <ellipse cx="83" cy="59" rx="6" ry="8" transform="rotate(20 83 59)" fill="#4AA500"/>
+  <ellipse cx="29" cy="62" rx="6" ry="8" transform="rotate(-20 29 62)" fill="#4AA500"/>
+</svg>

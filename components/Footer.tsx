@@ -2,7 +2,8 @@
 
 import { useLanguage } from '@/context'
 import Link from 'next/link'
-import { Shield, Mail, Phone, MapPin, Linkedin, Twitter } from 'lucide-react'
+import { Mail, Phone, MapPin, Linkedin, Twitter } from 'lucide-react'
+import BrandLogo from './BrandLogo'
 
 export default function Footer() {
   const { t } = useLanguage()
@@ -14,13 +15,10 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent-400 to-accent-600 flex items-center justify-center">
-                <Shield className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <span className="text-xl font-bold">QHSSE</span>
-                <span className="text-xl font-light text-gray-300"> Consultant</span>
-              </div>
+              <BrandLogo
+                textClassName="text-white"
+                subtitleClassName="text-accent-200/90"
+              />
             </Link>
             <p className="text-gray-400 max-w-md mb-6">
               {t('home.heroSubtitle')}
