@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getSession } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
+import { sendNotificationEmail } from '@/lib/email'
 
 export async function GET(request: Request) {
   try {
@@ -122,6 +123,19 @@ export async function POST(request: Request) {
     })
 
     await logActivity(session.user.id, 'REPORT_CREATED', 'report', report.id, `Created report for ${siteName}`, ip)
+
+    const clientEmail = report.client?.user?.email
+    if (clientEmail) {
+      const portalUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/dashboard`
+      await sendNotificationEmail({
+        to: clientEmail,
+        subject: `New report available: ${siteName}`,
+        text: `A new report for ${siteName} has been added to your portal. View it at ${portalUrl}.`,
+        html: `<p>A new report for <strong>${siteName}</strong> has been added to your portal.</p><p><a href="${portalUrl}">Open dashboard</a></p>`,
+      }).catch((error) => {
+        console.error('Failed to send report notification email:', error)
+      })
+    }
 
     return NextResponse.json(report, { status: 201 })
   } catch (error: any) {

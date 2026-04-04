@@ -23,12 +23,24 @@ export default function ContactPage() {
     setLoading(true)
 
     try {
-      // Simulate form submission
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      })
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null)
+        throw new Error(data?.error || t('common.error'))
+      }
+
       toast.success(t('contact.successMessage'))
       setFormData({ name: '', company: '', email: '', phone: '', message: '' })
     } catch (error) {
-      toast.error(t('common.error'))
+      console.error('Failed to submit contact form:', error)
+      toast.error(error instanceof Error ? error.message : t('common.error'))
     } finally {
       setLoading(false)
     }

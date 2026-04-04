@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
+import { sendNotificationEmail } from '@/lib/email'
 
 export async function GET() {
   try {
@@ -76,6 +77,15 @@ export async function POST(request: Request) {
     })
 
     await logActivity(user.id, 'CLIENT_CREATED', 'client', user.client!.id, `Created client account for ${companyName}`, ip)
+
+    await sendNotificationEmail({
+      to: user.email,
+      subject: 'Your client portal account is ready',
+      text: `Hello ${user.name}, your client portal account has been created for ${companyName}. You can sign in using your email at ${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/login.`,
+      html: `<p>Hello ${user.name},</p><p>Your client portal account has been created for <strong>${companyName}</strong>.</p><p>You can sign in using your email at <a href="${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/login">${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || ''}/login</a>.</p>`,
+    }).catch((error) => {
+      console.error('Failed to send client welcome email:', error)
+    })
 
     return NextResponse.json(user, { status: 201 })
   } catch (error: any) {

@@ -10,15 +10,15 @@ import {
   CheckCircle2,
   TrendingUp,
   Users,
-  FileBarChart,
   Activity,
   BarChart3,
-  Shield,
+  MessageSquare,
 } from 'lucide-react'
 import Header from '@/components/Header'
 import AdminReports from './admin-reports'
 import AdminClients from './admin-clients'
 import AdminActivityLog from './admin-activity-log'
+import AdminContactRequests from './admin-contact-requests'
 
 type DashboardStats = {
   totalReports: number
@@ -31,11 +31,11 @@ type DashboardStats = {
 }
 
 export default function AdminDashboardClient() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { data: session } = useSession()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'clients' | 'activity'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'reports' | 'clients' | 'requests' | 'activity'>('overview')
 
   const fetchStats = useCallback(async () => {
     try {
@@ -59,6 +59,7 @@ export default function AdminDashboardClient() {
     { id: 'overview' as const, label: t('dashboard.title'), icon: BarChart3 },
     { id: 'reports' as const, label: t('admin.reports'), icon: FileText },
     { id: 'clients' as const, label: t('admin.clients'), icon: Users },
+    { id: 'requests' as const, label: language === 'ar' ? 'طلبات التواصل' : 'Contact Requests', icon: MessageSquare },
     { id: 'activity' as const, label: t('admin.activityLog'), icon: Activity },
   ]
 
@@ -100,6 +101,7 @@ export default function AdminDashboardClient() {
           )}
           {activeTab === 'reports' && <AdminReports />}
           {activeTab === 'clients' && <AdminClients />}
+          {activeTab === 'requests' && <AdminContactRequests />}
           {activeTab === 'activity' && <AdminActivityLog />}
         </div>
       </main>

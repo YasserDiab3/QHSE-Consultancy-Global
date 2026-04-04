@@ -26,6 +26,19 @@ export async function PUT(
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
+    const duplicateUser = await prisma.user.findFirst({
+      where: {
+        email,
+        id: {
+          not: existingClient.userId,
+        },
+      },
+    })
+
+    if (duplicateUser) {
+      return NextResponse.json({ error: 'Email already exists' }, { status: 400 })
+    }
+
     const updateData: any = {
       companyName,
       companyNameAr,

@@ -38,7 +38,7 @@ export default function AdminClients() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
-  const [formData, setFormData] = useState({
+  const createInitialFormData = () => ({
     name: '',
     email: '',
     password: '',
@@ -47,18 +47,30 @@ export default function AdminClients() {
     phone: '',
     address: '',
   })
+  const [formData, setFormData] = useState(createInitialFormData)
+
+  const resetForm = () => {
+    setEditingClient(null)
+    setFormData(createInitialFormData())
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch('/api/clients')
-      if (res.ok) setClients(await res.json())
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error || t('common.error'))
+      }
+
+      setClients(await res.json())
     } catch (error) {
       console.error('Failed to fetch:', error)
+      toast.error(error instanceof Error ? error.message : t('common.error'))
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [t])
 
   useEffect(() => {
     fetchData()
@@ -79,8 +91,7 @@ export default function AdminClients() {
       if (res.ok) {
         toast.success(editingClient ? t('admin.clientUpdated') : t('admin.clientCreated'))
         setShowForm(false)
-        setEditingClient(null)
-        setFormData({ name: '', email: '', password: '', companyName: '', companyNameAr: '', phone: '', address: '' })
+        resetForm()
         fetchData()
       } else {
         const data = await res.json()
@@ -98,6 +109,9 @@ export default function AdminClients() {
       if (res.ok) {
         toast.success(t('admin.deleted'))
         fetchData()
+      } else {
+        const data = await res.json().catch(() => null)
+        toast.error(data?.error || t('common.error'))
       }
     } catch (error) {
       toast.error(t('common.error'))
@@ -123,7 +137,13 @@ export default function AdminClients() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-gray-900">{t('admin.manageClients')}</h2>
-        <button onClick={() => { setShowForm(true); setEditingClient(null) }} className="btn-primary">
+        <button
+          onClick={() => {
+            resetForm()
+            setShowForm(true)
+          }}
+          className="btn-primary"
+        >
           <Plus className="w-4 h-4" />
           {t('admin.addClient')}
         </button>
@@ -137,7 +157,12 @@ export default function AdminClients() {
               <h3 className="text-lg font-bold text-gray-900">
                 {editingClient ? t('admin.editClient') : t('admin.createClient')}
               </h3>
-              <button onClick={() => { setShowForm(false); setEditingClient(null) }}>
+              <button
+                onClick={() => {
+                  setShowForm(false)
+                  resetForm()
+                }}
+              >
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
@@ -212,7 +237,14 @@ export default function AdminClients() {
               </div>
               <div className="flex items-center gap-3 pt-4">
                 <button type="submit" className="btn-primary">{t('common.save')}</button>
-                <button type="button" onClick={() => { setShowForm(false); setEditingClient(null) }} className="btn-secondary">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowForm(false)
+                    resetForm()
+                  }}
+                  className="btn-secondary"
+                >
                   {t('common.cancel')}
                 </button>
               </div>

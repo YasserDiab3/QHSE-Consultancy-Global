@@ -41,6 +41,23 @@ model Client {
   @@map("Client")
 }
 
+model ContactRequest {
+  id         String   @id @default(uuid())
+  name       String
+  company    String?
+  email      String
+  phone      String?
+  message    String
+  status     String   @default("NEW")
+  createdAt  DateTime @default(now()) @map("createdat")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updatedat")
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("ContactRequest")
+}
+
 model Report {
   id            String         @id @default(uuid())
   clientId      String
