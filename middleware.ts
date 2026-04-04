@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
 export async function middleware(request: NextRequest) {
+  // Get token using default cookie name (NextAuth handles secure prefix automatically)
   const token = await getToken({
     req: request,
     secret: process.env.NEXTAUTH_SECRET,
@@ -11,8 +12,13 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public paths that don't require auth
-  const publicPaths = ['/', '/about', '/services', '/contact', '/login', '/api/auth', '/uploads', '/locales', '/_next', '/favicon']
+  const publicPaths = ['/', '/about', '/services', '/contact', '/login', '/api/auth', '/uploads', '/locales', '/_next', '/favicon', '/api/health']
   const isPublicPath = publicPaths.some((path) => pathname.startsWith(path))
+
+  // If public path, allow access
+  if (isPublicPath && !pathname.startsWith('/api/auth')) {
+    return NextResponse.next()
+  }
 
   // Dashboard routes require auth
   if (pathname.startsWith('/dashboard')) {
