@@ -12,6 +12,9 @@ import {
   Mail,
   Phone,
   MapPin,
+  Building2,
+  Lock,
+  ArrowRight,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -36,6 +39,7 @@ export default function AdminClients() {
   const { t } = useLanguage()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
   const createInitialFormData = () => ({
@@ -82,6 +86,7 @@ export default function AdminClients() {
     const method = editingClient ? 'PUT' : 'POST'
 
     try {
+      setSubmitting(true)
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -99,6 +104,8 @@ export default function AdminClients() {
       }
     } catch (error) {
       toast.error(t('common.error'))
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -152,101 +159,179 @@ export default function AdminClients() {
       {/* Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingClient ? t('admin.editClient') : t('admin.createClient')}
-              </h3>
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto border border-gray-100">
+            <div className="p-6 md:p-8 border-b border-gray-200 flex items-start justify-between gap-4">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingClient ? t('admin.editClient') : t('admin.createClient')}
+                </h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  {editingClient
+                    ? 'Update the client account and company details from one place.'
+                    : 'Create a portal account, company profile, and contact details for the client.'}
+                </p>
+              </div>
               <button
                 onClick={() => {
                   setShowForm(false)
                   resetForm()
                 }}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               >
                 <X className="w-5 h-5 text-gray-400" />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="label-field">{t('admin.clientName')} *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
-                  required
-                  className="input-field"
-                />
+            <form onSubmit={handleSubmit} className="p-6 md:p-8 space-y-8">
+              <div className="rounded-2xl bg-primary-50 border border-primary-100 p-4 md:p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-primary-500 text-white flex items-center justify-center">
+                    <User className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Portal Account</h4>
+                    <p className="text-sm text-gray-500">Login credentials and main client contact.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-field">{t('admin.clientName')} *</label>
+                    <div className="relative">
+                      <User className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData((f) => ({ ...f, name: e.target.value }))}
+                        required
+                        className="input-field ps-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label-field">{t('admin.clientEmail')} *</label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
+                        required
+                        className="input-field ps-10"
+                      />
+                    </div>
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="label-field">{t('auth.password')} {!editingClient && '*'}</label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="password"
+                        value={formData.password}
+                        onChange={(e) => setFormData((f) => ({ ...f, password: e.target.value }))}
+                        required={!editingClient}
+                        placeholder={editingClient ? 'Leave empty to keep current password' : 'Create a temporary password'}
+                        className="input-field ps-10"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="label-field">{t('admin.clientEmail')} *</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData((f) => ({ ...f, email: e.target.value }))}
-                  required
-                  className="input-field"
-                />
+
+              <div className="rounded-2xl bg-gray-50 border border-gray-200 p-4 md:p-5">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 text-primary-500 flex items-center justify-center">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Company Profile</h4>
+                    <p className="text-sm text-gray-500">Company identity and primary contact information.</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="label-field">{t('admin.clientCompany')} *</label>
+                    <div className="relative">
+                      <Building2 className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={formData.companyName}
+                        onChange={(e) => setFormData((f) => ({ ...f, companyName: e.target.value }))}
+                        required
+                        className="input-field ps-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label-field">{t('admin.clientCompany')} (AR)</label>
+                    <input
+                      type="text"
+                      value={formData.companyNameAr}
+                      onChange={(e) => setFormData((f) => ({ ...f, companyNameAr: e.target.value }))}
+                      className="input-field"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-field">{t('admin.clientPhone')}</label>
+                    <div className="relative">
+                      <Phone className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
+                        className="input-field ps-10"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label-field">{t('admin.clientAddress')}</label>
+                    <div className="relative">
+                      <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={formData.address}
+                        onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
+                        className="input-field ps-10"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="label-field">{t('auth.password')} {!editingClient && '*'}</label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData((f) => ({ ...f, password: e.target.value }))}
-                  required={!editingClient}
-                  placeholder={editingClient ? 'Leave empty to keep current' : ''}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="label-field">{t('admin.clientCompany')} *</label>
-                <input
-                  type="text"
-                  value={formData.companyName}
-                  onChange={(e) => setFormData((f) => ({ ...f, companyName: e.target.value }))}
-                  required
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="label-field">{t('admin.clientCompany')} (AR)</label>
-                <input
-                  type="text"
-                  value={formData.companyNameAr}
-                  onChange={(e) => setFormData((f) => ({ ...f, companyNameAr: e.target.value }))}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="label-field">{t('admin.clientPhone')}</label>
-                <input
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => setFormData((f) => ({ ...f, phone: e.target.value }))}
-                  className="input-field"
-                />
-              </div>
-              <div>
-                <label className="label-field">{t('admin.clientAddress')}</label>
-                <input
-                  type="text"
-                  value={formData.address}
-                  onChange={(e) => setFormData((f) => ({ ...f, address: e.target.value }))}
-                  className="input-field"
-                />
-              </div>
-              <div className="flex items-center gap-3 pt-4">
-                <button type="submit" className="btn-primary">{t('common.save')}</button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowForm(false)
-                    resetForm()
-                  }}
-                  className="btn-secondary"
-                >
-                  {t('common.cancel')}
-                </button>
+
+              <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                <p className="text-sm text-gray-500">
+                  {editingClient
+                    ? 'Changes are saved immediately to the client portal.'
+                    : 'The client will be created in the database and can sign in immediately.'}
+                </p>
+                <div className="flex items-center justify-end gap-3">
+                  <button
+                    type="submit"
+                    disabled={submitting}
+                    className="btn-primary min-w-[128px] justify-center"
+                  >
+                    {submitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        {t('contact.sending')}
+                      </>
+                    ) : (
+                      <>
+                        {t('common.save')}
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForm(false)
+                      resetForm()
+                    }}
+                    className="btn-secondary"
+                    disabled={submitting}
+                  >
+                    {t('common.cancel')}
+                  </button>
+                </div>
               </div>
             </form>
           </div>

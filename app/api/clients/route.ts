@@ -5,10 +5,12 @@ import bcrypt from 'bcryptjs'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
 import { sendNotificationEmail } from '@/lib/email'
+import { ensureClientTableCompatibility, isMissingTableOrColumnError } from '@/lib/db-compat'
 
 export async function GET() {
   try {
     await requireAdmin()
+    await ensureClientTableCompatibility()
     const clients = await prisma.client.findMany({
       include: {
         user: {
@@ -38,6 +40,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await requireAdmin()
+    await ensureClientTableCompatibility()
     const body = await request.json()
     const headerList = headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
@@ -89,6 +92,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(user, { status: 201 })
   } catch (error: any) {
+    if (isMissingTableOrColumnError(error)) {
+      return NextResponse.json(
+        { error: 'Client schema in the database is outdated. Please redeploy once and try again.' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ error: error.message }, { status: error.message === 'Forbidden' ? 403 : 500 })
   }
 }

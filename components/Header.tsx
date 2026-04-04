@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
 import LanguageSwitcher from './LanguageSwitcher'
-import { Menu, X, Shield, User, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react'
+import { Menu, X, Shield, User, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucide-react'
 
 export default function Header() {
   const { t } = useLanguage()
@@ -75,6 +75,17 @@ export default function Header() {
             {session ? (
               <div className="hidden md:flex items-center gap-2">
                 <Link
+                  href="/"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    scrolled
+                      ? 'text-gray-700 hover:text-primary-500 hover:bg-gray-100'
+                      : 'text-white/90 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  <Home className="w-4 h-4" />
+                  {t('nav.home')}
+                </Link>
+                <Link
                   href={session.user.role === 'ADMIN' ? '/admin' : '/dashboard'}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     scrolled
@@ -143,6 +154,13 @@ export default function Header() {
               <div className="pt-2 border-t border-gray-200">
                 {session ? (
                   <>
+                    <Link
+                      href="/"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block px-4 py-3 rounded-lg text-gray-700 hover:text-primary-500 hover:bg-gray-50 font-medium"
+                    >
+                      {t('nav.home')}
+                    </Link>
                     <Link
                       href={session.user.role === 'ADMIN' ? '/admin' : '/dashboard'}
                       onClick={() => setMobileMenuOpen(false)}

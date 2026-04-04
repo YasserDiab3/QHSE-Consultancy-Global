@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
+import { ensureClientTableCompatibility, isMissingTableOrColumnError } from '@/lib/db-compat'
 
 export async function PUT(
   request: Request,
@@ -11,6 +12,7 @@ export async function PUT(
 ) {
   try {
     await requireAdmin()
+    await ensureClientTableCompatibility()
     const body = await request.json()
     const headerList = headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
@@ -86,6 +88,13 @@ export async function PUT(
 
     return NextResponse.json(updatedClient)
   } catch (error: any) {
+    if (isMissingTableOrColumnError(error)) {
+      return NextResponse.json(
+        { error: 'Client schema in the database is outdated. Please redeploy once and try again.' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ error: error.message }, { status: error.message === 'Forbidden' ? 403 : 500 })
   }
 }
@@ -96,6 +105,7 @@ export async function DELETE(
 ) {
   try {
     await requireAdmin()
+    await ensureClientTableCompatibility()
     const headerList = headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
@@ -122,6 +132,13 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
+    if (isMissingTableOrColumnError(error)) {
+      return NextResponse.json(
+        { error: 'Client schema in the database is outdated. Please redeploy once and try again.' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json({ error: error.message }, { status: error.message === 'Forbidden' ? 403 : 500 })
   }
 }

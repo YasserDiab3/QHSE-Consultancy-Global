@@ -2,10 +2,12 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth'
 import { sendNotificationEmail } from '@/lib/email'
+import { ensureContactRequestTable, isMissingTableOrColumnError } from '@/lib/db-compat'
 
 export async function GET() {
   try {
     await requireAdmin()
+    await ensureContactRequestTable()
 
     const requests = await prisma.contactRequest.findMany({
       orderBy: {
@@ -15,6 +17,10 @@ export async function GET() {
 
     return NextResponse.json(requests)
   } catch (error: any) {
+    if (isMissingTableOrColumnError(error)) {
+      return NextResponse.json([])
+    }
+
     return NextResponse.json(
       { error: error.message || 'Failed to load contact requests' },
       { status: error.message === 'Forbidden' ? 403 : 500 }
@@ -24,6 +30,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    await ensureContactRequestTable()
     const body = await request.json()
     const { name, company, email, phone, message } = body
 
@@ -66,6 +73,13 @@ export async function POST(request: Request) {
 
     return NextResponse.json(contactRequest, { status: 201 })
   } catch (error: any) {
+    if (isMissingTableOrColumnError(error)) {
+      return NextResponse.json(
+        { error: 'Contact requests storage is not ready yet. Please redeploy and try again.' },
+        { status: 500 }
+      )
+    }
+
     return NextResponse.json(
       { error: error.message || 'Failed to submit contact request' },
       { status: 500 }
