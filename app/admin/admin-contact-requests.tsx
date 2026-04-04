@@ -105,6 +105,13 @@ export default function AdminContactRequests({
     [requests, statusFilter]
   )
 
+  const activeFilterLabel =
+    statusFilter === 'ALL'
+      ? null
+      : language === 'ar'
+        ? `عرض الطلبات بالحالة: ${copy.statuses[statusFilter]}`
+        : `Showing requests with status: ${copy.statuses[statusFilter]}`
+
   const updateStatus = async (id: string, status: string) => {
     setUpdatingId(id)
     try {
@@ -155,6 +162,12 @@ export default function AdminContactRequests({
         <h2 className="text-xl font-bold text-gray-900">{copy.title}</h2>
         <p className="mt-1 text-gray-600">{copy.subtitle}</p>
       </div>
+
+      {activeFilterLabel && (
+        <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">
+          {activeFilterLabel}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6">
         {filteredRequests.map((request) => (

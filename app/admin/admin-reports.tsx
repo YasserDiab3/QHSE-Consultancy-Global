@@ -63,6 +63,22 @@ export default function AdminReports({
   const [viewingReport, setViewingReport] = useState<Report | null>(null)
   const [formData, setFormData] = useState(createInitialFormData)
 
+  const activeFilterLabel = (() => {
+    if (filterPreset?.riskLevel) {
+      return language === 'ar'
+        ? `عرض التقارير المرتبطة بالمخاطر: ${filterPreset.riskLevel}`
+        : `Showing reports for risk levels: ${filterPreset.riskLevel}`
+    }
+
+    if (filterPreset?.status) {
+      return language === 'ar'
+        ? `عرض التقارير بالحالة: ${filterPreset.status}`
+        : `Showing reports with status: ${filterPreset.status}`
+    }
+
+    return null
+  })()
+
   const resetForm = () => {
     setEditingReport(null)
     setFormData(createInitialFormData())
@@ -170,6 +186,12 @@ export default function AdminReports({
           {t('admin.addReport')}
         </button>
       </div>
+
+      {activeFilterLabel && (
+        <div className="rounded-2xl border border-primary-100 bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">
+          {activeFilterLabel}
+        </div>
+      )}
 
       {/* Form Modal */}
       {showForm && (

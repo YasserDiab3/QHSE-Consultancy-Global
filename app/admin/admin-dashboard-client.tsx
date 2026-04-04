@@ -2,7 +2,7 @@
 
 import { useLanguage } from '@/context'
 import { useSession } from 'next-auth/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -55,6 +55,7 @@ export default function AdminDashboardClient() {
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
   const [reportFilterPreset, setReportFilterPreset] = useState<ReportFilterPreset>(null)
   const [requestFilterPreset, setRequestFilterPreset] = useState<RequestStatusPreset>('ALL')
+  const contentAnchorRef = useRef<HTMLDivElement | null>(null)
 
   const fetchStats = useCallback(async () => {
     setLoading(true)
@@ -83,6 +84,17 @@ export default function AdminDashboardClient() {
     }
   }, [activeTab, fetchStats])
 
+  const activateTab = useCallback((tab: AdminTab) => {
+    setActiveTab(tab)
+
+    requestAnimationFrame(() => {
+      contentAnchorRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      })
+    })
+  }, [])
+
   const tabs = useMemo(
     () => [
       { id: 'overview' as const, label: t('dashboard.title'), icon: BarChart3 },
@@ -96,17 +108,17 @@ export default function AdminDashboardClient() {
 
   const openReports = useCallback((preset?: ReportFilterPreset) => {
     setReportFilterPreset(preset ?? null)
-    setActiveTab('reports')
-  }, [])
+    activateTab('reports')
+  }, [activateTab])
 
   const openClients = useCallback(() => {
-    setActiveTab('clients')
-  }, [])
+    activateTab('clients')
+  }, [activateTab])
 
   const openRequests = useCallback((status: RequestStatusPreset = 'ALL') => {
     setRequestFilterPreset(status)
-    setActiveTab('requests')
-  }, [])
+    activateTab('requests')
+  }, [activateTab])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -114,6 +126,7 @@ export default function AdminDashboardClient() {
 
       <main className="pb-12 pt-20">
         <div className="container-custom">
+          <div ref={contentAnchorRef} />
           <div className="mb-8">
             <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t('admin.title')}</h1>
             <p className="mt-1 text-gray-600">
@@ -125,7 +138,7 @@ export default function AdminDashboardClient() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => activateTab(tab.id)}
                 className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   activeTab === tab.id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
                 }`}
