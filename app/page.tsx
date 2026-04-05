@@ -5,6 +5,7 @@ import { useLanguage } from '@/context'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { getAllServiceCards } from '@/lib/service-cards'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   Shield,
@@ -59,24 +60,28 @@ export default function HomePage() {
   const clientLogos =
     language === 'ar'
       ? [
-          { name: 'شركة السوبكي', accent: 'from-blue-500/15 to-blue-100', mark: 'س' },
-          { name: 'بتروكورب', accent: 'from-emerald-500/15 to-emerald-100', mark: 'ب' },
-          { name: 'المصرية الألمانية', accent: 'from-amber-500/15 to-amber-100', mark: 'م' },
-          { name: 'النور للصناعات', accent: 'from-violet-500/15 to-violet-100', mark: 'ن' },
-          { name: 'الصفوة الغذائية', accent: 'from-rose-500/15 to-rose-100', mark: 'ص' },
-          { name: 'دلتا للخدمات', accent: 'from-cyan-500/15 to-cyan-100', mark: 'د' },
-          { name: 'الأفق البيئي', accent: 'from-lime-500/15 to-lime-100', mark: 'أ' },
-          { name: 'الرؤية المتحدة', accent: 'from-sky-500/15 to-sky-100', mark: 'ر' },
+          { name: 'العميل 1', src: '/clients/1631322692916.jpeg' },
+          { name: 'العميل 2', src: '/clients/633160a66af18.jpg' },
+          { name: 'شركة كايرو 3A', src: '/clients/caro3A.jpg' },
+          { name: 'CEGY', src: '/clients/CEGY.png' },
+          { name: 'الزمردة', src: '/clients/El-Zomoroda-for-corn-products-1.webp' },
+          { name: 'العميل 6', src: '/clients/images.png' },
+          { name: 'جرماني', src: '/clients/Logo%20-grmany.png' },
+          { name: 'العميل 8', src: '/clients/Logo%20G%C3%B6rsel%202025-01-31%20saat%2016.26.51_966469d2%20(002).jpg' },
+          { name: 'العميل 9', src: '/clients/Picture1.png' },
+          { name: 'زوماردا', src: '/clients/ZOMARDA.png' },
         ]
       : [
-          { name: 'Elsobky Co.', accent: 'from-blue-500/15 to-blue-100', mark: 'E' },
-          { name: 'Petrocorp', accent: 'from-emerald-500/15 to-emerald-100', mark: 'P' },
-          { name: 'German Egyptian', accent: 'from-amber-500/15 to-amber-100', mark: 'G' },
-          { name: 'Noor Industries', accent: 'from-violet-500/15 to-violet-100', mark: 'N' },
-          { name: 'Safwa Foods', accent: 'from-rose-500/15 to-rose-100', mark: 'S' },
-          { name: 'Delta Services', accent: 'from-cyan-500/15 to-cyan-100', mark: 'D' },
-          { name: 'Horizon Environmental', accent: 'from-lime-500/15 to-lime-100', mark: 'H' },
-          { name: 'United Vision', accent: 'from-sky-500/15 to-sky-100', mark: 'U' },
+          { name: 'Client 1', src: '/clients/1631322692916.jpeg' },
+          { name: 'Client 2', src: '/clients/633160a66af18.jpg' },
+          { name: 'Cairo 3A', src: '/clients/caro3A.jpg' },
+          { name: 'CEGY', src: '/clients/CEGY.png' },
+          { name: 'El Zomoroda', src: '/clients/El-Zomoroda-for-corn-products-1.webp' },
+          { name: 'Client 6', src: '/clients/images.png' },
+          { name: 'Germany Logo', src: '/clients/Logo%20-grmany.png' },
+          { name: 'Client 8', src: '/clients/Logo%20G%C3%B6rsel%202025-01-31%20saat%2016.26.51_966469d2%20(002).jpg' },
+          { name: 'Client 9', src: '/clients/Picture1.png' },
+          { name: 'ZOMARDA', src: '/clients/ZOMARDA.png' },
         ]
 
   useEffect(() => {
@@ -269,20 +274,21 @@ export default function HomePage() {
               {clientLogos.map((client, index) => (
                 <div key={`${client.name}-${index}`} className="snap-start">
                   <div
-                    className={`group flex h-32 w-[240px] shrink-0 flex-col justify-between rounded-3xl border border-gray-200 bg-gradient-to-br ${client.accent} p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl`}
+                    className="group flex h-40 w-[240px] shrink-0 flex-col justify-between rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-lg font-bold text-primary-700 shadow-sm">
-                        {client.mark}
-                      </div>
-                      <div className="rounded-full border border-white/80 bg-white/80 px-3 py-1 text-xs font-semibold text-gray-500 backdrop-blur-sm">
-                        {language === 'ar' ? 'عميل معتمد' : 'Verified Client'}
-                      </div>
+                    <div className="relative flex h-20 items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                      <Image
+                        src={client.src}
+                        alt={client.name}
+                        fill
+                        sizes="240px"
+                        className="object-contain p-3"
+                      />
                     </div>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">{client.name}</h3>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {language === 'ar' ? 'حلول جودة وسلامة مخصصة' : 'Tailored QHSSE solutions'}
+                      <h3 className="text-center text-base font-bold text-gray-900">{client.name}</h3>
+                      <p className="mt-1 text-center text-sm text-gray-600">
+                        {language === 'ar' ? 'شريك نجاح' : 'Success Partner'}
                       </p>
                     </div>
                   </div>
