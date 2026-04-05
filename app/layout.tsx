@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Cairo } from 'next/font/google'
 import './globals.css'
 import Providers from '@/components/Providers'
+import FloatingContactButtons from '@/components/FloatingContactButtons'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -29,7 +30,10 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className={`${inter.variable} ${cairo.variable}`}>
-        <Providers>{children}</Providers>
+        <Providers>
+          {children}
+          <FloatingContactButtons />
+        </Providers>
       </body>
     </html>
   )
