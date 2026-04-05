@@ -57,32 +57,26 @@ export default function HomePage() {
     { value: '99%', label: t('about.stat4Label'), icon: Shield },
   ]
 
-  const clientLogos =
-    language === 'ar'
-      ? [
-          { name: 'العميل 1', src: '/clients/1631322692916.jpeg' },
-          { name: 'العميل 2', src: '/clients/633160a66af18.jpg' },
-          { name: 'شركة كايرو 3A', src: '/clients/caro3A.jpg' },
-          { name: 'CEGY', src: '/clients/CEGY.png' },
-          { name: 'الزمردة', src: '/clients/El-Zomoroda-for-corn-products-1.webp' },
-          { name: 'العميل 6', src: '/clients/images.png' },
-          { name: 'جرماني', src: '/clients/Logo%20-grmany.png' },
-          { name: 'العميل 8', src: '/clients/Logo%20G%C3%B6rsel%202025-01-31%20saat%2016.26.51_966469d2%20(002).jpg' },
-          { name: 'العميل 9', src: '/clients/Picture1.png' },
-          { name: 'زوماردا', src: '/clients/ZOMARDA.png' },
-        ]
-      : [
-          { name: 'Client 1', src: '/clients/1631322692916.jpeg' },
-          { name: 'Client 2', src: '/clients/633160a66af18.jpg' },
-          { name: 'Cairo 3A', src: '/clients/caro3A.jpg' },
-          { name: 'CEGY', src: '/clients/CEGY.png' },
-          { name: 'El Zomoroda', src: '/clients/El-Zomoroda-for-corn-products-1.webp' },
-          { name: 'Client 6', src: '/clients/images.png' },
-          { name: 'Germany Logo', src: '/clients/Logo%20-grmany.png' },
-          { name: 'Client 8', src: '/clients/Logo%20G%C3%B6rsel%202025-01-31%20saat%2016.26.51_966469d2%20(002).jpg' },
-          { name: 'Client 9', src: '/clients/Picture1.png' },
-          { name: 'ZOMARDA', src: '/clients/ZOMARDA.png' },
-        ]
+  const clientLogos = [
+    '/clients/1631322692916.jpeg',
+    '/clients/633160a66af18.jpg',
+    '/clients/B8RTGzcIGnBm3vnsFei2HaMjjqObSsDYFY1fNG0I.png',
+    '/clients/caro3A.jpg',
+    '/clients/CEGY.png',
+    '/clients/d9HTnmZPXYxKrGzZX5b08nm0Xu2n5Y3hquYrdXYU.png',
+    '/clients/El-Zomoroda-for-corn-products-1.webp',
+    '/clients/FTt5ksm7hAvBUwWhcrmX4cHKaScfdFlP0pUobhwA.png',
+    '/clients/images.png',
+    '/clients/LdpueF42rsXw3I3NbwoPNW4vRrHGoQgYSgPAKFIt.webp',
+    '/clients/Logo%20G%C3%B6rsel%202025-01-31%20saat%2016.26.51_966469d2%20(002).jpg',
+    '/clients/Logo%20-grmany.png',
+    '/clients/loqj5E1nT9fSe8PTuYCmoNxNKizEODNu70kEISNS.png',
+    '/clients/n9Dmt6xuWnLZYpMBiJaYYesgcZXiJ9Bdad8kreUl.webp',
+    '/clients/oBJ4VI0wAWuBf1QcYdMjk9Pk7hxX5EVSonI5uVSy.webp',
+    '/clients/Picture1.png',
+    '/clients/xTbWEjOGbPZomISDerNd9h4IZcosnpmBzTUgMOzG.webp',
+    '/clients/ZOMARDA.png',
+  ]
 
   useEffect(() => {
     const container = partnersRef.current
@@ -271,25 +265,19 @@ export default function HomePage() {
               ref={partnersRef}
               className="flex snap-x snap-mandatory gap-6 overflow-x-auto py-4 scroll-smooth [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             >
-              {clientLogos.map((client, index) => (
-                <div key={`${client.name}-${index}`} className="snap-start">
+              {clientLogos.map((clientSrc, index) => (
+                <div key={`${clientSrc}-${index}`} className="snap-start">
                   <div
-                    className="group flex h-40 w-[240px] shrink-0 flex-col justify-between rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                    className="group flex h-32 w-[240px] shrink-0 items-center justify-center rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
-                    <div className="relative flex h-20 items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                    <div className="relative flex h-full w-full items-center justify-center overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
                       <Image
-                        src={client.src}
-                        alt={client.name}
+                        src={clientSrc}
+                        alt={`Client logo ${index + 1}`}
                         fill
                         sizes="240px"
-                        className="object-contain p-3"
+                        className="object-contain p-4"
                       />
-                    </div>
-                    <div>
-                      <h3 className="text-center text-base font-bold text-gray-900">{client.name}</h3>
-                      <p className="mt-1 text-center text-sm text-gray-600">
-                        {language === 'ar' ? 'شريك نجاح' : 'Success Partner'}
-                      </p>
                     </div>
                   </div>
                 </div>
