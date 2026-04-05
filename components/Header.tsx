@@ -9,7 +9,7 @@ import { Menu, X, User, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucid
 import BrandLogo from './BrandLogo'
 
 export default function Header() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const { data: session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
@@ -26,6 +26,7 @@ export default function Header() {
     { href: '/', label: t('nav.home') },
     { href: '/about', label: t('nav.about') },
     { href: '/services', label: t('nav.services') },
+    { href: '/jobs', label: language === 'ar' ? 'الوظائف' : 'Jobs' },
     { href: '/contact', label: t('nav.contact') },
   ]
 

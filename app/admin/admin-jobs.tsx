@@ -38,6 +38,23 @@ type JobOpening = {
   createdAt: string
 }
 
+type JobApplication = {
+  id: string
+  name: string
+  email: string
+  phone?: string | null
+  company?: string | null
+  linkedinUrl?: string | null
+  coverLetter?: string | null
+  status: string
+  createdAt: string
+  jobOpening: {
+    id: string
+    title: string
+    titleAr?: string | null
+  }
+}
+
 const createInitialFormData = () => ({
   title: '',
   titleAr: '',
@@ -66,10 +83,13 @@ export default function AdminJobs({
   const { language, dir } = useLanguage()
   const [jobs, setJobs] = useState<JobOpening[]>([])
   const [loading, setLoading] = useState(true)
+  const [applicationsLoading, setApplicationsLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
+  const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingJob, setEditingJob] = useState<JobOpening | null>(null)
   const [formData, setFormData] = useState(createInitialFormData)
+  const [applications, setApplications] = useState<JobApplication[]>([])
 
   const copy = useMemo(
     () =>
@@ -95,6 +115,12 @@ export default function AdminJobs({
             sortOrder: 'ترتيب الظهور',
             published: 'منشورة للزوار',
             saveHint: 'يتم حفظ الوظيفة مباشرة في قاعدة البيانات ويمكن عرضها لاحقًا في أي صفحة وظائف عامة.',
+            applicationsTitle: 'طلبات التوظيف',
+            applicationsEmpty: 'لا توجد طلبات توظيف حتى الآن.',
+            statusNew: 'جديد',
+            statusReviewed: 'تمت المراجعة',
+            statusContacted: 'تم التواصل',
+            statusRejected: 'مرفوض',
           }
         : {
             title: 'Jobs Management',
@@ -117,6 +143,12 @@ export default function AdminJobs({
             sortOrder: 'Sort order',
             published: 'Visible to visitors',
             saveHint: 'The role will be saved directly to the database and can be surfaced in a public careers section later.',
+            applicationsTitle: 'Job Applications',
+            applicationsEmpty: 'No job applications yet.',
+            statusNew: 'New',
+            statusReviewed: 'Reviewed',
+            statusContacted: 'Contacted',
+            statusRejected: 'Rejected',
           },
     [language]
   )
@@ -145,9 +177,32 @@ export default function AdminJobs({
     }
   }, [language])
 
+  const fetchApplications = useCallback(async () => {
+    setApplicationsLoading(true)
+    try {
+      const res = await fetch('/api/job-applications', { cache: 'no-store' })
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to load job applications')
+      }
+
+      setApplications(data)
+    } catch (error) {
+      console.error('Failed to load job applications:', error)
+      toast.error(language === 'ar' ? 'تعذر تحميل طلبات التوظيف' : 'Failed to load job applications')
+    } finally {
+      setApplicationsLoading(false)
+    }
+  }, [language])
+
   useEffect(() => {
     void fetchData()
   }, [fetchData])
+
+  useEffect(() => {
+    void fetchApplications()
+  }, [fetchApplications])
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -171,6 +226,7 @@ export default function AdminJobs({
       setShowForm(false)
       resetForm()
       await fetchData()
+      await fetchApplications()
       await onDataChanged?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : language === 'ar' ? 'تعذر حفظ الوظيفة' : 'Failed to save job')
@@ -218,9 +274,35 @@ export default function AdminJobs({
 
       toast.success(language === 'ar' ? 'تم حذف الوظيفة' : 'Job deleted')
       await fetchData()
+      await fetchApplications()
       await onDataChanged?.()
     } catch (error) {
       toast.error(error instanceof Error ? error.message : language === 'ar' ? 'تعذر حذف الوظيفة' : 'Failed to delete job')
+    }
+  }
+
+  const updateApplicationStatus = async (id: string, status: string) => {
+    setUpdatingApplicationId(id)
+    try {
+      const res = await fetch(`/api/job-applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      })
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Failed to update application')
+      }
+
+      setApplications((current) =>
+        current.map((application) => (application.id === id ? { ...application, status } : application))
+      )
+      toast.success(language === 'ar' ? 'تم تحديث حالة الطلب' : 'Application status updated')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : language === 'ar' ? 'تعذر تحديث الطلب' : 'Failed to update application')
+    } finally {
+      setUpdatingApplicationId(null)
     }
   }
 
@@ -507,76 +589,143 @@ export default function AdminJobs({
           <p className="text-gray-600">{copy.emptyDesc}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          {jobs.map((job) => (
-            <div key={job.id} className="card transition-shadow hover:shadow-md">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="mb-3 flex flex-wrap items-center gap-2">
-                    <span className={`badge ${job.status === 'OPEN' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
-                      {job.status === 'OPEN' ? copy.statusOpen : copy.statusClosed}
-                    </span>
-                    <span className={`badge ${job.isPublished ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
-                      {job.isPublished ? copy.publish : copy.hidden}
-                    </span>
+        <div className="space-y-8">
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {jobs.map((job) => (
+              <div key={job.id} className="card transition-shadow hover:shadow-md">
+                <div className="mb-4 flex items-start justify-between gap-4">
+                  <div>
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <span className={`badge ${job.status === 'OPEN' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                        {job.status === 'OPEN' ? copy.statusOpen : copy.statusClosed}
+                      </span>
+                      <span className={`badge ${job.isPublished ? 'bg-blue-100 text-blue-800' : 'bg-amber-100 text-amber-800'}`}>
+                        {job.isPublished ? copy.publish : copy.hidden}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">
+                      {language === 'ar' && job.titleAr ? job.titleAr : job.title}
+                    </h3>
+                    <p className="mt-2 text-sm text-gray-500">
+                      {language === 'ar' && job.employmentTypeAr ? job.employmentTypeAr : job.employmentType}
+                    </p>
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">
-                    {language === 'ar' && job.titleAr ? job.titleAr : job.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-500">
-                    {language === 'ar' && job.employmentTypeAr ? job.employmentTypeAr : job.employmentType}
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(job)}
+                      className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(job.id)}
+                      className="rounded-lg p-2 text-red-500 transition hover:bg-red-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(job)}
-                    className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100"
-                  >
-                    <Edit className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(job.id)}
-                    className="rounded-lg p-2 text-red-500 transition hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+
+                <p className="line-clamp-3 text-sm leading-7 text-gray-600">
+                  {language === 'ar' && job.summaryAr ? job.summaryAr : job.summary}
+                </p>
+
+                <div className="mt-5 grid grid-cols-1 gap-3 border-t border-gray-200 pt-4 sm:grid-cols-2">
+                  {(job.location || job.locationAr) && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <span>{language === 'ar' && job.locationAr ? job.locationAr : job.location}</span>
+                    </div>
+                  )}
+                  {(job.department || job.departmentAr) && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Building2 className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <span>{language === 'ar' && job.departmentAr ? job.departmentAr : job.department}</span>
+                    </div>
+                  )}
+                  {job.applyEmail && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Mail className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <span className="truncate">{job.applyEmail}</span>
+                    </div>
+                  )}
+                  {job.applyUrl && (
+                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                      <Globe className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                      <span className="truncate">{job.applyUrl}</span>
+                    </div>
+                  )}
                 </div>
               </div>
+            ))}
+          </div>
 
-              <p className="line-clamp-3 text-sm leading-7 text-gray-600">
-                {language === 'ar' && job.summaryAr ? job.summaryAr : job.summary}
-              </p>
-
-              <div className="mt-5 grid grid-cols-1 gap-3 border-t border-gray-200 pt-4 sm:grid-cols-2">
-                {(job.location || job.locationAr) && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span>{language === 'ar' && job.locationAr ? job.locationAr : job.location}</span>
-                  </div>
-                )}
-                {(job.department || job.departmentAr) && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Building2 className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span>{language === 'ar' && job.departmentAr ? job.departmentAr : job.department}</span>
-                  </div>
-                )}
-                {job.applyEmail && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Mail className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span className="truncate">{job.applyEmail}</span>
-                  </div>
-                )}
-                {job.applyUrl && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Globe className="h-4 w-4 flex-shrink-0 text-gray-400" />
-                    <span className="truncate">{job.applyUrl}</span>
-                  </div>
-                )}
-              </div>
+          <div className="card">
+            <div className="mb-6 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">{copy.applicationsTitle}</h3>
+              <span className="badge bg-primary-50 text-primary-700">{applications.length}</span>
             </div>
-          ))}
+
+            {applicationsLoading ? (
+              <div className="flex items-center justify-center py-10">
+                <Loader2 className="h-7 w-7 animate-spin text-primary-500" />
+              </div>
+            ) : applications.length === 0 ? (
+              <p className="text-sm text-gray-500">{copy.applicationsEmpty}</p>
+            ) : (
+              <div className="space-y-4">
+                {applications.map((application) => (
+                  <div key={application.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="space-y-2">
+                        <h4 className="font-bold text-gray-900">{application.name}</h4>
+                        <p className="text-sm text-gray-600">
+                          {language === 'ar' && application.jobOpening.titleAr
+                            ? application.jobOpening.titleAr
+                            : application.jobOpening.title}
+                        </p>
+                        <div className="flex flex-wrap gap-3 text-sm text-gray-500">
+                          <span>{application.email}</span>
+                          {application.phone ? <span>{application.phone}</span> : null}
+                          {application.company ? <span>{application.company}</span> : null}
+                        </div>
+                        {application.linkedinUrl ? (
+                          <a
+                            href={application.linkedinUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex text-sm font-medium text-primary-600 hover:text-primary-700"
+                          >
+                            {application.linkedinUrl}
+                          </a>
+                        ) : null}
+                        {application.coverLetter ? (
+                          <p className="whitespace-pre-wrap text-sm leading-6 text-gray-600">{application.coverLetter}</p>
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-[180px]">
+                        <label className="label-field">{language === 'ar' ? 'حالة الطلب' : 'Application status'}</label>
+                        <select
+                          value={application.status}
+                          disabled={updatingApplicationId === application.id}
+                          onChange={(event) => void updateApplicationStatus(application.id, event.target.value)}
+                          className="input-field"
+                        >
+                          <option value="NEW">{copy.statusNew}</option>
+                          <option value="REVIEWED">{copy.statusReviewed}</option>
+                          <option value="CONTACTED">{copy.statusContacted}</option>
+                          <option value="REJECTED">{copy.statusRejected}</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

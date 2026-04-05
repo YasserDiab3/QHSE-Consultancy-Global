@@ -80,12 +80,33 @@ model JobOpening {
   sortOrder        Int      @default(0)
   createdAt        DateTime @default(now()) @map("createdat")
   updatedAt        DateTime @default(now()) @updatedAt @map("updatedat")
+  applications     JobApplication[]
 
   @@index([status])
   @@index([isPublished])
   @@index([sortOrder])
   @@index([createdAt(sort: Desc)])
   @@map("JobOpening")
+}
+
+model JobApplication {
+  id           String     @id @default(uuid())
+  jobOpeningId String
+  jobOpening   JobOpening @relation(fields: [jobOpeningId], references: [id], onDelete: Cascade)
+  name         String
+  email        String
+  phone        String?
+  company      String?
+  linkedinUrl  String?
+  coverLetter  String?
+  status       String     @default("NEW")
+  createdAt    DateTime   @default(now()) @map("createdat")
+  updatedAt    DateTime   @default(now()) @updatedAt @map("updatedat")
+
+  @@index([jobOpeningId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@map("JobApplication")
 }
 
 model Report {

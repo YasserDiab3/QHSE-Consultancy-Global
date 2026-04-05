@@ -7,7 +7,7 @@ import { Linkedin, Mail, MapPin, MessageCircle, Phone } from 'lucide-react'
 import BrandLogo from './BrandLogo'
 
 export default function Footer() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   return (
     <footer className="bg-primary-900 text-white">
@@ -59,6 +59,11 @@ export default function Footer() {
               <li>
                 <Link href="/services" className="text-gray-400 transition-colors hover:text-white">
                   {t('nav.services')}
+                </Link>
+              </li>
+              <li>
+                <Link href="/jobs" className="text-gray-400 transition-colors hover:text-white">
+                  {language === 'ar' ? 'الوظائف' : 'Jobs'}
                 </Link>
               </li>
               <li>
