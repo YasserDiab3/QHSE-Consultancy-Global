@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { getClientIdByUserId, listClientAccounts } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
 import { prisma } from '@/lib/prisma'
+import { getCountryNameFromCode } from '@/lib/visitor-tracking'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -10,6 +11,11 @@ export const revalidate = 0
 function isMissingContactRequestTable(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
   return message.includes('ContactRequest') && message.includes('does not exist')
+}
+
+function isMissingVisitorSessionTable(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error)
+  return message.includes('VisitorSession') && message.includes('does not exist')
 }
 
 export async function GET() {
@@ -76,6 +82,8 @@ export async function GET() {
     let totalClients = 0
     let totalRequests = 0
     let requestStatusBreakdown: { status: string; _count: { status: number } }[] = []
+    let totalVisitors = 0
+    let visitorCountryBreakdown: { countryCode: string | null; countryName: string; count: number }[] = []
 
     if (session.user.role === 'ADMIN') {
       totalClients = (await listClientAccounts()).length
@@ -94,6 +102,34 @@ export async function GET() {
           throw error
         }
       }
+
+      try {
+        totalVisitors = await prisma.visitorSession.count()
+
+        const groupedCountries = await prisma.visitorSession.groupBy({
+          by: ['countryCode', 'countryName'],
+          _count: {
+            countryCode: true,
+          },
+          orderBy: {
+            _count: {
+              countryCode: 'desc',
+            },
+          },
+        })
+
+        visitorCountryBreakdown = groupedCountries.map((item) => ({
+          countryCode: item.countryCode,
+          countryName:
+            item.countryName ||
+            getCountryNameFromCode(item.countryCode || undefined),
+          count: item._count.countryCode,
+        }))
+      } catch (error) {
+        if (!isMissingVisitorSessionTable(error)) {
+          throw error
+        }
+      }
     }
 
     return NextResponse.json(
@@ -104,9 +140,11 @@ export async function GET() {
         highRiskItems,
         totalClients,
         totalRequests,
+        totalVisitors,
         riskBreakdown,
         statusBreakdown,
         requestStatusBreakdown,
+        visitorCountryBreakdown,
         recentReports,
       },
       {

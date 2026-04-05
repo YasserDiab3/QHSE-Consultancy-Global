@@ -110,6 +110,25 @@ model JobApplication {
   @@map("JobApplication")
 }
 
+model VisitorSession {
+  id               String   @id @default(uuid())
+  visitorKey       String   @unique @map("visitorkey")
+  countryCode      String?  @map("countrycode")
+  countryName      String?  @map("countryname")
+  region           String?
+  city             String?
+  ipAddress        String?  @map("ipaddress")
+  userAgent        String?  @map("useragent")
+  lastPath         String?  @map("lastpath")
+  pageViews        Int      @default(1) @map("pageviews")
+  firstSeenAt      DateTime @default(now()) @map("firstseenat")
+  lastSeenAt       DateTime @default(now()) @map("lastseenat")
+
+  @@index([countryCode])
+  @@index([lastSeenAt(sort: Desc)])
+  @@map("VisitorSession")
+}
+
 model Report {
   id            String         @id @default(uuid())
   clientId      String

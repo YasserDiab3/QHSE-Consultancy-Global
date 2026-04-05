@@ -3,6 +3,7 @@ import { Inter, Cairo } from 'next/font/google'
 import './globals.css'
 import Providers from '@/components/Providers'
 import FloatingContactButtons from '@/components/FloatingContactButtons'
+import VisitorTracker from '@/components/VisitorTracker'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -31,6 +32,7 @@ export default function RootLayout({
     <html lang="en" dir="ltr" suppressHydrationWarning>
       <body className={`${inter.variable} ${cairo.variable}`}>
         <Providers>
+          <VisitorTracker />
           {children}
           <FloatingContactButtons />
         </Providers>

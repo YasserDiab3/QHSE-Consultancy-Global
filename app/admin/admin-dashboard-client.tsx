@@ -10,6 +10,7 @@ import {
   BriefcaseBusiness,
   CheckCircle2,
   FileText,
+  Globe2,
   MessageSquare,
   TrendingUp,
   Users,
@@ -30,9 +31,11 @@ type DashboardStats = {
   highRiskItems: number
   totalClients: number
   totalRequests: number
+  totalVisitors: number
   riskBreakdown: { riskLevel: string; _count: { riskLevel: number } }[]
   statusBreakdown: { status: string; _count: { status: number } }[]
   requestStatusBreakdown: { status: string; _count: { status: number } }[]
+  visitorCountryBreakdown: { countryCode: string | null; countryName: string; count: number }[]
   recentReports: Array<{
     id: string
     siteName: string
@@ -254,6 +257,13 @@ function OverviewTab({
       color: 'from-cyan-500 to-cyan-600',
       onClick: () => onOpenRequests('ALL'),
     },
+    {
+      label: language === 'ar' ? 'زوار الموقع' : 'Site Visitors',
+      value: stats?.totalVisitors || 0,
+      icon: Globe2,
+      color: 'from-indigo-500 to-indigo-600',
+      onClick: () => undefined,
+    },
   ]
 
   const requestStatusCount = (status: 'NEW' | 'CONTACTED' | 'CLOSED') =>
@@ -417,6 +427,53 @@ function OverviewTab({
               </p>
             )}
           </div>
+        </div>
+
+        <div className="card">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-lg font-bold text-gray-900">
+              {language === 'ar' ? 'زوار الموقع حسب الدولة' : 'Visitors by Country'}
+            </h3>
+            <span className="badge bg-primary-50 text-primary-700">
+              {language === 'ar'
+                ? `إجمالي الزوار: ${stats?.totalVisitors || 0}`
+                : `Total visitors: ${stats?.totalVisitors || 0}`}
+            </span>
+          </div>
+          {stats?.visitorCountryBreakdown?.length ? (
+            <div className="space-y-4">
+              {stats.visitorCountryBreakdown.map((country) => {
+                const total = stats.visitorCountryBreakdown.reduce((sum, item) => sum + item.count, 0)
+                const percentage = total > 0 ? (country.count / total) * 100 : 0
+
+                return (
+                  <div key={`${country.countryCode || 'unknown'}-${country.countryName}`}>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-gray-800">{country.countryName}</span>
+                        {country.countryCode ? (
+                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                            {country.countryCode}
+                          </span>
+                        ) : null}
+                      </div>
+                      <span className="text-sm font-semibold text-primary-700">{country.count}</span>
+                    </div>
+                    <div className="h-2.5 w-full rounded-full bg-gray-100">
+                      <div
+                        className="h-2.5 rounded-full bg-gradient-to-r from-primary-500 to-accent-500"
+                        style={{ width: `${percentage}%` }}
+                      />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">
+              {language === 'ar' ? 'لا توجد بيانات زوار مسجلة حتى الآن' : 'No visitor country data recorded yet'}
+            </p>
+          )}
         </div>
       </div>
 
