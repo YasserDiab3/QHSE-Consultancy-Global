@@ -44,7 +44,8 @@ type JobApplication = {
   email: string
   phone?: string | null
   company?: string | null
-  linkedinUrl?: string | null
+  resumeUrl?: string | null
+  resumeOriginalName?: string | null
   coverLetter?: string | null
   status: string
   createdAt: string
@@ -691,14 +692,14 @@ export default function AdminJobs({
                           {application.phone ? <span>{application.phone}</span> : null}
                           {application.company ? <span>{application.company}</span> : null}
                         </div>
-                        {application.linkedinUrl ? (
+                        {application.resumeUrl ? (
                           <a
-                            href={application.linkedinUrl}
+                            href={application.resumeUrl}
                             target="_blank"
                             rel="noreferrer"
                             className="inline-flex text-sm font-medium text-primary-600 hover:text-primary-700"
                           >
-                            {application.linkedinUrl}
+                            {application.resumeOriginalName || (language === 'ar' ? 'عرض السيرة الذاتية' : 'View resume')}
                           </a>
                         ) : null}
                         {application.coverLetter ? (

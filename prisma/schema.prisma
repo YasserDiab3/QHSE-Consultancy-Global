@@ -97,7 +97,8 @@ model JobApplication {
   email        String
   phone        String?
   company      String?
-  linkedinUrl  String?
+  resumeUrl    String?
+  resumeOriginalName String?
   coverLetter  String?
   status       String     @default("NEW")
   createdAt    DateTime   @default(now()) @map("createdat")
