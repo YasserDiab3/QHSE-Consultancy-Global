@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
+import { createImageRecord } from '@/lib/image-records'
 
 export async function POST(request: Request) {
   try {
@@ -33,18 +34,13 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer()
     const imageUrl = `data:${file.type || 'image/jpeg'};base64,${Buffer.from(bytes).toString('base64')}`
 
-    // Create image record in database
-    const { prisma } = await import('@/lib/prisma')
-
-    const image = await prisma.image.create({
-      data: {
-        observationId,
-        type,
-        url: imageUrl,
-        originalName: file.name,
-        mimeType: file.type,
-        size: file.size,
-      },
+    const image = await createImageRecord({
+      observationId,
+      type,
+      url: imageUrl,
+      originalName: file.name,
+      mimeType: file.type,
+      size: file.size,
     })
 
     await logActivity(
