@@ -1,4 +1,4 @@
-import { prisma } from './prisma'
+import { createActivityLogRecord } from './activity-log-records'
 
 export async function logActivity(
   userId: string,
@@ -9,15 +9,13 @@ export async function logActivity(
   ipAddress?: string
 ) {
   try {
-    await prisma.activityLog.create({
-      data: {
-        userId,
-        action,
-        entityType,
-        entityId,
-        details,
-        ipAddress,
-      },
+    await createActivityLogRecord({
+      userId,
+      action,
+      entityType,
+      entityId,
+      details,
+      ipAddress,
     })
   } catch (error) {
     console.error('Failed to log activity:', error)

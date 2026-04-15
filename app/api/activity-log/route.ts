@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { logActivity } from '@/lib/activity-log'
-import { headers } from 'next/headers'
+import { listActivityLogRecords } from '@/lib/activity-log-records'
+
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET() {
   try {
@@ -10,23 +12,7 @@ export async function GET() {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const { prisma } = await import('@/lib/prisma')
-
-    const logs = await prisma.activityLog.findMany({
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      take: 100,
-    })
+    const logs = await listActivityLogRecords(100)
 
     return NextResponse.json(logs)
   } catch (error: any) {
