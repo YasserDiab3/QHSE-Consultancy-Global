@@ -16,6 +16,7 @@ type RawReportRow = {
   status: string
   notes: string | null
   notesAr: string | null
+  assessmentScores: string | null
   consultantId: string | null
   clientId: string
   clientCompanyName: string | null
@@ -61,6 +62,7 @@ type ReportSchemaInfo = {
     consultantId: string | null
     notes: string | null
     notesAr: string | null
+    assessmentScores: string | null
     status: string | null
     createdAt: string | null
     updatedAt: string | null
@@ -117,6 +119,7 @@ type CreateReportInput = {
   consultantId?: string
   notes?: string
   notesAr?: string
+  assessmentScores?: Record<string, number>
   status?: string
 }
 
@@ -128,6 +131,7 @@ type UpdateReportInput = {
   consultantId?: string
   notes?: string
   notesAr?: string
+  assessmentScores?: Record<string, number>
   status?: string
 }
 
@@ -233,6 +237,7 @@ async function loadSchemaInfo(): Promise<ReportSchemaInfo> {
       consultantId: resolveOptionalColumn(reportColumns, ['consultantId', 'consultant_id', 'consultantid']),
       notes: resolveOptionalColumn(reportColumns, ['notes', 'note']),
       notesAr: resolveOptionalColumn(reportColumns, ['notesAr', 'notes_ar', 'notesar']),
+      assessmentScores: resolveOptionalColumn(reportColumns, ['assessmentScores', 'assessment_scores', 'assessmentscores']),
       status: resolveOptionalColumn(reportColumns, ['status']),
       createdAt: resolveOptionalColumn(reportColumns, ['createdAt', 'created_at', 'createdat']),
       updatedAt: resolveOptionalColumn(reportColumns, ['updatedAt', 'updated_at', 'updatedat']),
@@ -391,6 +396,7 @@ function mapReportRow(row: RawReportRow, observationsByReportId: Map<string, any
     status: row.status,
     notes: row.notes ?? undefined,
     notesAr: row.notesAr ?? undefined,
+    assessmentScores: row.assessmentScores ? JSON.parse(row.assessmentScores) : undefined,
     consultantId: row.consultantId ?? undefined,
     observations: observationsByReportId.get(row.id) ?? [],
     client: {
@@ -439,6 +445,7 @@ export async function listReportRecords(options: ListReportOptions = {}) {
       ${schema.report.status ? `r.${quoteIdentifier(schema.report.status)}` : `'OPEN'`} AS "status",
       ${selectExpr('r', schema.report.notes, 'notes')},
       ${selectExpr('r', schema.report.notesAr, 'notesAr')},
+      ${schema.report.assessmentScores ? `r.${quoteIdentifier(schema.report.assessmentScores)}::text AS "assessmentScores"` : 'NULL::text AS "assessmentScores"'},
       ${selectExpr('r', schema.report.consultantId, 'consultantId')},
       c.${quoteIdentifier(schema.client.id)} AS "clientId",
       ${selectExpr('c', schema.client.companyName, 'clientCompanyName')},
@@ -532,6 +539,10 @@ export async function createReportRecord(input: CreateReportInput) {
     columns.push(schema.report.notesAr)
     values.push(sqlValue(input.notesAr))
   }
+  if (schema.report.assessmentScores) {
+    columns.push(schema.report.assessmentScores)
+    values.push(input.assessmentScores ? `${sqlValue(JSON.stringify(input.assessmentScores))}::jsonb` : 'NULL')
+  }
   if (schema.report.createdAt) {
     columns.push(schema.report.createdAt)
     values.push('CURRENT_TIMESTAMP')
@@ -576,6 +587,9 @@ export async function updateReportRecord(id: string, input: UpdateReportInput) {
   }
   if (schema.report.notesAr && typeof input.notesAr !== 'undefined') {
     updates.push(`${quoteIdentifier(schema.report.notesAr)} = ${sqlValue(input.notesAr)}`)
+  }
+  if (schema.report.assessmentScores && typeof input.assessmentScores !== 'undefined') {
+    updates.push(`${quoteIdentifier(schema.report.assessmentScores)} = ${sqlValue(JSON.stringify(input.assessmentScores))}::jsonb`)
   }
   if (schema.report.status && typeof input.status !== 'undefined') {
     updates.push(`${quoteIdentifier(schema.report.status)} = ${sqlValue(input.status)}`)

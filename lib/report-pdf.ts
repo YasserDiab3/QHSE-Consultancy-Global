@@ -5,6 +5,7 @@ type Observation = { title: string; titleAr?: string; description?: string; desc
 type ReportPdfData = {
   id: string; date: string; siteName: string; siteNameAr?: string; category: string; status: string
   notes?: string; notesAr?: string; observations: Observation[]
+  assessmentScores?: Record<string, number>
   client?: { companyName?: string; companyNameAr?: string }; consultant?: { name?: string }
 }
 
@@ -60,6 +61,7 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   const isFoodSafety = report.category === 'FOOD_SAFETY'
   const formCode = isFoodSafety ? 'QHSSE-FS-VISIT-01' : 'QHSSE-VISIT-01'
   const formRevision = 'REV. 01'
+  const assessmentScores = report.assessmentScores || {}
 
   ctx.fillStyle = '#f7f9fc'; ctx.fillRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = '#123f31'; ctx.fillRect(0, 0, canvas.width, 250)
@@ -105,13 +107,14 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   if (isFoodSafety) {
     const assessmentY = 780
     const items = isArabic ? ['الموقع', 'العاملون', 'المستندات والسجلات', 'المعدات', 'البنية التحتية', 'الاستلام والتخزين'] : ['Site', 'Employees', 'Documents & records', 'Equipment', 'Infrastructure', 'Receiving & storage']
+    const itemKeys = ['site', 'employees', 'documents', 'equipment', 'infrastructure', 'storage']
     ctx.fillStyle = '#123f31'; ctx.font = '700 17px Cairo, Arial'; ctx.fillText(isArabic ? 'تقييم التوافق المبدئي لسلامة الغذاء' : 'FOOD SAFETY COMPLIANCE ASSESSMENT', isArabic ? 1178 : 62, assessmentY)
     ctx.fillStyle = '#f7d93b'; ctx.fillRect(62, assessmentY + 15, 1116, 32); ctx.fillStyle = '#1f2937'; ctx.font = '700 13px Cairo, Arial'
     const heads = isArabic ? ['م', 'البند', 'النسبة الحالية', 'النسبة المطلوبة'] : ['#', 'ASSESSMENT ITEM', 'CURRENT', 'TARGET']
     const headX = isArabic ? [1140, 820, 360, 135] : [88, 160, 850, 1060]
     heads.forEach((head, index) => ctx.fillText(head, headX[index], assessmentY + 37))
     items.forEach((item, index) => {
-      const rowY = assessmentY + 47 + index * 29; const current = Math.max(0, complianceScore - (index % 3) * 3)
+      const rowY = assessmentY + 47 + index * 29; const current = assessmentScores[itemKeys[index]] ?? Math.max(0, complianceScore - (index % 3) * 3)
       ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#eff6f2'; ctx.fillRect(62, rowY, 1116, 29); ctx.strokeStyle = '#dbe4df'; ctx.strokeRect(62, rowY, 1116, 29)
       ctx.fillStyle = '#334155'; ctx.font = '500 12px Cairo, Arial'
       if (isArabic) { ctx.fillText(String(index + 1), 1140, rowY + 20); ctx.fillText(item, 820, rowY + 20); ctx.fillText(`${current}%`, 360, rowY + 20); ctx.fillText('85%', 135, rowY + 20) }

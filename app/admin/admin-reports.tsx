@@ -25,6 +25,7 @@ type Report = {
   status: string
   notes?: string
   notesAr?: string
+  assessmentScores?: Record<string, number>
   consultantId?: string
   client?: { id: string; companyName?: string }
   observations: any[]
@@ -111,6 +112,7 @@ const createInitialFormData = () => ({
   consultantId: '',
   notes: '',
   notesAr: '',
+  assessmentScores: { site: 80, employees: 80, documents: 80, equipment: 80, infrastructure: 80, storage: 80 } as Record<string, number>,
   status: 'OPEN',
 })
 
@@ -251,6 +253,7 @@ export default function AdminReports({
       consultantId: report.consultantId || '',
       notes: report.notes || '',
       notesAr: report.notesAr || '',
+      assessmentScores: report.assessmentScores || { site: 80, employees: 80, documents: 80, equipment: 80, infrastructure: 80, storage: 80 },
       status: report.status,
     })
     setShowForm(true)
@@ -381,6 +384,26 @@ export default function AdminReports({
                   className="input-field resize-none"
                 />
               </div>
+              {formData.category === 'FOOD_SAFETY' && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5">
+                  <div className="mb-4"><h4 className="font-bold text-amber-950">{language === 'ar' ? 'درجات تقييم سلامة الغذاء' : 'Food safety assessment scores'}</h4><p className="mt-1 text-sm text-amber-800">{language === 'ar' ? 'حدّث النسبة الحالية لكل بند؛ ستظهر مباشرة في تقرير الزيارة.' : 'Update each current percentage; it will appear directly in the visit report.'}</p></div>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                    {[
+                      ['site', language === 'ar' ? 'الموقع' : 'Site'],
+                      ['employees', language === 'ar' ? 'العاملون' : 'Employees'],
+                      ['documents', language === 'ar' ? 'السجلات' : 'Documents'],
+                      ['equipment', language === 'ar' ? 'المعدات' : 'Equipment'],
+                      ['infrastructure', language === 'ar' ? 'البنية التحتية' : 'Infrastructure'],
+                      ['storage', language === 'ar' ? 'الاستلام والتخزين' : 'Receiving & storage'],
+                    ].map(([key, label]) => (
+                      <label key={key} className="rounded-xl border border-amber-100 bg-white p-3 text-sm font-medium text-slate-700">
+                        <span className="block truncate">{label}</span>
+                        <input type="number" min="0" max="100" value={(formData.assessmentScores || {})[key] ?? 0} onChange={(event) => setFormData((current) => ({ ...current, assessmentScores: { ...(current.assessmentScores || {}), [key]: Math.max(0, Math.min(100, Number(event.target.value))) } }))} className="mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 font-bold text-primary-700 outline-none focus:border-primary-400" />
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               {!editingReport && (
                 <div className="rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
                   <label className="label-field text-primary-900">{language === 'ar' ? 'نقاط التقرير الأولية (سطر لكل ملاحظة)' : 'Initial report points (one observation per line)'}</label>

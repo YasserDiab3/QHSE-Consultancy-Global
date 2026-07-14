@@ -18,7 +18,7 @@ export async function PUT(
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 
-    const { date, siteName, siteNameAr, category, consultantId, notes, notesAr, status } = body
+    const { date, siteName, siteNameAr, category, consultantId, notes, notesAr, status, assessmentScores } = body
     const normalizedConsultantId =
       typeof consultantId === 'string' && consultantId.trim().length > 0
         ? consultantId.trim()
@@ -37,6 +37,7 @@ export async function PUT(
       consultantId: normalizedConsultantId,
       notes,
       notesAr,
+      assessmentScores,
       status,
     })
 

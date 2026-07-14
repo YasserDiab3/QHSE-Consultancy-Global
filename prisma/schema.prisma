@@ -144,6 +144,7 @@ model Report {
   consultant    User?          @relation("ConsultantReports", fields: [consultantId], references: [id])
   notes         String?
   notesAr       String?
+  assessmentScores Json?
   status        String         @default("OPEN")
   createdAt     DateTime       @default(now()) @map("createdat")
   updatedAt     DateTime       @default(now()) @updatedAt @map("updatedat")

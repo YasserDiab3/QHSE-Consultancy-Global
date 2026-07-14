@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 
-    const { clientId, date, siteName, siteNameAr, category, consultantId, notes, notesAr, status } = body
+    const { clientId, date, siteName, siteNameAr, category, consultantId, notes, notesAr, status, assessmentScores } = body
     const normalizedConsultantId =
       typeof consultantId === 'string' && consultantId.trim().length > 0
         ? consultantId.trim()
@@ -86,6 +86,7 @@ export async function POST(request: Request) {
       consultantId: normalizedConsultantId,
       notes,
       notesAr,
+      assessmentScores,
     })
 
     const report = await getReportRecordById(reportId)
