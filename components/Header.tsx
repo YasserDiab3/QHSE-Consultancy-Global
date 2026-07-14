@@ -3,6 +3,7 @@
 import { useLanguage } from '@/context'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { signOut, useSession } from 'next-auth/react'
 import LanguageSwitcher from './LanguageSwitcher'
 import { Menu, X, User, UserPlus, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react'
@@ -11,6 +12,7 @@ import BrandLogo from './BrandLogo'
 export default function Header() {
   const { t, language } = useLanguage()
   const { data: session } = useSession()
+  const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -23,12 +25,12 @@ export default function Header() {
   }, [])
 
   const navLinks = [
-    { href: '/', label: t('nav.home') },
-    { href: '/about', label: t('nav.about') },
-    { href: '/services', label: t('nav.services') },
+    { href: '/', label: language === 'ar' ? 'الرئيسية' : 'Home' },
+    { href: '/about', label: language === 'ar' ? 'من نحن' : 'About' },
+    { href: '/services', label: language === 'ar' ? 'خدماتنا' : 'Services' },
     { href: '/training', label: language === 'ar' ? 'التدريب' : 'Training' },
     { href: '/jobs', label: language === 'ar' ? 'الوظائف' : 'Jobs' },
-    { href: '/contact', label: t('nav.contact') },
+    { href: '/contact', label: language === 'ar' ? 'اتصل بنا' : 'Contact' },
   ]
   const portalHref =
     session?.user.role === 'ADMIN'
@@ -44,29 +46,27 @@ export default function Header() {
           ? 'التدريب'
           : 'Training'
         : t('nav.dashboard')
+  const isPortal = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/dashboard' || pathname.startsWith('/dashboard/')
+  const useSolidHeader = isPortal || scrolled
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'border-b border-slate-200/70 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl' : 'bg-gradient-to-b from-slate-950/40 to-transparent'
+        useSolidHeader ? 'border-b border-slate-200/80 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl' : 'bg-gradient-to-b from-slate-950/40 to-transparent'
       }`}
     >
       <div className="w-full px-4 sm:px-6 lg:px-10">
-        <div className="flex h-[72px] items-center justify-between gap-3 md:h-[84px]">
+        <div dir="ltr" className="flex h-[72px] items-center gap-3 md:h-[84px]">
           {/* Logo */}
           <Link
             href="/"
-            className={`group flex shrink-0 items-center overflow-hidden rounded-2xl border p-1.5 shadow-lg shadow-slate-900/10 transition-all duration-300 hover:-translate-y-0.5 ${
-              scrolled
-                ? 'border-slate-200/80 bg-white/96'
-                : 'border-white/70 bg-white/92 backdrop-blur-sm'
-            }`}
+            className="group flex shrink-0 items-center transition-transform duration-300 hover:scale-[1.03]"
           >
             <BrandLogo
               variant="header"
               priority
               className={`transition-all duration-300 ${
-                scrolled
+                useSolidHeader
                   ? 'h-[52px] w-[52px] md:h-[60px] md:w-[60px]'
                   : 'h-[56px] w-[56px] md:h-[64px] md:w-[64px]'
               }`}
@@ -74,14 +74,14 @@ export default function Header() {
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className={`hidden items-center gap-1 rounded-2xl border px-2 py-1.5 lg:flex ${scrolled ? 'border-slate-200 bg-slate-50/80' : 'border-white/15 bg-white/5 backdrop-blur-sm'}`}>
+          <nav dir={language === 'ar' ? 'rtl' : 'ltr'} className={`hidden items-center gap-1 lg:flex ${useSolidHeader ? '' : 'rounded-2xl border border-white/15 bg-white/5 px-2 py-1.5 backdrop-blur-sm'}`}>
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 xl:px-4 ${
-                  scrolled
-                    ? 'text-gray-700 hover:text-primary-500 hover:bg-gray-100'
+                  useSolidHeader
+                    ? 'text-slate-700 hover:bg-primary-50 hover:text-primary-700'
                     : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -91,7 +91,7 @@ export default function Header() {
           </nav>
 
           {/* Right side */}
-          <div className="flex shrink-0 items-center gap-2 md:gap-3">
+          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
             <LanguageSwitcher />
 
             {session ? (
@@ -99,7 +99,7 @@ export default function Header() {
                 <Link
                   href={portalHref}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    scrolled
+                    useSolidHeader
                       ? 'text-gray-700 hover:text-primary-500 hover:bg-gray-100'
                       : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
@@ -113,7 +113,7 @@ export default function Header() {
                 <button
                   onClick={() => signOut({ callbackUrl: '/' })}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    scrolled
+                    useSolidHeader
                       ? 'text-red-600 hover:bg-red-50'
                       : 'text-white/90 hover:text-white hover:bg-white/10'
                   }`}
@@ -127,7 +127,7 @@ export default function Header() {
                 <Link
                   href="/login"
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    scrolled ? 'text-gray-700 hover:bg-gray-100 hover:text-primary-600' : 'text-white hover:bg-white/10'
+                    useSolidHeader ? 'text-gray-700 hover:bg-gray-100 hover:text-primary-600' : 'text-white hover:bg-white/10'
                   }`}
                 >
                   <User className="w-4 h-4" />
@@ -146,8 +146,8 @@ export default function Header() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`md:hidden p-2 rounded-lg transition-colors ${
-                scrolled ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'
+              className={`lg:hidden p-2 rounded-lg transition-colors ${
+                useSolidHeader ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'
               }`}
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -157,7 +157,7 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden bg-white rounded-xl shadow-lg border border-gray-200 mb-4 overflow-hidden fade-in">
+          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="lg:hidden bg-white rounded-xl shadow-lg border border-gray-200 mb-4 overflow-hidden fade-in">
             <nav className="p-4 space-y-1">
               {navLinks.map((link) => (
                 <Link

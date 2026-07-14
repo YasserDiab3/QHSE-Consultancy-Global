@@ -135,10 +135,10 @@ export default function AdminDashboardClient() {
   }, [activateTab])
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <Header />
 
-      <main className="pb-12 pt-24">
+      <main className="bg-white pb-12 pt-24">
         <div className="w-full px-4 sm:px-6 lg:px-10">
           <div ref={contentAnchorRef} />
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
