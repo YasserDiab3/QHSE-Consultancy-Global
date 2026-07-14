@@ -138,8 +138,8 @@ export default function AdminDashboardClient() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="pb-12 pt-20">
-        <div className="container-custom">
+      <main className="pb-12 pt-24">
+        <div className="w-full px-4 sm:px-6 lg:px-10">
           <div ref={contentAnchorRef} />
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>

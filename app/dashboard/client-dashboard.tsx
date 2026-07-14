@@ -168,8 +168,8 @@ export default function ClientDashboard() {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="pt-20 pb-12">
-        <div className="container-custom">
+      <main className="pt-24 pb-12">
+        <div className="w-full px-4 sm:px-6 lg:px-10">
           {/* Page Header */}
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>

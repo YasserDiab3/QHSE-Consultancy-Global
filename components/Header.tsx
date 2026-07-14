@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
 import LanguageSwitcher from './LanguageSwitcher'
-import { Menu, X, User, UserPlus, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucide-react'
+import { Menu, X, User, UserPlus, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react'
 import BrandLogo from './BrandLogo'
 
 export default function Header() {
@@ -51,7 +51,7 @@ export default function Header() {
         scrolled ? 'border-b border-slate-200/70 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl' : 'bg-gradient-to-b from-slate-950/40 to-transparent'
       }`}
     >
-      <div className="mx-auto w-full max-w-[1720px] px-4 sm:px-6 lg:px-10">
+      <div className="w-full px-4 sm:px-6 lg:px-10">
         <div className="flex h-[72px] items-center justify-between gap-3 md:h-[84px]">
           {/* Logo */}
           <Link
@@ -96,17 +96,6 @@ export default function Header() {
 
             {session ? (
               <div className="hidden md:flex items-center gap-2">
-                <Link
-                  href="/"
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    scrolled
-                      ? 'text-gray-700 hover:text-primary-500 hover:bg-gray-100'
-                      : 'text-white/90 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <Home className="w-4 h-4" />
-                  {t('nav.home')}
-                </Link>
                 <Link
                   href={portalHref}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
@@ -183,13 +172,6 @@ export default function Header() {
               <div className="pt-2 border-t border-gray-200">
                 {session ? (
                   <>
-                    <Link
-                      href="/"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block px-4 py-3 rounded-lg text-gray-700 hover:text-primary-500 hover:bg-gray-50 font-medium"
-                    >
-                      {t('nav.home')}
-                    </Link>
                     <Link
                       href={portalHref}
                       onClick={() => setMobileMenuOpen(false)}
