@@ -387,6 +387,18 @@ async function loadObservations(reportIds: string[]) {
 }
 
 function mapReportRow(row: RawReportRow, observationsByReportId: Map<string, any[]>) {
+  let assessmentScores: Record<string, number> | undefined
+  if (row.assessmentScores) {
+    try {
+      const parsed = JSON.parse(row.assessmentScores)
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        assessmentScores = parsed as Record<string, number>
+      }
+    } catch {
+      assessmentScores = undefined
+    }
+  }
+
   return {
     id: row.id,
     date: row.date instanceof Date ? row.date.toISOString() : row.date,
@@ -396,7 +408,7 @@ function mapReportRow(row: RawReportRow, observationsByReportId: Map<string, any
     status: row.status,
     notes: row.notes ?? undefined,
     notesAr: row.notesAr ?? undefined,
-    assessmentScores: row.assessmentScores ? JSON.parse(row.assessmentScores) : undefined,
+    assessmentScores,
     consultantId: row.consultantId ?? undefined,
     observations: observationsByReportId.get(row.id) ?? [],
     client: {

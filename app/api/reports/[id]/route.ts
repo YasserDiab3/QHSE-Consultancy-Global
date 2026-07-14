@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
 import { deleteReportRecord, getReportRecordById, updateReportRecord } from '@/lib/report-records'
+import { normalizeAssessmentScores } from '@/lib/report-assessment'
 
 export async function PUT(
   request: Request,
@@ -37,7 +38,7 @@ export async function PUT(
       consultantId: normalizedConsultantId,
       notes,
       notesAr,
-      assessmentScores,
+      assessmentScores: normalizeAssessmentScores(assessmentScores),
       status,
     })
 

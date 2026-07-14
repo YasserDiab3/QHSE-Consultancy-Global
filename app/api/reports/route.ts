@@ -10,6 +10,7 @@ import {
   getReportRecordById,
   listReportRecords,
 } from '@/lib/report-records'
+import { normalizeAssessmentScores } from '@/lib/report-assessment'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
       consultantId: normalizedConsultantId,
       notes,
       notesAr,
-      assessmentScores,
+      assessmentScores: normalizeAssessmentScores(assessmentScores),
     })
 
     const report = await getReportRecordById(reportId)
