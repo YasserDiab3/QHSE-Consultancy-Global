@@ -23,9 +23,11 @@ export async function POST(request: Request) {
     const name = normalizeText(body.name)
     const email = normalizeText(body.email).toLowerCase()
     const password = normalizeText(body.password)
+    const confirmPassword = normalizeText(body.confirmPassword)
+    const phone = normalizeText(body.phone)
     const language = normalizeText(body.language) === 'ar' ? 'ar' : 'en'
 
-    if (!name || !email || !password) {
+    if (!name || !email || !phone || !password || !confirmPassword) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -35,6 +37,14 @@ export async function POST(request: Request) {
 
     if (password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
+    }
+
+    if (password !== confirmPassword) {
+      return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 })
+    }
+
+    if (!/^[+()\d\s-]{7,20}$/.test(phone)) {
+      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -53,6 +63,7 @@ export async function POST(request: Request) {
         name,
         email,
         password: hashedPassword,
+        phone,
         role: 'TRAINEE',
         language,
       },

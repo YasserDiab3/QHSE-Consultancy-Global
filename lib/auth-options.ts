@@ -1,7 +1,9 @@
 import NextAuth, { NextAuthOptions, DefaultSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { randomUUID } from 'crypto'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -70,15 +72,52 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          }),
+        ]
+      : []),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      if (account?.provider !== 'google' || !user.email) {
+        return true
+      }
+
+      try {
+        const existingUser = await prisma.user.findUnique({ where: { email: user.email } })
+        const appUser = existingUser ?? await prisma.user.create({
+          data: {
+            name: user.name?.trim() || user.email.split('@')[0],
+            email: user.email,
+            password: await bcrypt.hash(randomUUID(), 12),
+            role: 'TRAINEE',
+            language: 'en',
+          },
+        })
+
+        user.id = appUser.id
+        ;(user as typeof user & { role?: string; language?: string }).role = appUser.role
+        ;(user as typeof user & { role?: string; language?: string }).language = appUser.language
+        return true
+      } catch (error) {
+        console.error('Google sign-in failed:', error)
+        return false
+      }
+    },
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id
-        token.role = user.role
-        token.language = user.language
-        token.name = user.name
-        token.email = user.email
+        const appUser = user.email
+          ? await prisma.user.findUnique({ where: { email: user.email } })
+          : null
+        token.id = appUser?.id ?? user.id
+        token.role = appUser?.role ?? user.role ?? 'TRAINEE'
+        token.language = appUser?.language ?? user.language ?? 'en'
+        token.name = appUser?.name ?? user.name
+        token.email = appUser?.email ?? user.email
       }
       return token
     },

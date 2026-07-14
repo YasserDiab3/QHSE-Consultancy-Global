@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { signOut, useSession } from 'next-auth/react'
 import LanguageSwitcher from './LanguageSwitcher'
-import { Menu, X, User, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucide-react'
+import { Menu, X, User, UserPlus, LogOut, LayoutDashboard, ShieldCheck, Home } from 'lucide-react'
 import BrandLogo from './BrandLogo'
 
 export default function Header() {
@@ -134,17 +134,24 @@ export default function Header() {
                 </button>
               </div>
             ) : (
-              <Link
-                href="/login"
-                className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  scrolled
-                    ? 'bg-primary-500 text-white hover:bg-primary-600'
-                    : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                {t('nav.login')}
-              </Link>
+              <div className="hidden md:flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    scrolled ? 'text-gray-700 hover:bg-gray-100 hover:text-primary-600' : 'text-white hover:bg-white/10'
+                  }`}
+                >
+                  <User className="w-4 h-4" />
+                  {t('nav.login')}
+                </Link>
+                <Link
+                  href="/register"
+                  className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-600"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  {language === 'ar' ? 'إنشاء حساب' : 'Create account'}
+                </Link>
+              </div>
             )}
 
             {/* Mobile menu button */}
@@ -201,13 +208,14 @@ export default function Header() {
                     </button>
                   </>
                 ) : (
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block px-4 py-3 rounded-lg bg-primary-500 text-white font-medium text-center"
-                  >
-                    {t('nav.login')}
-                  </Link>
+                  <div className="space-y-2">
+                    <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="block rounded-lg border border-primary-200 px-4 py-3 text-center font-medium text-primary-700">
+                      {t('nav.login')}
+                    </Link>
+                    <Link href="/register" onClick={() => setMobileMenuOpen(false)} className="block rounded-lg bg-primary-500 px-4 py-3 text-center font-medium text-white">
+                      {language === 'ar' ? 'إنشاء حساب' : 'Create account'}
+                    </Link>
+                  </div>
                 )}
               </div>
             </nav>

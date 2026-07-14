@@ -3,7 +3,7 @@
 import BrandLogo from '@/components/BrandLogo'
 import { useLanguage } from '@/context'
 import { signIn, useSession } from 'next-auth/react'
-import { Eye, EyeOff, Loader2, Lock, Mail, UserRound } from 'lucide-react'
+import { Chrome, Eye, EyeOff, Loader2, Lock, Mail, Phone, UserRound } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useEffect, useMemo, useState } from 'react'
@@ -17,15 +17,23 @@ function RegisterForm() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [phone, setPhone] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const callbackUrl = searchParams.get('callbackUrl') || '/training'
+  const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_SIGN_IN_ENABLED === 'true'
 
   const copy = useMemo(
     () =>
       language === 'ar'
         ? {
+            phone: 'رقم الهاتف',
+            confirmPassword: 'تأكيد كلمة المرور',
+            continueWithGoogle: 'المتابعة باستخدام Google',
+            or: 'أو',
             portal: 'TRAINING PORTAL',
             title: 'إنشاء حساب متدرب',
             subtitle: 'سجل حسابك للوصول إلى تدريبات السلامة وسلامة الغذاء والاختبار والشهادة.',
@@ -47,6 +55,11 @@ function RegisterForm() {
             name: 'Full name',
             email: 'Email address',
             password: 'Password',
+            confirmPassword: 'Confirm password',
+            phone: 'Phone number',
+            passwordsDoNotMatch: 'Passwords do not match',
+            continueWithGoogle: 'Continue with Google',
+            or: 'or',
             button: 'Create account and sign in',
             loading: 'Creating account...',
             success: 'Account created successfully',
@@ -67,13 +80,17 @@ function RegisterForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    if (password !== confirmPassword) {
+      toast.error(language === 'ar' ? 'كلمتا المرور غير متطابقتين' : 'Passwords do not match')
+      return
+    }
     setLoading(true)
 
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password, language }),
+        body: JSON.stringify({ name, email, phone, password, confirmPassword, language }),
       })
       const data = await response.json().catch(() => null)
 
@@ -105,6 +122,10 @@ function RegisterForm() {
     }
   }
 
+  const handleGoogleSignIn = () => {
+    void signIn('google', { callbackUrl })
+  }
+
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f9fc] px-4 py-10">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(151,215,0,0.14),_transparent_32%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(244,247,252,0.95))]" />
@@ -132,6 +153,15 @@ function RegisterForm() {
 
           <div className="px-8 py-8">
             <form onSubmit={handleSubmit} className="space-y-5">
+              {googleEnabled && (
+                <>
+                  <button type="button" onClick={handleGoogleSignIn} className="flex w-full items-center justify-center gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50">
+                    <Chrome className="h-5 w-5 text-[#4285F4]" />
+                    {language === 'ar' ? 'المتابعة باستخدام Google' : copy.continueWithGoogle}
+                  </button>
+                  <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-slate-400"><span className="h-px flex-1 bg-slate-200" />{language === 'ar' ? 'أو' : copy.or}<span className="h-px flex-1 bg-slate-200" /></div>
+                </>
+              )}
               <div>
                 <label className="label-field text-slate-700">{copy.name}</label>
                 <div className="relative">
@@ -182,6 +212,25 @@ function RegisterForm() {
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="label-field text-slate-700">{language === 'ar' ? 'رقم الهاتف' : copy.phone}</label>
+                <div className="relative">
+                  <Phone className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} required autoComplete="tel" placeholder="+20 111 775 5096" className="input-field rounded-2xl border-slate-200 bg-slate-50 py-3 pl-12 text-slate-900 placeholder:text-slate-400 focus:border-[#8B4D00]/35 focus:bg-white focus:ring-4 focus:ring-[#8B4D00]/10" />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-field text-slate-700">{language === 'ar' ? 'تأكيد كلمة المرور' : copy.confirmPassword}</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input type={showConfirmPassword ? 'text' : 'password'} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} required minLength={8} autoComplete="new-password" className="input-field rounded-2xl border-slate-200 bg-slate-50 py-3 pl-12 pr-12 text-slate-900 focus:border-[#8B4D00]/35 focus:bg-white focus:ring-4 focus:ring-[#8B4D00]/10" />
+                  <button type="button" onClick={() => setShowConfirmPassword((current) => !current)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600">
+                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
                 </div>
               </div>
