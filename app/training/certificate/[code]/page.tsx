@@ -8,8 +8,9 @@ import BrandLogo from '@/components/BrandLogo'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useLanguage } from '@/context'
-import { Award, Download, Loader2 } from 'lucide-react'
+import { Award, Download, Loader2, ShieldCheck } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { downloadTrainingCertificatePdf } from '@/lib/certificate-pdf'
 
 type Certificate = {
   id: string
@@ -41,6 +42,7 @@ export default function TrainingCertificatePage() {
             score: 'النتيجة',
             issueDate: 'تاريخ الإصدار',
             code: 'رقم الشهادة',
+            verify: 'التحقق من الشهادة',
             print: 'طباعة / تنزيل PDF',
             back: 'العودة للتدريب',
             notFound: 'تعذر تحميل الشهادة',
@@ -53,6 +55,7 @@ export default function TrainingCertificatePage() {
             score: 'Score',
             issueDate: 'Issue date',
             code: 'Certificate code',
+            verify: 'Verify certificate',
             print: 'Print / Download PDF',
             back: 'Back to training',
             notFound: 'Failed to load certificate',
@@ -98,6 +101,17 @@ export default function TrainingCertificatePage() {
     ? new Date(certificate.certificateIssuedAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')
     : '-'
 
+  const downloadPdf = () => {
+    if (!certificate) return
+    downloadTrainingCertificatePdf({
+      recipientName: certificate.userName || certificate.userEmail || '-',
+      courseTitle,
+      score: certificate.score,
+      certificateCode: certificate.certificateCode,
+      issuedAt: certificate.certificateIssuedAt,
+    })
+  }
+
   if (loading || status === 'loading') {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
@@ -115,12 +129,16 @@ export default function TrainingCertificatePage() {
 
       <main className="container-custom py-28 print:container-auto print:p-0">
         <div className="mx-auto mb-6 flex max-w-5xl justify-end gap-3 print:hidden">
-          <button type="button" onClick={() => window.print()} className="btn-primary px-5 py-3">
+          <button type="button" onClick={downloadPdf} className="btn-primary px-5 py-3">
             <Download className="h-5 w-5" />
-            {copy.print}
+            {language === 'ar' ? 'تحميل PDF' : 'Download PDF'}
           </button>
           <Link href="/training" className="btn-secondary px-5 py-3">
             {copy.back}
+          </Link>
+          <Link href="/training/verify" className="btn-secondary px-5 py-3">
+            <ShieldCheck className="h-5 w-5" />
+            {copy.verify}
           </Link>
         </div>
 
@@ -153,6 +171,9 @@ export default function TrainingCertificatePage() {
                 <div className="rounded-2xl bg-gray-50 p-5">
                   <p className="text-sm text-gray-500">{copy.code}</p>
                   <p className="mt-2 break-all text-lg font-bold text-gray-900">{certificate.certificateCode}</p>
+                  <Link href="/training/verify" className="mt-2 inline-block text-sm font-semibold text-primary-700 hover:underline print:hidden">
+                    {copy.verify}
+                  </Link>
                 </div>
               </div>
             </div>

@@ -14,6 +14,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useLanguage } from '@/context'
+import { trainingTemplates } from '@/lib/training-templates'
 import toast from 'react-hot-toast'
 
 type AdminCourse = {
@@ -114,6 +115,8 @@ export default function AdminTraining({ onDataChanged }: { onDataChanged?: () =>
         ? {
             title: 'إدارة التدريب والشهادات',
             addCourse: 'إضافة تدريب جديد',
+            template: 'قالب تدريبي جاهز',
+            chooseTemplate: 'اختر قالبًا لملء النموذج',
             courses: 'التدريبات',
             trainees: 'المتدربون والنتائج',
             certificates: 'الشهادات',
@@ -146,6 +149,8 @@ export default function AdminTraining({ onDataChanged }: { onDataChanged?: () =>
         : {
             title: 'Training and certificates management',
             addCourse: 'Add new training',
+            template: 'Ready training template',
+            chooseTemplate: 'Choose a template to prefill the form',
             courses: 'Courses',
             trainees: 'Trainees and results',
             certificates: 'Certificates',
@@ -207,6 +212,24 @@ export default function AdminTraining({ onDataChanged }: { onDataChanged?: () =>
     }))
   }
 
+  const applyTemplate = (templateId: string) => {
+    const template = trainingTemplates.find((item) => item.id === templateId)
+    if (!template) return
+
+    setForm({
+      title: template.title,
+      titleAr: template.titleAr,
+      category: template.category,
+      description: template.description,
+      descriptionAr: template.descriptionAr,
+      content: template.content,
+      contentAr: template.contentAr,
+      passingScore: 80,
+      isPublished: true,
+      questions: template.questions.map((item) => ({ ...item })),
+    })
+  }
+
   const submitCourse = async (event: React.FormEvent) => {
     event.preventDefault()
     setSaving(true)
@@ -260,6 +283,21 @@ export default function AdminTraining({ onDataChanged }: { onDataChanged?: () =>
 
       {showForm && (
         <form onSubmit={submitCourse} className="card space-y-6 p-6">
+          <div>
+            <label className="label-field">{copy.template}</label>
+            <select
+              defaultValue=""
+              onChange={(event) => applyTemplate(event.target.value)}
+              className="input-field"
+            >
+              <option value="">{copy.chooseTemplate}</option>
+              {trainingTemplates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {language === 'ar' ? template.labelAr : template.label}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input label={copy.titleEn} value={form.title} onChange={(value) => setForm((current) => ({ ...current, title: value }))} required />
             <Input label={copy.titleAr} value={form.titleAr} onChange={(value) => setForm((current) => ({ ...current, titleAr: value }))} />
