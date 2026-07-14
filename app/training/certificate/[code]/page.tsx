@@ -101,15 +101,19 @@ export default function TrainingCertificatePage() {
     ? new Date(certificate.certificateIssuedAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')
     : '-'
 
-  const downloadPdf = () => {
+  const downloadPdf = async () => {
     if (!certificate) return
-    downloadTrainingCertificatePdf({
-      recipientName: certificate.userName || certificate.userEmail || '-',
-      courseTitle,
-      score: certificate.score,
-      certificateCode: certificate.certificateCode,
-      issuedAt: certificate.certificateIssuedAt,
-    })
+    try {
+      await downloadTrainingCertificatePdf({
+        recipientName: certificate.userName || certificate.userEmail || '-',
+        courseTitle,
+        score: certificate.score,
+        certificateCode: certificate.certificateCode,
+        issuedAt: certificate.certificateIssuedAt,
+      })
+    } catch {
+      toast.error(language === 'ar' ? 'تعذر تنزيل الشهادة' : 'Failed to download certificate')
+    }
   }
 
   if (loading || status === 'loading') {
@@ -129,7 +133,7 @@ export default function TrainingCertificatePage() {
 
       <main className="container-custom py-28 print:container-auto print:p-0">
         <div className="mx-auto mb-6 flex max-w-5xl justify-end gap-3 print:hidden">
-          <button type="button" onClick={downloadPdf} className="btn-primary px-5 py-3">
+          <button type="button" onClick={() => void downloadPdf()} className="btn-primary px-5 py-3">
             <Download className="h-5 w-5" />
             {language === 'ar' ? 'تحميل PDF' : 'Download PDF'}
           </button>

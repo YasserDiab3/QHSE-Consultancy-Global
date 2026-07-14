@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useState } from 'react'
+import { FormEvent, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -24,19 +24,31 @@ export default function VerifyCertificatePage() {
   const [loading, setLoading] = useState(false)
   const isArabic = language === 'ar'
 
-  const verify = async (event: FormEvent) => {
-    event.preventDefault()
-    const value = code.trim()
-    if (!value) return
+  const verifyCode = useCallback(async (value: string) => {
+    const normalizedCode = value.trim()
+    if (!normalizedCode) return
+    setCode(normalizedCode.toUpperCase())
     setLoading(true)
     try {
-      const response = await fetch(`/api/training/certificates/${encodeURIComponent(value)}/verify`, { cache: 'no-store' })
+      const response = await fetch(`/api/training/certificates/${encodeURIComponent(normalizedCode)}/verify`, { cache: 'no-store' })
       const data = await response.json().catch(() => ({ valid: false }))
       setResult(data)
     } finally {
       setLoading(false)
     }
+  }, [])
+
+  const verify = async (event: FormEvent) => {
+    event.preventDefault()
+    await verifyCode(code)
   }
+
+  useEffect(() => {
+    const scannedCode = new URLSearchParams(window.location.search).get('code')
+    if (scannedCode) {
+      void verifyCode(scannedCode)
+    }
+  }, [verifyCode])
 
   const date = result?.issuedAt ? new Date(result.issuedAt).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US') : '-'
   const title = isArabic && result?.courseTitleAr ? result.courseTitleAr : result?.courseTitle
