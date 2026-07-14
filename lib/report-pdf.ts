@@ -57,6 +57,9 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   })
   const openCount = report.observations.filter((observation) => observation.status !== 'CLOSED' && observation.status !== 'RESOLVED').length
   const complianceScore = Math.max(0, 100 - riskCounts.CRITICAL * 25 - riskCounts.HIGH * 12 - riskCounts.MEDIUM * 5 - riskCounts.LOW * 2)
+  const isFoodSafety = report.category === 'FOOD_SAFETY'
+  const formCode = isFoodSafety ? 'QHSSE-FS-VISIT-01' : 'QHSSE-VISIT-01'
+  const formRevision = 'REV. 01'
 
   ctx.fillStyle = '#f7f9fc'; ctx.fillRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = '#123f31'; ctx.fillRect(0, 0, canvas.width, 250)
@@ -68,6 +71,9 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   ctx.fillStyle = '#fff'; ctx.font = '700 38px Cairo, Arial'; ctx.textAlign = 'center'; ctx.direction = isArabic ? 'rtl' : 'ltr'
   ctx.fillText(isArabic ? 'تقرير زيارة العميل' : 'CLIENT VISIT REPORT', canvas.width / 2, 92)
   ctx.font = '500 20px Cairo, Arial'; ctx.fillStyle = '#d5f2df'; ctx.fillText('QHSSE CONSULTANT', canvas.width / 2, 132)
+  ctx.fillStyle = '#d5f2df'; ctx.font = '600 14px Cairo, Arial'; ctx.textAlign = 'center'; ctx.direction = 'ltr'
+  ctx.fillText(`${formCode}  •  ${formRevision}`, canvas.width / 2, 184)
+  ctx.textAlign = isArabic ? 'right' : 'left'; ctx.direction = isArabic ? 'rtl' : 'ltr'
   ctx.textAlign = isArabic ? 'right' : 'left'
   ctx.fillStyle = '#fff'; ctx.font = '700 34px Cairo, Arial'; ctx.fillText(siteName, isArabic ? 1168 : 62, 310, 1080)
   ctx.fillStyle = '#526072'; ctx.font = '500 18px Cairo, Arial';
@@ -96,7 +102,23 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     ctx.fillStyle = '#e8eef0'; ctx.fillRect(x, chartY + 20, 190, 16); ctx.fillStyle = colors[index]; ctx.fillRect(isArabic ? x + 190 - barWidth : x, chartY + 20, barWidth, 16)
     ctx.fillStyle = '#475569'; ctx.font = '600 13px Cairo, Arial'; ctx.textAlign = isArabic ? 'right' : 'left'; ctx.fillText(`${level}: ${count}`, isArabic ? x + 190 : x, chartY + 58)
   })
-  let y = 780
+  if (isFoodSafety) {
+    const assessmentY = 780
+    const items = isArabic ? ['الموقع', 'العاملون', 'المستندات والسجلات', 'المعدات', 'البنية التحتية', 'الاستلام والتخزين'] : ['Site', 'Employees', 'Documents & records', 'Equipment', 'Infrastructure', 'Receiving & storage']
+    ctx.fillStyle = '#123f31'; ctx.font = '700 17px Cairo, Arial'; ctx.fillText(isArabic ? 'تقييم التوافق المبدئي لسلامة الغذاء' : 'FOOD SAFETY COMPLIANCE ASSESSMENT', isArabic ? 1178 : 62, assessmentY)
+    ctx.fillStyle = '#f7d93b'; ctx.fillRect(62, assessmentY + 15, 1116, 32); ctx.fillStyle = '#1f2937'; ctx.font = '700 13px Cairo, Arial'
+    const heads = isArabic ? ['م', 'البند', 'النسبة الحالية', 'النسبة المطلوبة'] : ['#', 'ASSESSMENT ITEM', 'CURRENT', 'TARGET']
+    const headX = isArabic ? [1140, 820, 360, 135] : [88, 160, 850, 1060]
+    heads.forEach((head, index) => ctx.fillText(head, headX[index], assessmentY + 37))
+    items.forEach((item, index) => {
+      const rowY = assessmentY + 47 + index * 29; const current = Math.max(0, complianceScore - (index % 3) * 3)
+      ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#eff6f2'; ctx.fillRect(62, rowY, 1116, 29); ctx.strokeStyle = '#dbe4df'; ctx.strokeRect(62, rowY, 1116, 29)
+      ctx.fillStyle = '#334155'; ctx.font = '500 12px Cairo, Arial'
+      if (isArabic) { ctx.fillText(String(index + 1), 1140, rowY + 20); ctx.fillText(item, 820, rowY + 20); ctx.fillText(`${current}%`, 360, rowY + 20); ctx.fillText('85%', 135, rowY + 20) }
+      else { ctx.fillText(String(index + 1), 88, rowY + 20); ctx.fillText(item, 160, rowY + 20); ctx.fillText(`${current}%`, 850, rowY + 20); ctx.fillText('85%', 1060, rowY + 20) }
+    })
+  }
+  let y = isFoodSafety ? 1030 : 780
   ctx.fillStyle = '#123f31'; ctx.fillRect(62, y, 1116, 48); ctx.fillStyle = '#fff'; ctx.font = '700 16px Cairo, Arial'
   const headers = isArabic ? ['#', 'الملاحظة', 'مستوى الخطورة', 'الحالة'] : ['#', 'OBSERVATION', 'RISK LEVEL', 'STATUS']
   const columns = isArabic ? [1140, 850, 300, 110] : [95, 165, 870, 1050]
@@ -111,7 +133,7 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     const observationTitle = choose(observation.titleAr, observation.title)
     const lines = wrapText(ctx, observationTitle, 620).slice(0, 2)
     const rowHeight = Math.max(58, 22 + lines.length * 24)
-    if (y + rowHeight > 1580) return
+    if (y + rowHeight > (isFoodSafety ? 1480 : 1580)) return
     ctx.fillStyle = index % 2 === 0 ? '#ffffff' : '#eff6f2'; ctx.fillRect(62, y, 1116, rowHeight)
     ctx.strokeStyle = '#dbe4df'; ctx.strokeRect(62, y, 1116, rowHeight)
     ctx.fillStyle = '#1f2937'; ctx.font = '500 16px Cairo, Arial'
@@ -122,9 +144,13 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     }
     y += rowHeight
   })
-  ctx.drawImage(qr, 910, 1530, 110, 110); ctx.fillStyle = '#123f31'; ctx.font = '700 14px Cairo, Arial'; ctx.textAlign = 'center'; ctx.direction = 'ltr'; ctx.fillText('SCAN TO OPEN REPORT', 965, 1662)
+  ctx.drawImage(qr, canvas.width / 2 - 55, 1515, 110, 110); ctx.fillStyle = '#123f31'; ctx.font = '700 14px Cairo, Arial'; ctx.textAlign = 'center'; ctx.direction = 'ltr'; ctx.fillText('SCAN TO OPEN REPORT', canvas.width / 2, 1648)
   ctx.textAlign = isArabic ? 'right' : 'left'; ctx.direction = isArabic ? 'rtl' : 'ltr'; ctx.fillStyle = '#64748b'; ctx.font = '500 13px Cairo, Arial'; ctx.fillText(isArabic ? `رمز التقرير: ${report.id}` : `Report reference: ${report.id}`, isArabic ? 1168 : 62, 1680)
   ctx.fillText('QHSSE Consultant • Safety • Quality • Environment', isArabic ? 1168 : 62, 1712)
+  ctx.fillStyle = '#f7f9fc'; ctx.fillRect(0, 1630, canvas.width, 124)
+  ctx.fillStyle = '#123f31'; ctx.font = '700 14px Cairo, Arial'; ctx.textAlign = 'center'; ctx.direction = 'ltr'; ctx.fillText('SCAN TO OPEN REPORT', canvas.width / 2, 1648)
+  ctx.fillStyle = '#64748b'; ctx.font = '500 13px Cairo, Arial'; ctx.fillText(`${formCode}  •  ${formRevision}  •  ${report.id}`, canvas.width / 2, 1674)
+  ctx.fillText('QHSSE Consultant • Safety • Quality • Environment', canvas.width / 2, 1708)
   const pdf = new jsPDF({ unit: 'px', format: [canvas.width, canvas.height] })
   pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, canvas.width, canvas.height)
   pdf.save(`qhsse-report-${report.id}.pdf`)
