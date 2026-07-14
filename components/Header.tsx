@@ -48,6 +48,7 @@ export default function Header() {
         : t('nav.dashboard')
   const isPortal = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/dashboard' || pathname.startsWith('/dashboard/')
   const useSolidHeader = isPortal || scrolled
+  const isArabicHomepage = pathname === '/' && language === 'ar'
 
   return (
     <header
@@ -56,7 +57,7 @@ export default function Header() {
       }`}
     >
       <div className="w-full px-4 sm:px-6 lg:px-10">
-        <div dir="ltr" className="flex h-[72px] items-center gap-3 md:h-[84px]">
+        <div dir={isArabicHomepage ? 'rtl' : 'ltr'} className="flex h-[72px] items-center gap-3 md:h-[84px]">
           {/* Logo */}
           <Link
             href="/"
@@ -91,7 +92,7 @@ export default function Header() {
           </nav>
 
           {/* Right side */}
-          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="ml-auto flex shrink-0 items-center gap-2 md:gap-3">
+          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className={`${isArabicHomepage ? 'mr-auto' : 'ml-auto'} flex shrink-0 items-center gap-2 md:gap-3`}>
             <LanguageSwitcher />
 
             {session ? (
@@ -131,15 +132,15 @@ export default function Header() {
                   }`}
                 >
                   <User className="w-4 h-4" />
-                  {t('nav.login')}
+                  {language === 'ar' ? 'تسجيل الدخول' : 'Login'}
                 </Link>
-                <Link
+                {!isArabicHomepage && <Link
                   href="/register"
                   className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-600"
                 >
                   <UserPlus className="w-4 h-4" />
                   {language === 'ar' ? 'إنشاء حساب' : 'Create account'}
-                </Link>
+                </Link>}
               </div>
             )}
 
