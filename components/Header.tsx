@@ -26,9 +26,24 @@ export default function Header() {
     { href: '/', label: t('nav.home') },
     { href: '/about', label: t('nav.about') },
     { href: '/services', label: t('nav.services') },
+    { href: '/training', label: language === 'ar' ? 'التدريب' : 'Training' },
     { href: '/jobs', label: language === 'ar' ? 'الوظائف' : 'Jobs' },
     { href: '/contact', label: t('nav.contact') },
   ]
+  const portalHref =
+    session?.user.role === 'ADMIN'
+      ? '/admin'
+      : session?.user.role === 'TRAINEE'
+        ? '/training'
+        : '/dashboard'
+  const portalLabel =
+    session?.user.role === 'ADMIN'
+      ? t('admin.title')
+      : session?.user.role === 'TRAINEE'
+        ? language === 'ar'
+          ? 'التدريب'
+          : 'Training'
+        : t('nav.dashboard')
 
   return (
     <header
@@ -93,7 +108,7 @@ export default function Header() {
                   {t('nav.home')}
                 </Link>
                 <Link
-                  href={session.user.role === 'ADMIN' ? '/admin' : '/dashboard'}
+                  href={portalHref}
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                     scrolled
                       ? 'text-gray-700 hover:text-primary-500 hover:bg-gray-100'
@@ -103,7 +118,7 @@ export default function Header() {
                   {session.user.role === 'ADMIN' ? (
                     <><ShieldCheck className="w-4 h-4" />{t('admin.title')}</>
                   ) : (
-                    <><LayoutDashboard className="w-4 h-4" />{t('nav.dashboard')}</>
+                    <><LayoutDashboard className="w-4 h-4" />{portalLabel}</>
                   )}
                 </Link>
                 <button
@@ -169,11 +184,11 @@ export default function Header() {
                       {t('nav.home')}
                     </Link>
                     <Link
-                      href={session.user.role === 'ADMIN' ? '/admin' : '/dashboard'}
+                      href={portalHref}
                       onClick={() => setMobileMenuOpen(false)}
                       className="block px-4 py-3 rounded-lg text-gray-700 hover:text-primary-500 hover:bg-gray-50 font-medium"
                     >
-                      {session.user.role === 'ADMIN' ? t('admin.title') : t('nav.dashboard')}
+                      {portalLabel}
                     </Link>
                     <button
                       onClick={() => {

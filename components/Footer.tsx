@@ -62,6 +62,11 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/training" className="text-gray-400 transition-colors hover:text-white">
+                  {language === 'ar' ? 'التدريب' : 'Training'}
+                </Link>
+              </li>
+              <li>
                 <Link href="/jobs" className="text-gray-400 transition-colors hover:text-white">
                   {language === 'ar' ? 'الوظائف' : 'Jobs'}
                 </Link>

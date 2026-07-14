@@ -20,6 +20,8 @@ model User {
   client        Client?
   activityLogs  ActivityLog[]
   reports       Report[]  @relation("ConsultantReports")
+  trainingEnrollments TrainingEnrollment[]
+  trainingAttempts TrainingAttempt[]
 
   @@index([email])
   @@map("User")
@@ -199,4 +201,86 @@ model ActivityLog {
   @@index([userId])
   @@index([createdAt(sort: Desc)])
   @@map("ActivityLog")
+}
+
+model TrainingCourse {
+  id            String               @id @default(uuid())
+  slug          String               @unique
+  title         String
+  titleAr       String?
+  category      String
+  description   String?
+  descriptionAr String?
+  content       String
+  contentAr     String?
+  passingScore  Int                  @default(80)
+  isPublished   Boolean              @default(true)
+  sortOrder     Int                  @default(0)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @default(now()) @updatedAt
+  questions     TrainingQuestion[]
+  enrollments   TrainingEnrollment[]
+  attempts      TrainingAttempt[]
+
+  @@index([isPublished, sortOrder])
+  @@map("TrainingCourse")
+}
+
+model TrainingQuestion {
+  id            String         @id @default(uuid())
+  courseId      String
+  course        TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  question      String
+  questionAr    String?
+  optionA       String
+  optionAAr     String?
+  optionB       String
+  optionBAr     String?
+  optionC       String
+  optionCAr     String?
+  optionD       String
+  optionDAr     String?
+  correctOption String
+  sortOrder     Int            @default(0)
+  createdAt     DateTime       @default(now())
+
+  @@index([courseId, sortOrder])
+  @@map("TrainingQuestion")
+}
+
+model TrainingEnrollment {
+  id                  String         @id @default(uuid())
+  userId              String
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId            String
+  course              TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status              String         @default("IN_PROGRESS")
+  score               Int?
+  passed              Boolean        @default(false)
+  attempts            Int            @default(0)
+  certificateCode     String?        @unique
+  certificateIssuedAt DateTime?
+  completedAt         DateTime?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @default(now()) @updatedAt
+
+  @@unique([userId, courseId])
+  @@index([userId])
+  @@map("TrainingEnrollment")
+}
+
+model TrainingAttempt {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String
+  course      TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  score       Int
+  passed      Boolean        @default(false)
+  answers     Json
+  createdAt   DateTime       @default(now())
+
+  @@index([userId, courseId])
+  @@index([createdAt(sort: Desc)])
+  @@map("TrainingAttempt")
 }

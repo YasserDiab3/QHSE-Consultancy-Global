@@ -12,5 +12,9 @@ export default async function DashboardLayout({
     redirect('/login?callbackUrl=/dashboard')
   }
 
+  if (session.user.role === 'TRAINEE') {
+    redirect('/training')
+  }
+
   return children
 }

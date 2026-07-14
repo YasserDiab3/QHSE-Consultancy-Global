@@ -36,6 +36,8 @@ export async function GET(request: Request) {
       }
     } else if (session.user.role === 'ADMIN') {
       await backfillMissingReportConsultantIds(session.user.id)
+    } else {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const reports = await listReportRecords({
