@@ -40,7 +40,7 @@ export default function Header() {
         : '/dashboard'
   const portalLabel =
     session?.user.role === 'ADMIN'
-      ? t('admin.title')
+      ? language === 'ar' ? 'لوحة تحكم المدير' : 'Admin Dashboard'
       : session?.user.role === 'TRAINEE'
         ? language === 'ar'
           ? 'التدريب'
@@ -48,7 +48,7 @@ export default function Header() {
         : t('nav.dashboard')
   const isPortal = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/dashboard' || pathname.startsWith('/dashboard/')
   const useSolidHeader = isPortal || scrolled
-  const isArabicHomepage = pathname === '/' && language === 'ar'
+  const isArabicInterface = language === 'ar'
 
   return (
     <header
@@ -57,7 +57,7 @@ export default function Header() {
       }`}
     >
       <div className="w-full px-4 sm:px-6 lg:px-10">
-        <div dir={isArabicHomepage ? 'rtl' : 'ltr'} className="flex h-[72px] items-center gap-3 md:h-[84px]">
+        <div dir={isArabicInterface ? 'rtl' : 'ltr'} className="flex h-[72px] items-center gap-3 md:h-[84px]">
           {/* Logo */}
           <Link
             href="/"
@@ -92,7 +92,7 @@ export default function Header() {
           </nav>
 
           {/* Right side */}
-          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className={`${isArabicHomepage ? 'mr-auto' : 'ml-auto'} flex shrink-0 items-center gap-2 md:gap-3`}>
+          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className={`${isArabicInterface ? 'mr-auto' : 'ml-auto'} flex shrink-0 items-center gap-2 md:gap-3`}>
             <LanguageSwitcher />
 
             {session ? (
@@ -106,7 +106,7 @@ export default function Header() {
                   }`}
                 >
                   {session.user.role === 'ADMIN' ? (
-                    <><ShieldCheck className="w-4 h-4" />{t('admin.title')}</>
+                    <><ShieldCheck className="w-4 h-4" />{language === 'ar' ? 'لوحة تحكم المدير' : 'Admin Dashboard'}</>
                   ) : (
                     <><LayoutDashboard className="w-4 h-4" />{portalLabel}</>
                   )}
@@ -120,7 +120,7 @@ export default function Header() {
                   }`}
                 >
                   <LogOut className="w-4 h-4" />
-                  {t('nav.logout')}
+                  {language === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
                 </button>
               </div>
             ) : (
@@ -134,7 +134,7 @@ export default function Header() {
                   <User className="w-4 h-4" />
                   {language === 'ar' ? 'تسجيل الدخول' : 'Login'}
                 </Link>
-                {!isArabicHomepage && <Link
+                {pathname !== '/' && <Link
                   href="/register"
                   className="flex items-center gap-2 rounded-lg bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-primary-600"
                 >
@@ -187,7 +187,7 @@ export default function Header() {
                       }}
                       className="w-full text-start px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 font-medium"
                     >
-                      {t('nav.logout')}
+                      {language === 'ar' ? 'تسجيل الخروج' : 'Sign out'}
                     </button>
                   </>
                 ) : (
