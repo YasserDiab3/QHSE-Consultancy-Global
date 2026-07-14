@@ -132,6 +132,7 @@ export default function AdminReports({
   const [editingReport, setEditingReport] = useState<Report | null>(null)
   const [viewingReport, setViewingReport] = useState<Report | null>(null)
   const [formData, setFormData] = useState(createInitialFormData)
+  const [initialPoints, setInitialPoints] = useState('')
 
   const activeFilterLabel = (() => {
     if (filterPreset?.riskLevel) {
@@ -152,6 +153,7 @@ export default function AdminReports({
   const resetForm = () => {
     setEditingReport(null)
     setFormData(createInitialFormData())
+    setInitialPoints('')
   }
 
   const fetchData = useCallback(async () => {
@@ -199,6 +201,14 @@ export default function AdminReports({
       if (!res.ok) {
         toast.error(data?.error || t('common.error'))
         return
+      }
+
+      if (!editingReport && initialPoints.trim()) {
+        const points = initialPoints.split('\n').map((point) => point.trim()).filter(Boolean)
+        await Promise.all(points.map((title) => fetch('/api/observations', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reportId: data.id, title, riskLevel: 'MEDIUM', status: 'OPEN' }),
+        })))
       }
 
       toast.success(editingReport ? t('admin.reportUpdated') : t('admin.reportCreated'))
@@ -371,6 +381,18 @@ export default function AdminReports({
                   className="input-field resize-none"
                 />
               </div>
+              {!editingReport && (
+                <div className="rounded-2xl border border-primary-100 bg-primary-50/60 p-4">
+                  <label className="label-field text-primary-900">{language === 'ar' ? 'نقاط التقرير الأولية (سطر لكل ملاحظة)' : 'Initial report points (one observation per line)'}</label>
+                  {formData.category === 'FOOD_SAFETY' && (
+                    <button type="button" onClick={() => setInitialPoints(foodSafetyEgyptTemplates.map((template) => template.title).join('\n'))} className="mb-3 inline-flex items-center gap-2 rounded-lg border border-primary-200 bg-white px-3 py-2 text-sm font-semibold text-primary-700 hover:bg-primary-50">
+                      <Plus className="h-4 w-4" />{language === 'ar' ? 'تحميل قائمة فحص سلامة الغذاء المصرية' : 'Load Egypt food-safety checklist'}
+                    </button>
+                  )}
+                  <textarea value={initialPoints} onChange={(event) => setInitialPoints(event.target.value)} rows={5} className="input-field resize-y bg-white" placeholder={language === 'ar' ? 'مثال: التحقق من سجل درجات الحرارة\nمراجعة برنامج التنظيف والتطهير' : 'Example: Verify temperature records\nReview cleaning and sanitation program'} />
+                  <p className="mt-2 text-xs text-primary-700">{language === 'ar' ? 'ستُضاف هذه النقاط تلقائيًا للتقرير بعد إنشائه.' : 'These points are added to the report automatically after it is created.'}</p>
+                </div>
+              )}
               <div className="flex items-center gap-3 pt-4">
                 <button type="submit" className="btn-primary">
                   {t('common.save')}
@@ -430,7 +452,7 @@ export default function AdminReports({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => downloadClientReportPdf(report, language)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title={language === 'ar' ? 'تصدير التقرير' : 'Export report'}>
+                      <button onClick={() => void downloadClientReportPdf(report, language)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title={language === 'ar' ? 'تصدير التقرير' : 'Export report'}>
                         <Download className="w-4 h-4" />
                       </button>
                       <button

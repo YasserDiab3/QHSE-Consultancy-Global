@@ -148,7 +148,7 @@ export default function ClientDashboard() {
 
   const handleDownloadPDF = async (report: Report) => {
     try {
-      downloadClientReportPdf(report, language)
+      await downloadClientReportPdf(report, language)
       toast.success(language === 'ar' ? 'تم تنزيل ملف PDF' : 'PDF downloaded')
     } catch {
       toast.error(language === 'ar' ? 'تعذر إنشاء ملف PDF' : 'Failed to generate PDF')

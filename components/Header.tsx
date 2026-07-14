@@ -51,7 +51,7 @@ export default function Header() {
         scrolled ? 'border-b border-slate-200/70 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl' : 'bg-gradient-to-b from-slate-950/40 to-transparent'
       }`}
     >
-      <div className="container-custom">
+      <div className="mx-auto w-full max-w-[1720px] px-4 sm:px-6 lg:px-10">
         <div className="flex h-[72px] items-center justify-between gap-3 md:h-[84px]">
           {/* Logo */}
           <Link
