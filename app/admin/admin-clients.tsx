@@ -15,6 +15,10 @@ import {
   Building2,
   Lock,
   ArrowRight,
+  Eye,
+  FileText,
+  Printer,
+  Upload,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -46,6 +50,7 @@ export default function AdminClients({
   const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [profileClient, setProfileClient] = useState<Client | null>(null)
   const createInitialFormData = () => ({
     name: '',
     email: '',
@@ -391,6 +396,7 @@ export default function AdminClients({
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <button onClick={() => setProfileClient(client)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title="Client profile"><Eye className="w-4 h-4" /></button>
                   <button onClick={() => startEdit(client)} className="p-1.5 rounded hover:bg-gray-100 text-gray-500">
                     <Edit className="w-4 h-4" />
                   </button>
@@ -433,6 +439,35 @@ export default function AdminClients({
           <p className="text-gray-600">{t('admin.createClient')}</p>
         </div>
       )}
+      {profileClient && <ClientProfile client={profileClient} onClose={() => setProfileClient(null)} />}
     </div>
   )
 }
+
+function ClientProfile({ client, onClose }: { client: Client; onClose: () => void }) {
+  const [data, setData] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const load = useCallback(async () => { setLoading(true); const response = await fetch(`/api/clients/${client.id}/profile`); setData(await response.json()); setLoading(false) }, [client.id])
+  useEffect(() => { void load() }, [load])
+  const upload = async (file: File | null) => {
+    if (!file) return
+    if (file.size > 8 * 1024 * 1024) return toast.error('Maximum file size is 8 MB')
+    setUploading(true)
+    const reader = new FileReader()
+    reader.onload = async () => { await fetch(`/api/clients/${client.id}/profile`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title: file.name, category: 'SYSTEM', url: reader.result, originalName: file.name, mimeType: file.type, size: file.size }) }); setUploading(false); await load() }
+    reader.readAsDataURL(file)
+  }
+  return <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/50 p-4"><div className="mx-auto my-6 max-w-6xl rounded-3xl bg-white shadow-2xl print:my-0 print:max-w-none">
+    <div className="flex items-center justify-between border-b p-6 print:hidden"><div><h2 className="text-2xl font-bold">ملف العميل — {client.companyName}</h2><p className="mt-1 text-sm text-slate-500">ملف موحد للتقارير والزيارات والملاحظات والبيانات المالية وبنك المعلومات.</p></div><div className="flex gap-2"><button onClick={() => window.print()} className="btn-secondary px-4 py-2"><Printer className="h-4 w-4" />طباعة الملف</button><button onClick={onClose} className="rounded-lg p-2 hover:bg-slate-100"><X /></button></div></div>
+    {loading ? <div className="p-16 text-center"><Loader2 className="mx-auto animate-spin text-primary-500" /></div> : <div className="space-y-6 p-6">{data?.client && <>
+      <div className="grid gap-4 md:grid-cols-4"><ProfileMetric label="الزيارات والتقارير" value={data.summary.reports} /><ProfileMetric label="الملاحظات" value={data.summary.observations} /><ProfileMetric label="الملفات" value={data.client.documents.length} /><ProfileMetric label="إجمالي مالي" value={`${data.summary.financialTotal} EGP`} /></div>
+      <section className="rounded-2xl border border-slate-200 p-5"><h3 className="mb-3 flex items-center gap-2 font-bold"><Building2 className="h-5 w-5 text-primary-600" />بيانات الشركة والاتصال</h3><div className="grid gap-3 text-sm md:grid-cols-2"><p><b>الشركة:</b> {data.client.companyNameAr || data.client.companyName}</p><p><b>مسؤول التواصل:</b> {data.client.user.name}</p><p><b>البريد:</b> {data.client.user.email}</p><p><b>الهاتف:</b> {data.client.phone || data.client.user.phone || '-'}</p><p className="md:col-span-2"><b>العنوان:</b> {data.client.address || '-'}</p></div></section>
+      <section className="rounded-2xl border border-slate-200 p-5"><h3 className="mb-3 font-bold">سجل الزيارات والتقارير</h3><div className="overflow-x-auto"><table className="w-full text-right text-sm"><thead className="bg-slate-50"><tr><th className="p-3">الموقع</th><th>التاريخ</th><th>التصنيف</th><th>الحالة</th><th>الملاحظات</th></tr></thead><tbody>{data.client.reports.map((r: any) => <tr key={r.id} className="border-t"><td className="p-3">{r.siteNameAr || r.siteName}</td><td>{new Date(r.date).toLocaleDateString('ar-EG')}</td><td>{r.category}</td><td>{r.status}</td><td>{r.observations.length}</td></tr>)}</tbody></table></div></section>
+      <section className="rounded-2xl border border-slate-200 p-5"><div className="mb-3 flex items-center justify-between"><h3 className="flex items-center gap-2 font-bold"><FileText className="h-5 w-5 text-primary-600" />بنك معلومات العميل</h3><label className="btn-secondary cursor-pointer px-3 py-2 text-sm print:hidden"><Upload className="h-4 w-4" />{uploading ? 'جارٍ الرفع...' : 'رفع ملف'}<input type="file" className="hidden" onChange={(e) => void upload(e.target.files?.[0] || null)} /></label></div><div className="grid gap-3 md:grid-cols-2">{data.client.documents.length ? data.client.documents.map((d: any) => <a key={d.id} href={d.url} target="_blank" className="flex items-center justify-between rounded-xl border p-3 hover:bg-primary-50"><span>{d.title}</span><span className="text-xs text-slate-500">{d.category}</span></a>) : <p className="text-sm text-slate-500">لا توجد ملفات بعد.</p>}</div></section>
+      <section className="rounded-2xl border border-slate-200 p-5"><h3 className="mb-3 font-bold">السجل المالي</h3><div className="grid gap-3 md:grid-cols-3">{data.client.financialRecords.length ? data.client.financialRecords.map((item: any) => <div key={item.id} className="rounded-xl bg-slate-50 p-3"><b>{item.title}</b><p className="mt-1">{Number(item.amount)} {item.currency}</p><span className="text-xs text-slate-500">{item.status}</span></div>) : <p className="text-sm text-slate-500">لا توجد بنود مالية مسجلة.</p>}</div></section>
+    </>}</div>}
+  </div></div>
+}
+
+function ProfileMetric({ label, value }: { label: string; value: string | number }) { return <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4"><p className="text-sm text-primary-700">{label}</p><p className="mt-2 text-2xl font-bold text-slate-900">{value}</p></div> }

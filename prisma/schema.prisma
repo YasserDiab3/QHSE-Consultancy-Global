@@ -40,9 +40,43 @@ model Client {
   createdAt     DateTime  @default(now()) @map("createdat")
   updatedAt     DateTime  @default(now()) @updatedAt @map("updatedat")
   reports       Report[]
+  documents     ClientDocument[]
+  financialRecords FinancialRecord[]
 
   @@index([userId])
   @@map("Client")
+}
+
+model ClientDocument {
+  id           String   @id @default(uuid())
+  clientId     String
+  client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title        String
+  category     String   @default("SYSTEM")
+  url          String
+  originalName String?
+  mimeType     String?
+  size         Int?
+  createdAt    DateTime @default(now()) @map("createdat")
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@map("ClientDocument")
+}
+
+model FinancialRecord {
+  id          String   @id @default(uuid())
+  clientId    String
+  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  title       String
+  amount      Decimal  @db.Decimal(12, 2)
+  currency    String   @default("EGP")
+  status      String   @default("PENDING")
+  dueDate     DateTime?
+  notes       String?
+  createdAt   DateTime @default(now()) @map("createdat")
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@map("FinancialRecord")
 }
 
 model ContactRequest {
