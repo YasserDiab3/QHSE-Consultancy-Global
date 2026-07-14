@@ -51,6 +51,12 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   const company = choose(report.client?.companyNameAr, report.client?.companyName)
   const notes = choose(report.notesAr, report.notes)
   const date = new Date(report.date).toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const riskCounts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 }
+  report.observations.forEach((observation) => {
+    if (observation.riskLevel in riskCounts) riskCounts[observation.riskLevel as keyof typeof riskCounts] += 1
+  })
+  const openCount = report.observations.filter((observation) => observation.status !== 'CLOSED' && observation.status !== 'RESOLVED').length
+  const complianceScore = Math.max(0, 100 - riskCounts.CRITICAL * 25 - riskCounts.HIGH * 12 - riskCounts.MEDIUM * 5 - riskCounts.LOW * 2)
 
   ctx.fillStyle = '#f7f9fc'; ctx.fillRect(0, 0, canvas.width, canvas.height)
   ctx.fillStyle = '#123f31'; ctx.fillRect(0, 0, canvas.width, 250)
@@ -58,6 +64,11 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   ctx.fillStyle = '#fff'; ctx.font = '700 38px Cairo, Arial'; ctx.textAlign = isArabic ? 'right' : 'left'; ctx.direction = isArabic ? 'rtl' : 'ltr'
   ctx.fillText(isArabic ? 'تقرير زيارة العميل' : 'CLIENT VISIT REPORT', isArabic ? 1168 : 220, 92)
   ctx.font = '500 20px Cairo, Arial'; ctx.fillStyle = '#d5f2df'; ctx.fillText('QHSSE CONSULTANT', isArabic ? 1168 : 220, 132)
+  ctx.fillStyle = '#123f31'; ctx.fillRect(205, 28, 970, 145)
+  ctx.fillStyle = '#fff'; ctx.font = '700 38px Cairo, Arial'; ctx.textAlign = 'center'; ctx.direction = isArabic ? 'rtl' : 'ltr'
+  ctx.fillText(isArabic ? 'تقرير زيارة العميل' : 'CLIENT VISIT REPORT', canvas.width / 2, 92)
+  ctx.font = '500 20px Cairo, Arial'; ctx.fillStyle = '#d5f2df'; ctx.fillText('QHSSE CONSULTANT', canvas.width / 2, 132)
+  ctx.textAlign = isArabic ? 'right' : 'left'
   ctx.fillStyle = '#fff'; ctx.font = '700 34px Cairo, Arial'; ctx.fillText(siteName, isArabic ? 1168 : 62, 310, 1080)
   ctx.fillStyle = '#526072'; ctx.font = '500 18px Cairo, Arial';
   const meta = isArabic ? `العميل: ${company}  |  التاريخ: ${date}  |  التصنيف: ${report.category}  |  الحالة: ${report.status}` : `Client: ${company}  |  Date: ${date}  |  Category: ${report.category}  |  Status: ${report.status}`
@@ -65,12 +76,37 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(15,23,42,0.08)'; ctx.shadowBlur = 18; ctx.fillRect(62, 392, 1116, 145); ctx.shadowBlur = 0
   ctx.fillStyle = '#123f31'; ctx.font = '700 20px Cairo, Arial'; ctx.fillText(isArabic ? 'الملخص التنفيذي' : 'EXECUTIVE SUMMARY', isArabic ? 1145 : 88, 430)
   ctx.fillStyle = '#374151'; ctx.font = '500 17px Cairo, Arial'; const noteLines = wrapText(ctx, notes, 1050).slice(0, 3); noteLines.forEach((line, index) => ctx.fillText(line, isArabic ? 1145 : 88, 468 + index * 27))
-  let y = 590
+  const metricY = 570
+  const metricLabels = isArabic ? ['درجة التوافق', 'إجمالي الملاحظات', 'نقاط مفتوحة'] : ['COMPLIANCE SCORE', 'TOTAL OBSERVATIONS', 'OPEN POINTS']
+  const metricValues = [`${complianceScore}%`, String(report.observations.length), String(openCount)]
+  const metricColors = ['#19795c', '#2057a6', '#b45309']
+  metricLabels.forEach((label, index) => {
+    const x = 62 + index * 375
+    ctx.fillStyle = '#ffffff'; ctx.shadowColor = 'rgba(15,23,42,0.07)'; ctx.shadowBlur = 12; ctx.fillRect(x, metricY, 350, 92); ctx.shadowBlur = 0
+    ctx.fillStyle = metricColors[index]; ctx.fillRect(x, metricY, 7, 92)
+    ctx.fillStyle = '#64748b'; ctx.font = '600 14px Cairo, Arial'; ctx.fillText(label, isArabic ? x + 325 : x + 25, metricY + 30)
+    ctx.fillStyle = '#0f172a'; ctx.font = '700 30px Cairo, Arial'; ctx.fillText(metricValues[index], isArabic ? x + 325 : x + 25, metricY + 70)
+  })
+  const chartY = 690
+  ctx.fillStyle = '#123f31'; ctx.font = '700 18px Cairo, Arial'; ctx.fillText(isArabic ? 'توزيع مستوى المخاطر' : 'RISK DISTRIBUTION', isArabic ? 1178 : 62, chartY)
+  const levels: Array<keyof typeof riskCounts> = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW']
+  const colors = ['#dc2626', '#f97316', '#eab308', '#16a34a']
+  levels.forEach((level, index) => {
+    const x = 62 + index * 275; const count = riskCounts[level]; const barWidth = Math.max(12, Math.min(190, count * 35))
+    ctx.fillStyle = '#e8eef0'; ctx.fillRect(x, chartY + 20, 190, 16); ctx.fillStyle = colors[index]; ctx.fillRect(isArabic ? x + 190 - barWidth : x, chartY + 20, barWidth, 16)
+    ctx.fillStyle = '#475569'; ctx.font = '600 13px Cairo, Arial'; ctx.textAlign = isArabic ? 'right' : 'left'; ctx.fillText(`${level}: ${count}`, isArabic ? x + 190 : x, chartY + 58)
+  })
+  let y = 780
   ctx.fillStyle = '#123f31'; ctx.fillRect(62, y, 1116, 48); ctx.fillStyle = '#fff'; ctx.font = '700 16px Cairo, Arial'
   const headers = isArabic ? ['#', 'الملاحظة', 'مستوى الخطورة', 'الحالة'] : ['#', 'OBSERVATION', 'RISK LEVEL', 'STATUS']
   const columns = isArabic ? [1140, 850, 300, 110] : [95, 165, 870, 1050]
   headers.forEach((header, index) => ctx.fillText(header, columns[index], y + 31))
   y += 48
+  if (report.observations.length === 0) {
+    ctx.fillStyle = '#ffffff'; ctx.fillRect(62, y, 1116, 90); ctx.strokeStyle = '#dbe4df'; ctx.strokeRect(62, y, 1116, 90)
+    ctx.fillStyle = '#64748b'; ctx.font = '500 18px Cairo, Arial'; ctx.textAlign = 'center'
+    ctx.fillText(isArabic ? 'لا توجد ملاحظات مسجلة في هذا التقرير بعد' : 'No observations have been recorded for this report yet.', canvas.width / 2, y + 53)
+  }
   report.observations.forEach((observation, index) => {
     const observationTitle = choose(observation.titleAr, observation.title)
     const lines = wrapText(ctx, observationTitle, 620).slice(0, 2)
