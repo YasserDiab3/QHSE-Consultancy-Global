@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import Header from '@/components/Header'
-import { generateReportPDF } from '@/lib/pdf'
+import { downloadClientReportPdf } from '@/lib/report-pdf'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 
@@ -148,7 +148,7 @@ export default function ClientDashboard() {
 
   const handleDownloadPDF = async (report: Report) => {
     try {
-      await generateReportPDF(report, t, language)
+      downloadClientReportPdf(report, language)
       toast.success(language === 'ar' ? 'تم تنزيل ملف PDF' : 'PDF downloaded')
     } catch {
       toast.error(language === 'ar' ? 'تعذر إنشاء ملف PDF' : 'Failed to generate PDF')

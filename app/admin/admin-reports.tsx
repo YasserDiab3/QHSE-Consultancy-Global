@@ -38,6 +38,13 @@ type ObservationImage = {
 
 const OBSERVATION_IMAGE_TYPES = ['BEFORE', 'AFTER', 'EVIDENCE'] as const
 
+const observationTemplates = [
+  { label: 'Housekeeping and access', title: 'Housekeeping and access routes require attention', riskLevel: 'MEDIUM' },
+  { label: 'PPE compliance', title: 'Personal protective equipment compliance should be improved', riskLevel: 'MEDIUM' },
+  { label: 'Emergency readiness', title: 'Emergency equipment and escape routes should be verified', riskLevel: 'HIGH' },
+  { label: 'Signage', title: 'Safety signage should be installed or updated', riskLevel: 'LOW' },
+]
+
 function ObservationImages({
   images,
   t,
@@ -468,6 +475,7 @@ function ViewReportModal({
 }) {
   const [observations, setObservations] = useState<any[]>(report.observations || [])
   const [newObs, setNewObs] = useState({ title: '', titleAr: '', description: '', descriptionAr: '', riskLevel: 'LOW', status: 'OPEN' })
+  const [quickPoints, setQuickPoints] = useState('')
   const [showObsForm, setShowObsForm] = useState(false)
   const [uploadingImageTarget, setUploadingImageTarget] = useState<string | null>(null)
 
@@ -493,6 +501,30 @@ function ViewReportModal({
       toast.success(t('common.success'))
     } catch {
       toast.error(t('common.error'))
+    }
+  }
+
+  const addQuickPoints = async () => {
+    const points = quickPoints.split('\n').map((point) => point.trim()).filter(Boolean)
+    if (!points.length) return
+
+    try {
+      const created: any[] = []
+      for (const title of points) {
+        const response = await fetch('/api/observations', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reportId: report.id, title, riskLevel: 'MEDIUM', status: 'OPEN' }),
+        })
+        const data = await response.json().catch(() => null)
+        if (!response.ok) throw new Error(data?.error || t('common.error'))
+        created.push(data)
+      }
+      setObservations((previous) => [...previous, ...created])
+      setQuickPoints('')
+      await onDataChanged?.()
+      toast.success(language === 'ar' ? `تمت إضافة ${created.length} ملاحظات` : `${created.length} observations added`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('common.error'))
     }
   }
 
@@ -606,6 +638,13 @@ function ViewReportModal({
             {showObsForm && (
               <div className="card mb-4 bg-gray-50">
                 <div className="space-y-3">
+                  <div className="flex flex-wrap gap-2">
+                    {observationTemplates.map((template) => (
+                      <button key={template.label} type="button" onClick={() => setNewObs((current) => ({ ...current, title: template.title, riskLevel: template.riskLevel }))} className="rounded-full border border-primary-200 bg-white px-3 py-1.5 text-xs font-medium text-primary-700 transition hover:bg-primary-50">
+                        {template.label}
+                      </button>
+                    ))}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <input
                       placeholder={t('reports.observation') + ' (EN)'}
@@ -657,6 +696,13 @@ function ViewReportModal({
                     </select>
                   </div>
                   <button onClick={addObservation} className="btn-primary px-4 py-2 text-sm">{t('common.save')}</button>
+                  <div className="border-t border-gray-200 pt-4">
+                    <label className="label-field">{language === 'ar' ? 'إضافة نقاط متعددة بسرعة (نقطة بكل سطر)' : 'Quick add multiple observations (one per line)'}</label>
+                    <textarea value={quickPoints} onChange={(event) => setQuickPoints(event.target.value)} rows={4} className="input-field resize-y" placeholder={language === 'ar' ? 'مثال: ممر الطوارئ يحتاج إلى إخلاء' : 'Example: Emergency exit route needs to be cleared'} />
+                    <button type="button" onClick={() => void addQuickPoints()} disabled={!quickPoints.trim()} className="btn-secondary mt-3 px-4 py-2 text-sm">
+                      <Plus className="h-4 w-4" />{language === 'ar' ? 'إضافة النقاط' : 'Add points'}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
