@@ -10,9 +10,11 @@ import {
   X,
   Loader2,
   Image as ImageIcon,
+  Download,
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import toast from 'react-hot-toast'
+import { downloadClientReportPdf } from '@/lib/report-pdf'
 
 type Report = {
   id: string
@@ -43,6 +45,15 @@ const observationTemplates = [
   { label: 'PPE compliance', title: 'Personal protective equipment compliance should be improved', riskLevel: 'MEDIUM' },
   { label: 'Emergency readiness', title: 'Emergency equipment and escape routes should be verified', riskLevel: 'HIGH' },
   { label: 'Signage', title: 'Safety signage should be installed or updated', riskLevel: 'LOW' },
+]
+
+const foodSafetyEgyptTemplates = [
+  { label: 'PRPs: hygiene & sanitation', title: 'Documented cleaning, sanitation, and personal-hygiene prerequisite programs require verification', titleAr: 'يلزم التحقق من برامج المتطلبات الأساسية الخاصة بالتنظيف والتطهير والنظافة الشخصية', riskLevel: 'HIGH' },
+  { label: 'HACCP plan', title: 'HACCP hazard analysis, critical limits, monitoring, and corrective actions require review', titleAr: 'يلزم مراجعة تحليل المخاطر ونقاط التحكم الحرجة والحدود الحرجة والرصد والإجراءات التصحيحية بنظام الهاسب', riskLevel: 'HIGH' },
+  { label: 'Traceability & recall', title: 'Food traceability records and withdrawal/recall procedure require testing and evidence', titleAr: 'يلزم اختبار وتوثيق سجلات تتبع الغذاء وإجراءات السحب والاسترجاع', riskLevel: 'HIGH' },
+  { label: 'Temperature control', title: 'Receiving, storage, and display temperature records require continuous verification', titleAr: 'يلزم التحقق المستمر من سجلات درجات حرارة الاستلام والتخزين والعرض', riskLevel: 'MEDIUM' },
+  { label: 'Pest control', title: 'Integrated pest-control program, inspections, and corrective actions require review', titleAr: 'يلزم مراجعة برنامج مكافحة الآفات المتكامل وسجلات الفحص والإجراءات التصحيحية', riskLevel: 'MEDIUM' },
+  { label: 'NFSA registration', title: 'Food establishment registration and applicable NFSA documentation require verification', titleAr: 'يلزم التحقق من تسجيل المنشأة الغذائية والمستندات المطلوبة لدى الهيئة القومية لسلامة الغذاء', riskLevel: 'MEDIUM' },
 ]
 
 function ObservationImages({
@@ -419,6 +430,9 @@ export default function AdminReports({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
+                      <button onClick={() => downloadClientReportPdf(report, language)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title={language === 'ar' ? 'تصدير التقرير' : 'Export report'}>
+                        <Download className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => startEdit(report)}
                         className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
@@ -478,6 +492,7 @@ function ViewReportModal({
   const [quickPoints, setQuickPoints] = useState('')
   const [showObsForm, setShowObsForm] = useState(false)
   const [uploadingImageTarget, setUploadingImageTarget] = useState<string | null>(null)
+  const templates = report.category === 'FOOD_SAFETY' ? foodSafetyEgyptTemplates : observationTemplates
 
   const addObservation = async () => {
     if (!newObs.title) return
@@ -639,8 +654,8 @@ function ViewReportModal({
               <div className="card mb-4 bg-gray-50">
                 <div className="space-y-3">
                   <div className="flex flex-wrap gap-2">
-                    {observationTemplates.map((template) => (
-                      <button key={template.label} type="button" onClick={() => setNewObs((current) => ({ ...current, title: template.title, riskLevel: template.riskLevel }))} className="rounded-full border border-primary-200 bg-white px-3 py-1.5 text-xs font-medium text-primary-700 transition hover:bg-primary-50">
+                    {templates.map((template) => (
+                      <button key={template.label} type="button" onClick={() => setNewObs((current) => ({ ...current, title: template.title, titleAr: 'titleAr' in template && typeof template.titleAr === 'string' ? template.titleAr : '', riskLevel: template.riskLevel }))} className="rounded-full border border-primary-200 bg-white px-3 py-1.5 text-xs font-medium text-primary-700 transition hover:bg-primary-50">
                         {template.label}
                       </button>
                     ))}

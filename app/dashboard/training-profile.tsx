@@ -2,9 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Award, BookOpenCheck, Download, Loader2, UserRound } from 'lucide-react'
+import { Award, BookOpenCheck, Download, Loader2, Mail, ShieldCheck, UserRound } from 'lucide-react'
 import { useLanguage } from '@/context'
 import toast from 'react-hot-toast'
+import BrandLogo from '@/components/BrandLogo'
+import Header from '@/components/Header'
+import Footer from '@/components/Footer'
 
 type Enrollment = {
   id: string
@@ -35,7 +38,10 @@ export default function TrainingProfile() {
       language === 'ar'
         ? {
             title: 'ملفي التدريبي',
-            subtitle: 'تابع نتائج التدريب وحمّل شهاداتك مباشرة بعد الاجتياز.',
+            subtitle: 'تابع تقدمك ونتائجك وشهاداتك من مساحة تدريبية واحدة.',
+            welcome: 'مرحبًا بك',
+            identity: 'هوية المتدرب',
+            email: 'البريد الإلكتروني',
             completed: 'دورات مجتازة',
             certificates: 'شهادات متاحة',
             avgScore: 'متوسط النتائج',
@@ -50,7 +56,10 @@ export default function TrainingProfile() {
           }
         : {
             title: 'My training profile',
-            subtitle: 'Track training results and download certificates immediately after passing.',
+            subtitle: 'Track your progress, results, and certificates in one professional training space.',
+            welcome: 'Welcome back',
+            identity: 'Trainee identity',
+            email: 'Email address',
             completed: 'Passed courses',
             certificates: 'Available certificates',
             avgScore: 'Average score',
@@ -93,33 +102,45 @@ export default function TrainingProfile() {
     value ? new Date(value).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US') : '-'
 
   if (loading) {
-    return <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary-500" /></div>
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50"><Loader2 className="h-8 w-8 animate-spin text-primary-500" /></div>
   }
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-[28px] bg-gradient-to-br from-primary-900 to-primary-700 p-8 text-white shadow-xl">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm">
-              <UserRound className="h-4 w-4" />
-              {profile?.user.email}
+    <div className="min-h-screen bg-slate-50">
+      <Header />
+      <main className="container-custom py-28">
+        <div className="space-y-8">
+          <section className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#103f31] via-primary-800 to-[#1e5b46] p-7 text-white shadow-2xl md:p-10">
+            <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-lime-300/10 blur-3xl" />
+            <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-5">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white p-2 shadow-lg">
+                  <BrandLogo variant="stacked" className="h-full w-full" />
+                </div>
+                <div>
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold tracking-wide text-white/85"><ShieldCheck className="h-3.5 w-3.5" />QHSSE TRAINING</div>
+                  <p className="text-sm text-white/70">{copy.welcome}</p>
+                  <h1 className="mt-1 text-3xl font-bold md:text-4xl">{profile?.user.name || profile?.user.email || copy.title}</h1>
+                  <p className="mt-3 max-w-2xl text-white/80">{copy.subtitle}</p>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-5 backdrop-blur-sm lg:min-w-[280px]">
+                <p className="text-xs font-semibold uppercase tracking-wider text-white/65">{copy.identity}</p>
+                <div className="mt-3 flex items-center gap-3"><UserRound className="h-5 w-5 text-lime-200" /><span className="font-semibold">{profile?.user.name || '-'}</span></div>
+                <div className="mt-3 flex items-center gap-3 text-sm text-white/75"><Mail className="h-4 w-4 text-lime-200" /><span>{profile?.user.email || '-'}</span></div>
+              </div>
             </div>
-            <h2 className="text-3xl font-bold">{copy.title}</h2>
-            <p className="mt-3 max-w-2xl text-white/80">{copy.subtitle}</p>
+          </section>
+
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <Metric icon={BookOpenCheck} label={copy.completed} value={passed.length} />
+            <Metric icon={Award} label={copy.certificates} value={passed.filter((item) => item.certificateCode).length} />
+            <Metric icon={Download} label={copy.avgScore} value={`${averageScore}%`} />
           </div>
-          <BookOpenCheck className="h-16 w-16 text-white/70" />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-        <Metric icon={BookOpenCheck} label={copy.completed} value={passed.length} />
-        <Metric icon={Award} label={copy.certificates} value={passed.filter((item) => item.certificateCode).length} />
-        <Metric icon={Download} label={copy.avgScore} value={`${averageScore}%`} />
-      </div>
-
-      <section className="card p-6">
-        <div className="overflow-x-auto">
+          <section className="card overflow-hidden p-0">
+            <div className="border-b border-slate-100 bg-white px-6 py-5"><h2 className="text-xl font-bold text-slate-900">{copy.title}</h2><p className="mt-1 text-sm text-slate-500">{copy.email}: {profile?.user.email || '-'}</p></div>
+            <div className="overflow-x-auto p-3 md:p-6">
           <table className="w-full min-w-[760px]">
             <thead>
               <tr className="border-b border-gray-200 text-sm text-gray-500">
@@ -158,8 +179,11 @@ export default function TrainingProfile() {
               )}
             </tbody>
           </table>
+            </div>
+          </section>
         </div>
-      </section>
+      </main>
+      <Footer />
     </div>
   )
 }
