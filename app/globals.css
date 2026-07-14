@@ -121,3 +121,9 @@
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400;
 }
+
+@media print {
+  body * { visibility: hidden; }
+  #client-profile-print, #client-profile-print * { visibility: visible; }
+  #client-profile-print { position: absolute; inset: 0; width: 100%; }
+}
