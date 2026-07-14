@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   FileText,
   Globe2,
+  GraduationCap,
   MessageSquare,
   TrendingUp,
   Users,
@@ -21,6 +22,7 @@ import AdminClients from './admin-clients'
 import AdminActivityLog from './admin-activity-log'
 import AdminContactRequests from './admin-contact-requests'
 import AdminJobs from './admin-jobs'
+import AdminTraining from './admin-training'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 
@@ -52,7 +54,7 @@ type ReportFilterPreset = {
 } | null
 
 type RequestStatusPreset = 'ALL' | 'NEW' | 'CONTACTED' | 'CLOSED'
-type AdminTab = 'overview' | 'reports' | 'clients' | 'jobs' | 'requests' | 'activity'
+type AdminTab = 'overview' | 'reports' | 'clients' | 'training' | 'jobs' | 'requests' | 'activity'
 
 export default function AdminDashboardClient() {
   const { t, language, dir } = useLanguage()
@@ -110,6 +112,7 @@ export default function AdminDashboardClient() {
       { id: 'overview' as const, label: t('dashboard.title'), icon: BarChart3 },
       { id: 'reports' as const, label: t('admin.reports'), icon: FileText },
       { id: 'clients' as const, label: t('admin.clients'), icon: Users },
+      { id: 'training' as const, label: language === 'ar' ? 'التدريب' : 'Training', icon: GraduationCap },
       { id: 'jobs' as const, label: language === 'ar' ? 'الوظائف' : 'Jobs', icon: BriefcaseBusiness },
       { id: 'requests' as const, label: language === 'ar' ? 'طلبات التواصل' : 'Contact Requests', icon: MessageSquare },
       { id: 'activity' as const, label: t('admin.activityLog'), icon: Activity },
@@ -179,6 +182,7 @@ export default function AdminDashboardClient() {
             <AdminReports onDataChanged={fetchStats} filterPreset={reportFilterPreset} />
           )}
           {activeTab === 'clients' && <AdminClients onDataChanged={fetchStats} />}
+          {activeTab === 'training' && <AdminTraining onDataChanged={fetchStats} />}
           {activeTab === 'jobs' && <AdminJobs onDataChanged={fetchStats} />}
           {activeTab === 'requests' && (
             <AdminContactRequests

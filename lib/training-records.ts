@@ -51,6 +51,20 @@ export type TrainingCertificateRecord = {
   category: string
 }
 
+export type AdminTrainingEnrollmentRecord = TrainingCertificateRecord & {
+  createdAt: Date | string
+  updatedAt: Date | string
+}
+
+export type TrainingProfileRecord = {
+  user: {
+    id: string
+    name: string | null
+    email: string | null
+  }
+  enrollments: AdminTrainingEnrollmentRecord[]
+}
+
 export type TrainingAttemptResult = {
   score: number
   totalQuestions: number
@@ -88,6 +102,16 @@ function numberValue(value: number, fallback = 0) {
 
 function createCertificateCode() {
   return `QHSSE-TR-${new Date().getFullYear()}-${randomUUID().slice(0, 8).toUpperCase()}`
+}
+
+function slugify(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return slug || `training-${randomUUID().slice(0, 8)}`
 }
 
 async function createTrainingTables() {
@@ -413,6 +437,22 @@ export async function listPublishedTrainingCourses() {
   `)
 }
 
+export async function listAdminTrainingCourses() {
+  await ensureTrainingTables()
+
+  return prisma.$queryRawUnsafe<Array<TrainingCourseRecord & { questionCount: number; enrollmentCount: number }>>(`
+    SELECT
+      c.*,
+      COUNT(DISTINCT q."id")::int AS "questionCount",
+      COUNT(DISTINCT e."id")::int AS "enrollmentCount"
+    FROM "TrainingCourse" c
+    LEFT JOIN "TrainingQuestion" q ON q."courseId" = c."id"
+    LEFT JOIN "TrainingEnrollment" e ON e."courseId" = c."id"
+    GROUP BY c."id"
+    ORDER BY c."sortOrder" ASC, c."createdAt" DESC
+  `)
+}
+
 export async function getTrainingCourseBySlug(slug: string) {
   await ensureTrainingTables()
 
@@ -425,6 +465,102 @@ export async function getTrainingCourseBySlug(slug: string) {
   `)
 
   return courses[0] ?? null
+}
+
+export async function createTrainingCourse(input: {
+  title: string
+  titleAr?: string | null
+  category: string
+  description?: string | null
+  descriptionAr?: string | null
+  content: string
+  contentAr?: string | null
+  passingScore?: number
+  isPublished?: boolean
+  questions: Array<{
+    question: string
+    questionAr?: string | null
+    optionA: string
+    optionAAr?: string | null
+    optionB: string
+    optionBAr?: string | null
+    optionC: string
+    optionCAr?: string | null
+    optionD: string
+    optionDAr?: string | null
+    correctOption: string
+  }>
+}) {
+  await ensureTrainingTables()
+
+  const title = input.title.trim()
+  const content = input.content.trim()
+  const category = input.category.trim() || 'SAFETY'
+  const passingScore = Math.min(100, Math.max(1, Math.round(input.passingScore ?? 80)))
+  const validQuestions = input.questions.filter((question) => {
+    return (
+      question.question?.trim() &&
+      question.optionA?.trim() &&
+      question.optionB?.trim() &&
+      question.optionC?.trim() &&
+      question.optionD?.trim() &&
+      ['A', 'B', 'C', 'D'].includes(String(question.correctOption).trim().toUpperCase())
+    )
+  })
+
+  if (!title || !content || validQuestions.length === 0) {
+    throw new Error('Course title, content, and at least one complete question are required')
+  }
+
+  const id = randomUUID()
+  const baseSlug = slugify(title)
+  let slug = baseSlug
+  let suffix = 1
+
+  while (true) {
+    const existing = await prisma.$queryRawUnsafe<{ id: string }[]>(`
+      SELECT "id" FROM "TrainingCourse" WHERE "slug" = ${sqlValue(slug)} LIMIT 1
+    `)
+    if (!existing[0]) break
+    suffix += 1
+    slug = `${baseSlug}-${suffix}`
+  }
+
+  const sortRows = await prisma.$queryRawUnsafe<{ nextSortOrder: number }[]>(`
+    SELECT COALESCE(MAX("sortOrder"), 0)::int + 1 AS "nextSortOrder" FROM "TrainingCourse"
+  `)
+  const sortOrder = Number(sortRows[0]?.nextSortOrder ?? 1)
+
+  await prisma.$executeRawUnsafe(`
+    INSERT INTO "TrainingCourse" (
+      "id", "slug", "title", "titleAr", "category", "description", "descriptionAr",
+      "content", "contentAr", "passingScore", "isPublished", "sortOrder",
+      "createdAt", "updatedAt"
+    ) VALUES (
+      ${sqlValue(id)}, ${sqlValue(slug)}, ${sqlValue(title)}, ${sqlValue(input.titleAr)},
+      ${sqlValue(category)}, ${sqlValue(input.description)}, ${sqlValue(input.descriptionAr)},
+      ${sqlValue(content)}, ${sqlValue(input.contentAr)}, ${numberValue(passingScore, 80)},
+      ${boolValue(input.isPublished ?? true)}, ${numberValue(sortOrder)},
+      CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+    )
+  `)
+
+  for (const [index, question] of validQuestions.entries()) {
+    await prisma.$executeRawUnsafe(`
+      INSERT INTO "TrainingQuestion" (
+        "id", "courseId", "question", "questionAr", "optionA", "optionAAr", "optionB", "optionBAr",
+        "optionC", "optionCAr", "optionD", "optionDAr", "correctOption", "sortOrder"
+      ) VALUES (
+        ${sqlValue(randomUUID())}, ${sqlValue(id)}, ${sqlValue(question.question.trim())},
+        ${sqlValue(question.questionAr)}, ${sqlValue(question.optionA.trim())}, ${sqlValue(question.optionAAr)},
+        ${sqlValue(question.optionB.trim())}, ${sqlValue(question.optionBAr)}, ${sqlValue(question.optionC.trim())},
+        ${sqlValue(question.optionCAr)}, ${sqlValue(question.optionD.trim())}, ${sqlValue(question.optionDAr)},
+        ${sqlValue(question.correctOption.trim().toUpperCase())}, ${numberValue(index + 1)}
+      )
+    `)
+  }
+
+  return { id, slug }
 }
 
 export async function listTrainingQuestions(courseId: string, includeAnswers = false) {
@@ -590,4 +726,76 @@ export async function getTrainingCertificateByCode(code: string) {
   `)
 
   return rows[0] ?? null
+}
+
+
+export async function listAdminTrainingEnrollments() {
+  await ensureTrainingTables()
+
+  return prisma.$queryRawUnsafe<AdminTrainingEnrollmentRecord[]>(`
+    SELECT
+      e."id",
+      e."userId",
+      e."courseId",
+      e."status",
+      e."score",
+      e."passed",
+      e."attempts",
+      e."certificateCode",
+      e."certificateIssuedAt",
+      e."completedAt",
+      e."createdAt",
+      e."updatedAt",
+      u."name" AS "userName",
+      u."email" AS "userEmail",
+      c."title" AS "courseTitle",
+      c."titleAr" AS "courseTitleAr",
+      c."category"
+    FROM "TrainingEnrollment" e
+    INNER JOIN "TrainingCourse" c ON c."id" = e."courseId"
+    LEFT JOIN "User" u ON u."id" = e."userId"
+    ORDER BY e."updatedAt" DESC
+  `)
+}
+
+export async function getTrainingProfile(userId: string) {
+  await ensureTrainingTables()
+
+  const users = await prisma.$queryRawUnsafe<Array<{ id: string; name: string | null; email: string | null }>>(`
+    SELECT "id", "name", "email"
+    FROM "User"
+    WHERE "id" = ${sqlValue(userId)}
+    LIMIT 1
+  `)
+
+  const enrollments = await prisma.$queryRawUnsafe<AdminTrainingEnrollmentRecord[]>(`
+    SELECT
+      e."id",
+      e."userId",
+      e."courseId",
+      e."status",
+      e."score",
+      e."passed",
+      e."attempts",
+      e."certificateCode",
+      e."certificateIssuedAt",
+      e."completedAt",
+      e."createdAt",
+      e."updatedAt",
+      u."name" AS "userName",
+      u."email" AS "userEmail",
+      c."title" AS "courseTitle",
+      c."titleAr" AS "courseTitleAr",
+      c."category"
+    FROM "TrainingEnrollment" e
+    INNER JOIN "TrainingCourse" c ON c."id" = e."courseId"
+    LEFT JOIN "User" u ON u."id" = e."userId"
+    WHERE e."userId" = ${sqlValue(userId)}
+    ORDER BY e."updatedAt" DESC
+  `)
+
+  return {
+    user: users[0] ?? { id: userId, name: null, email: null },
+    enrollments,
+  } satisfies TrainingProfileRecord
 }

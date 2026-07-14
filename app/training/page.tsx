@@ -6,7 +6,7 @@ import { useSession } from 'next-auth/react'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 import { useLanguage } from '@/context'
-import { ArrowRight, Award, BookOpenCheck, ClipboardCheck, Loader2, ShieldCheck, Utensils } from 'lucide-react'
+import { ArrowRight, Award, BookOpenCheck, ClipboardCheck, Loader2, ShieldCheck, UserRound, Utensils } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 type TrainingCourse = {
@@ -117,6 +117,12 @@ export default function TrainingPage() {
                   </Link>
                 </div>
               </div>
+            )}
+            {status === 'authenticated' && (
+              <Link href="/training/profile" className="btn-secondary mt-8 inline-flex justify-center px-6 py-3">
+                <UserRound className="h-4 w-4" />
+                {language === 'ar' ? 'ملفي التدريبي' : 'My training profile'}
+              </Link>
             )}
           </div>
         </div>
