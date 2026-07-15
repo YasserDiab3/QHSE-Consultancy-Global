@@ -1,24 +1,24 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getClientAccountById } from '@/lib/client-records'
+import { listReportRecords } from '@/lib/report-records'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(_: Request, { params }: { params: { id: string } }) {
   try {
     await requireAdmin()
-    const client = await prisma.client.findUnique({
-      where: { id: params.id },
-      include: { user: { select: { name: true, email: true, phone: true } }, reports: { include: { observations: true }, orderBy: { date: 'desc' } } },
-    })
+    const client = await getClientAccountById(params.id)
     if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+    const reports = await listReportRecords({ clientId: params.id })
     const [documents, financialRecords] = await Promise.all([
       prisma.clientDocument.findMany({ where: { clientId: params.id }, orderBy: { createdAt: 'desc' } }).catch(() => []),
       prisma.financialRecord.findMany({ where: { clientId: params.id }, orderBy: { createdAt: 'desc' } }).catch(() => []),
     ])
-    const observationCount = client.reports.reduce((total, report) => total + report.observations.length, 0)
+    const observationCount = reports.reduce((total, report) => total + report.observations.length, 0)
     const financialTotal = financialRecords.reduce((total, item) => total + Number(item.amount), 0)
-    return NextResponse.json({ client: { ...client, documents, financialRecords }, summary: { visits: client.reports.length, reports: client.reports.length, observations: observationCount, financialTotal } })
+    return NextResponse.json({ client: { ...client, reports, documents, financialRecords }, summary: { visits: reports.length, reports: reports.length, observations: observationCount, financialTotal } })
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }) }
 }
 
