@@ -278,6 +278,9 @@ model TrainingQuestion {
   optionDAr     String?
   correctOption String
   sortOrder     Int            @default(0)
+  clientResponse String?
+  correctiveAction String?
+  correctiveActionStatus String?
   createdAt     DateTime       @default(now())
 
   @@index([courseId, sortOrder])

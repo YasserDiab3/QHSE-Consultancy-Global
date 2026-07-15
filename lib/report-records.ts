@@ -34,6 +34,9 @@ type RawObservationRow = {
   riskLevel: string
   status: string
   sortOrder: number | null
+  clientResponse: string | null
+  correctiveAction: string | null
+  correctiveActionStatus: string | null
 }
 
 type RawImageRow = {
@@ -87,6 +90,9 @@ type ReportSchemaInfo = {
     riskLevel: string | null
     status: string | null
     sortOrder: string | null
+    clientResponse: string | null
+    correctiveAction: string | null
+    correctiveActionStatus: string | null
   }
   image: {
     id: string | null
@@ -262,6 +268,9 @@ async function loadSchemaInfo(): Promise<ReportSchemaInfo> {
       riskLevel: resolveOptionalColumn(observationColumns, ['riskLevel', 'risk_level', 'risklevel']),
       status: resolveOptionalColumn(observationColumns, ['status']),
       sortOrder: resolveOptionalColumn(observationColumns, ['sortOrder', 'sort_order', 'sortorder']),
+      clientResponse: resolveOptionalColumn(observationColumns, ['clientResponse', 'client_response']),
+      correctiveAction: resolveOptionalColumn(observationColumns, ['correctiveAction', 'corrective_action']),
+      correctiveActionStatus: resolveOptionalColumn(observationColumns, ['correctiveActionStatus', 'corrective_action_status']),
     },
     image: {
       id: resolveOptionalColumn(imageColumns, ['id']),
@@ -315,6 +324,9 @@ async function loadObservations(reportIds: string[]) {
         o.${quoteIdentifier(schema.observation.riskLevel)} AS "riskLevel",
         ${schema.observation.status ? `o.${quoteIdentifier(schema.observation.status)}` : `'OPEN'`} AS "status",
         ${schema.observation.sortOrder ? `o.${quoteIdentifier(schema.observation.sortOrder)}` : '0'} AS "sortOrder"
+        , ${selectExpr('o', schema.observation.clientResponse, 'clientResponse')}
+        , ${selectExpr('o', schema.observation.correctiveAction, 'correctiveAction')}
+        , ${selectExpr('o', schema.observation.correctiveActionStatus, 'correctiveActionStatus')}
       FROM ${quoteIdentifier(schema.observationTable)} o
       WHERE o.${quoteIdentifier(schema.observation.reportId)} IN (${reportIdsList})
       ORDER BY ${schema.observation.sortOrder ? `o.${quoteIdentifier(schema.observation.sortOrder)}` : '1'} ASC
@@ -374,6 +386,9 @@ async function loadObservations(reportIds: string[]) {
         riskLevel: observation.riskLevel,
         status: observation.status,
         sortOrder: observation.sortOrder ?? 0,
+        clientResponse: observation.clientResponse ?? undefined,
+        correctiveAction: observation.correctiveAction ?? undefined,
+        correctiveActionStatus: observation.correctiveActionStatus ?? undefined,
         images: imagesByObservationId.get(observation.id) ?? [],
       })
       grouped.set(observation.reportId, current)

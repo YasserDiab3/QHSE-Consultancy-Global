@@ -53,6 +53,9 @@ type Observation = {
   riskLevel: string
   status: string
   images: Image[]
+  clientResponse?: string
+  correctiveAction?: string
+  correctiveActionStatus?: string
 }
 
 type Image = {
@@ -503,6 +506,7 @@ function ReportDetail({
                       </p>
                     )}
                     <ObservationImages images={obs.images} t={t} />
+                    <ClientActionForm observation={obs} language={language} />
                   </div>
                 </div>
               </div>
@@ -512,4 +516,13 @@ function ReportDetail({
       </div>
     </div>
   )
+}
+
+function ClientActionForm({ observation, language }: { observation: Observation; language: string }) {
+  const [response, setResponse] = useState(observation.clientResponse || '')
+  const [action, setAction] = useState(observation.correctiveAction || '')
+  const [status, setStatus] = useState(observation.correctiveActionStatus || 'IN_PROGRESS')
+  const [saving, setSaving] = useState(false)
+  const save = async () => { setSaving(true); try { const result = await fetch(`/api/observations/${observation.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientResponse: response, correctiveAction: action, correctiveActionStatus: status }) }); if (!result.ok) throw new Error(); toast.success(language === 'ar' ? 'تم حفظ الرد والإجراء التصحيحي' : 'Response and corrective action saved') } catch { toast.error(language === 'ar' ? 'تعذر الحفظ' : 'Unable to save') } finally { setSaving(false) } }
+  return <div className="mt-4 rounded-xl border border-primary-100 bg-primary-50/60 p-4"><h5 className="font-bold text-primary-900">{language === 'ar' ? 'رد العميل والإجراء التصحيحي' : 'Client response and corrective action'}</h5><textarea value={response} onChange={(event) => setResponse(event.target.value)} className="input-field mt-3 resize-none bg-white" rows={2} placeholder={language === 'ar' ? 'أضف ردك على ملاحظة الاستشاري' : 'Add your response to the consultant observation'} /><textarea value={action} onChange={(event) => setAction(event.target.value)} className="input-field mt-3 resize-none bg-white" rows={2} placeholder={language === 'ar' ? 'الإجراء التصحيحي المتخذ أو المخطط' : 'Corrective action taken or planned'} /><div className="mt-3 flex flex-wrap items-center gap-3"><select value={status} onChange={(event) => setStatus(event.target.value)} className="input-field w-auto bg-white"><option value="IN_PROGRESS">{language === 'ar' ? 'قيد التنفيذ' : 'In progress'}</option><option value="COMPLETED">{language === 'ar' ? 'مكتمل' : 'Completed'}</option><option value="PENDING">{language === 'ar' ? 'بانتظار الإجراء' : 'Pending'}</option></select><button onClick={() => void save()} disabled={saving} className="btn-primary px-4 py-2">{saving ? '...' : language === 'ar' ? 'حفظ الإجراء' : 'Save action'}</button></div></div>
 }

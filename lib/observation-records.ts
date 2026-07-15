@@ -19,6 +19,9 @@ type ObservationSchemaInfo = {
     riskLevel: string
     status: string | null
     sortOrder: string | null
+    clientResponse: string | null
+    correctiveAction: string | null
+    correctiveActionStatus: string | null
     createdAt: string | null
     updatedAt: string | null
   }
@@ -33,6 +36,9 @@ type ObservationInput = {
   riskLevel: string
   status?: string
   sortOrder?: number
+  clientResponse?: string
+  correctiveAction?: string
+  correctiveActionStatus?: string
 }
 
 let schemaInfoPromise: Promise<ObservationSchemaInfo> | null = null
@@ -114,6 +120,9 @@ async function loadSchemaInfo(): Promise<ObservationSchemaInfo> {
       riskLevel: resolveRequiredColumn(observationColumns, ['riskLevel', 'risk_level', 'risklevel'], 'Risk level'),
       status: resolveOptionalColumn(observationColumns, ['status']),
       sortOrder: resolveOptionalColumn(observationColumns, ['sortOrder', 'sort_order', 'sortorder']),
+      clientResponse: resolveOptionalColumn(observationColumns, ['clientResponse', 'client_response']),
+      correctiveAction: resolveOptionalColumn(observationColumns, ['correctiveAction', 'corrective_action']),
+      correctiveActionStatus: resolveOptionalColumn(observationColumns, ['correctiveActionStatus', 'corrective_action_status']),
       createdAt: resolveOptionalColumn(observationColumns, ['createdAt', 'created_at', 'createdat']),
       updatedAt: resolveOptionalColumn(observationColumns, ['updatedAt', 'updated_at', 'updatedat']),
     },
@@ -203,6 +212,9 @@ export async function updateObservationRecord(id: string, input: Partial<Observa
   if (schema.observation.sortOrder && typeof input.sortOrder !== 'undefined') {
     updates.push(`${quoteIdentifier(schema.observation.sortOrder)} = ${input.sortOrder ?? 0}`)
   }
+  if (schema.observation.clientResponse && typeof input.clientResponse !== 'undefined') updates.push(`${quoteIdentifier(schema.observation.clientResponse)} = ${sqlValue(input.clientResponse)}`)
+  if (schema.observation.correctiveAction && typeof input.correctiveAction !== 'undefined') updates.push(`${quoteIdentifier(schema.observation.correctiveAction)} = ${sqlValue(input.correctiveAction)}`)
+  if (schema.observation.correctiveActionStatus && typeof input.correctiveActionStatus !== 'undefined') updates.push(`${quoteIdentifier(schema.observation.correctiveActionStatus)} = ${sqlValue(input.correctiveActionStatus)}`)
   if (schema.observation.updatedAt) {
     updates.push(`${quoteIdentifier(schema.observation.updatedAt)} = CURRENT_TIMESTAMP`)
   }
