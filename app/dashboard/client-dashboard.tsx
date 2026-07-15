@@ -21,6 +21,8 @@ import {
   Loader2,
   X,
   Image as ImageIcon,
+  LayoutDashboard,
+  BarChart3,
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import Header from '@/components/Header'
@@ -120,6 +122,7 @@ export default function ClientDashboard() {
     dateTo: '',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance'>('dashboard')
 
   const fetchReports = useCallback(async () => {
     setLoading(true)
@@ -189,6 +192,16 @@ export default function ClientDashboard() {
               </button>
             </div>
           </div>
+
+          <div className="mb-6 flex w-fit items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">
+            {[
+              ['dashboard', language === 'ar' ? 'لوحة التحكم' : 'Dashboard', LayoutDashboard],
+              ['reports', language === 'ar' ? 'تقارير الزيارات' : 'Visit reports', FileText],
+              ['performance', language === 'ar' ? 'مؤشرات الأداء' : 'Performance', BarChart3],
+            ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
+          </div>
+
+          {activeTab === 'dashboard' ? <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} /> : activeTab === 'performance' ? <ClientPerformance reports={reports} language={language} /> : <>
 
           {/* Filters */}
           {showFilters && (
@@ -348,11 +361,31 @@ export default function ClientDashboard() {
               )}
             </div>
           )}
+          </>}
         </div>
       </main>
     </div>
   )
 }
+
+function ClientOverview({ reports, language, onReports }: { reports: Report[]; language: string; onReports: () => void }) {
+  const observations = reports.flatMap((report) => report.observations)
+  const open = observations.filter((item) => !['CLOSED', 'RESOLVED'].includes(item.status)).length
+  const closed = observations.length - open
+  return <div className="space-y-6"><div className="grid gap-4 md:grid-cols-3"><ProfileCard label={language === 'ar' ? 'تقارير الزيارات' : 'Visit reports'} value={reports.length} icon={<FileText />} /><ProfileCard label={language === 'ar' ? 'ملاحظات مفتوحة' : 'Open observations'} value={open} icon={<AlertTriangle />} /><ProfileCard label={language === 'ar' ? 'ملاحظات مغلقة' : 'Closed observations'} value={closed} icon={<CheckCircle2 />} /></div><div className="card"><h2 className="text-lg font-bold text-gray-900">{language === 'ar' ? 'الوصول السريع' : 'Quick access'}</h2><p className="mt-2 text-gray-600">{language === 'ar' ? 'استعرض تقارير الزيارات، نزّل النسخ المعتمدة، وتابع مؤشرات الأداء من حسابك.' : 'Review visit reports, download approved copies, and monitor performance from your account.'}</p><button onClick={onReports} className="btn-primary mt-5 px-4 py-2">{language === 'ar' ? 'فتح تقارير الزيارات' : 'Open visit reports'}</button></div></div>
+}
+
+function ClientPerformance({ reports, language }: { reports: Report[]; language: string }) {
+  const observations = reports.flatMap((report) => report.observations)
+  const count = (level: string) => observations.filter((item) => item.riskLevel === level).length
+  const total = observations.length
+  const closed = observations.filter((item) => ['CLOSED', 'RESOLVED'].includes(item.status)).length
+  const closure = total ? Math.round((closed / total) * 100) : 0
+  const compliance = Math.max(0, 100 - count('CRITICAL') * 25 - count('HIGH') * 12 - count('MEDIUM') * 5 - count('LOW') * 2)
+  return <div className="space-y-6"><div className="grid gap-4 md:grid-cols-3"><ProfileCard label={language === 'ar' ? 'معدل إغلاق الملاحظات' : 'Observation closure'} value={`${closure}%`} icon={<CheckCircle2 />} /><ProfileCard label={language === 'ar' ? 'درجة التوافق التقديرية' : 'Estimated compliance'} value={`${compliance}%`} icon={<TrendingUp />} /><ProfileCard label={language === 'ar' ? 'المخاطر العالية والحرجة' : 'High & critical risks'} value={count('HIGH') + count('CRITICAL')} icon={<AlertTriangle />} /></div><div className="card"><h2 className="mb-5 text-lg font-bold text-gray-900">{language === 'ar' ? 'توزيع مستويات المخاطر' : 'Risk distribution'}</h2><div className="space-y-4">{[['CRITICAL', 'حرجة', 'bg-red-500'], ['HIGH', 'عالية', 'bg-orange-500'], ['MEDIUM', 'متوسطة', 'bg-amber-400'], ['LOW', 'منخفضة', 'bg-emerald-500']].map(([level, ar, color]) => <div key={level}><div className="mb-1 flex justify-between text-sm"><span>{language === 'ar' ? ar : level}</span><span>{count(level)}</span></div><div className="h-3 rounded-full bg-gray-100"><div className={`h-3 rounded-full ${color}`} style={{ width: `${total ? (count(level) / total) * 100 : 0}%` }} /></div></div>)}</div></div></div>
+}
+
+function ProfileCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) { return <div className="card"><div className="flex items-center justify-between"><span className="text-sm text-gray-600">{label}</span><span className="text-primary-600">{icon}</span></div><p className="mt-3 text-3xl font-bold text-gray-900">{value}</p></div> }
 
 function ReportDetail({
   report,
