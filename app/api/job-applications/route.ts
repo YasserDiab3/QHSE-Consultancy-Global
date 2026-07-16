@@ -4,7 +4,9 @@ import { getSession, requireAdmin } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { logActivity } from '@/lib/activity-log'
 import { sendNotificationEmail } from '@/lib/email'
-import { extname } from 'path'
+import { validateResumeFile } from '@/lib/file-validation'
+import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
+import { escapeHtml, formatValidationError, jobApplicationSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -18,33 +20,7 @@ function normalizeText(value: unknown) {
   return trimmed.length > 0 ? trimmed : undefined
 }
 
-const ALLOWED_RESUME_MIME_TYPES = new Set([
-  'application/pdf',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-])
-
 const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024
-
-function sanitizeFilename(filename: string) {
-  return filename.replace(/[^a-zA-Z0-9._-]/g, '-')
-}
-
-function resolveResumeMimeType(mimeType: string | undefined, extension: string) {
-  if (mimeType) {
-    return mimeType
-  }
-
-  if (extension === '.doc') {
-    return 'application/msword'
-  }
-
-  if (extension === '.docx') {
-    return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  }
-
-  return 'application/pdf'
-}
 
 export async function GET() {
   try {
@@ -75,14 +51,23 @@ export async function POST(request: Request) {
     const headerList = headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const formData = await request.formData()
+    const parsed = jobApplicationSchema.safeParse({
+      jobOpeningId: normalizeText(formData.get('jobOpeningId')),
+      name: normalizeText(formData.get('name')),
+      email: normalizeText(formData.get('email')),
+      phone: normalizeText(formData.get('phone')),
+      company: normalizeText(formData.get('company')),
+      coverLetter: normalizeText(formData.get('coverLetter')),
+    })
+    if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
+    const { jobOpeningId, name, email, phone, company, coverLetter } = parsed.data
 
-    const jobOpeningId = normalizeText(formData.get('jobOpeningId'))
-    const name = normalizeText(formData.get('name'))
-    const email = normalizeText(formData.get('email'))
-
-    if (!jobOpeningId || !name || !email) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const rateLimit = await enforceRateLimit(
+      request,
+      { keyPrefix: 'job-application', limit: 3, windowMs: 60 * 60 * 1000 },
+      `${email}:${jobOpeningId}`
+    )
+    if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
     const resume = formData.get('resume')
 
@@ -92,13 +77,6 @@ export async function POST(request: Request) {
 
     if (resume.size > MAX_RESUME_SIZE_BYTES) {
       return NextResponse.json({ error: 'Resume file is too large' }, { status: 400 })
-    }
-
-    const resumeMimeType = normalizeText(resume.type)
-    const resumeExtension = extname(resume.name || '').toLowerCase()
-
-    if (!ALLOWED_RESUME_MIME_TYPES.has(resumeMimeType || '') && !['.pdf', '.doc', '.docx'].includes(resumeExtension)) {
-      return NextResponse.json({ error: 'Unsupported resume file type' }, { status: 400 })
     }
 
     const jobOpening = await prisma.jobOpening.findFirst({
@@ -113,21 +91,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Job opening not found' }, { status: 404 })
     }
 
-    const safeOriginalName = sanitizeFilename(resume.name || 'resume')
     const bytes = await resume.arrayBuffer()
-    const resumeMimeTypeResolved = resolveResumeMimeType(resumeMimeType || undefined, resumeExtension)
-    const resumeUrl = `data:${resumeMimeTypeResolved};base64,${Buffer.from(bytes).toString('base64')}`
+    let resumeDetails: { mimeType: string; originalName: string }
+    try {
+      resumeDetails = validateResumeFile(resume, Buffer.from(bytes))
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid resume file' }, { status: 400 })
+    }
+    const resumeUrl = `data:${resumeDetails.mimeType};base64,${Buffer.from(bytes).toString('base64')}`
 
     const application = await prisma.jobApplication.create({
       data: {
         jobOpeningId,
         name,
         email,
-        phone: normalizeText(formData.get('phone')),
-        company: normalizeText(formData.get('company')),
+        phone,
+        company,
         resumeUrl,
-        resumeOriginalName: safeOriginalName,
-        coverLetter: normalizeText(formData.get('coverLetter')),
+        resumeOriginalName: resumeDetails.originalName,
+        coverLetter,
         status: 'NEW',
       },
       include: {
@@ -142,8 +124,8 @@ export async function POST(request: Request) {
       await sendNotificationEmail({
         to: notificationTarget,
         subject: `New job application: ${jobOpening.title}`,
-        text: `A new application has been submitted for ${jobOpening.title}.\n\nName: ${name}\nEmail: ${email}\nPhone: ${normalizeText(formData.get('phone')) || '-'}\nCompany: ${normalizeText(formData.get('company')) || '-'}\nResume file: ${safeOriginalName}\nResume access: available inside the admin dashboard.\nCover letter:\n${normalizeText(formData.get('coverLetter')) || '-'}`,
-        html: `<p>A new application has been submitted for <strong>${jobOpening.title}</strong>.</p><ul><li><strong>Name:</strong> ${name}</li><li><strong>Email:</strong> ${email}</li><li><strong>Phone:</strong> ${normalizeText(formData.get('phone')) || '-'}</li><li><strong>Company:</strong> ${normalizeText(formData.get('company')) || '-'}</li><li><strong>Resume file:</strong> ${safeOriginalName}</li><li><strong>Resume access:</strong> Available inside the admin dashboard.</li></ul><p><strong>Cover letter:</strong></p><p>${(normalizeText(formData.get('coverLetter')) || '-').replace(/\n/g, '<br />')}</p>`,
+        text: `A new application has been submitted for ${jobOpening.title}.\n\nName: ${name}\nEmail: ${email}\nPhone: ${phone || '-'}\nCompany: ${company || '-'}\nResume file: ${resumeDetails.originalName}\nResume access: available inside the admin dashboard.\nCover letter:\n${coverLetter || '-'}`,
+        html: `<p>A new application has been submitted for <strong>${escapeHtml(jobOpening.title)}</strong>.</p><ul><li><strong>Name:</strong> ${escapeHtml(name)}</li><li><strong>Email:</strong> ${escapeHtml(email)}</li><li><strong>Phone:</strong> ${escapeHtml(phone || '-')}</li><li><strong>Company:</strong> ${escapeHtml(company || '-')}</li><li><strong>Resume file:</strong> ${escapeHtml(resumeDetails.originalName)}</li><li><strong>Resume access:</strong> Available inside the admin dashboard.</li></ul><p><strong>Cover letter:</strong></p><p>${escapeHtml(coverLetter || '-').replace(/\n/g, '<br />')}</p>`,
       }).catch((emailError) => {
         console.error('Failed to send job application notification:', emailError)
       })
@@ -153,7 +135,7 @@ export async function POST(request: Request) {
       to: email,
       subject: `Application received for ${jobOpening.title}`,
       text: `Hello ${name},\n\nWe received your application for ${jobOpening.title}. Our team will review it and contact you if there is a match.\n\nQHSSE Consultant`,
-      html: `<p>Hello ${name},</p><p>We received your application for <strong>${jobOpening.title}</strong>.</p><p>Our team will review it and contact you if there is a match.</p><p>QHSSE Consultant</p>`,
+      html: `<p>Hello ${escapeHtml(name)},</p><p>We received your application for <strong>${escapeHtml(jobOpening.title)}</strong>.</p><p>Our team will review it and contact you if there is a match.</p><p>QHSSE Consultant</p>`,
     }).catch((emailError) => {
       console.error('Failed to send job application confirmation:', emailError)
     })
@@ -170,7 +152,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(application, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to submit application' }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: 'Unable to submit application at this time' }, { status: 500 })
   }
 }

@@ -1,0 +1,23 @@
+-- The application accesses Postgres only from trusted server-side Prisma code.
+-- Direct Supabase anon/authenticated access is denied until explicit policies are
+-- introduced alongside a Supabase Auth integration.
+
+ALTER TABLE "ActivityLog" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Client" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ClientDocument" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "ContactRequest" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "FinancialRecord" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Image" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "JobApplication" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "JobOpening" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Observation" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "Report" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TrainingAttempt" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TrainingCourse" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TrainingEnrollment" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "TrainingQuestion" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "User" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE "VisitorSession" ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON ALL TABLES IN SCHEMA public FROM anon, authenticated;
+REVOKE ALL ON ALL SEQUENCES IN SCHEMA public FROM anon, authenticated;

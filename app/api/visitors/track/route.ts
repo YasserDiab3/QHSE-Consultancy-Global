@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getVisitorGeoDetails, isBotUserAgent } from '@/lib/visitor-tracking'
+import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -20,9 +21,16 @@ export async function POST(request: Request) {
     const visitorKey = normalizeText(body?.visitorKey)
     const path = normalizeText(body?.path)
 
-    if (!visitorKey || !path) {
+    if (!visitorKey || !path || visitorKey.length > 128 || path.length > 2048 || !path.startsWith('/')) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    const rateLimit = await enforceRateLimit(
+      request,
+      { keyPrefix: 'visitor-track', limit: 120, windowMs: 60 * 1000 },
+      visitorKey
+    )
+    if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
     const geo = getVisitorGeoDetails()
 
@@ -73,6 +81,6 @@ export async function POST(request: Request) {
     })
   } catch (error: any) {
     console.error('Visitor tracking failed:', error)
-    return NextResponse.json({ error: error.message || 'Failed to track visitor' }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to track visitor at this time' }, { status: 500 })
   }
 }

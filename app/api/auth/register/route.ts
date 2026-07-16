@@ -1,51 +1,26 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
+import { formatValidationError, registrationSchema } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-function normalizeText(value: unknown) {
-  if (typeof value !== 'string') {
-    return ''
-  }
-
-  return value.trim()
-}
-
-function isEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-}
-
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}))
-    const name = normalizeText(body.name)
-    const email = normalizeText(body.email).toLowerCase()
-    const password = normalizeText(body.password)
-    const confirmPassword = normalizeText(body.confirmPassword)
-    const phone = normalizeText(body.phone)
-    const language = normalizeText(body.language) === 'ar' ? 'ar' : 'en'
+    const parsed = registrationSchema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
+    const { name, email, password, phone } = parsed.data
+    const language = parsed.data.language === 'ar' ? 'ar' : 'en'
 
-    if (!name || !email || !phone || !password || !confirmPassword) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
-
-    if (!isEmail(email)) {
-      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 })
-    }
-
-    if (password.length < 8) {
-      return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
-    }
-
-    if (password !== confirmPassword) {
-      return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 })
-    }
-
-    if (!/^[+()\d\s-]{7,20}$/.test(phone)) {
-      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
-    }
+    const rateLimit = await enforceRateLimit(
+      request,
+      { keyPrefix: 'registration', limit: 5, windowMs: 60 * 60 * 1000 },
+      email
+    )
+    if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
     const existingUser = await prisma.user.findUnique({
       where: { email },
@@ -53,7 +28,7 @@ export async function POST(request: Request) {
     })
 
     if (existingUser) {
-      return NextResponse.json({ error: 'Email already registered' }, { status: 409 })
+      return NextResponse.json({ error: 'Unable to create account with these details' }, { status: 409 })
     }
 
     const hashedPassword = await bcrypt.hash(password, 12)
@@ -76,7 +51,7 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json(user, { status: 201 })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Failed to create trainee account' }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: 'Unable to create account at this time' }, { status: 500 })
   }
 }

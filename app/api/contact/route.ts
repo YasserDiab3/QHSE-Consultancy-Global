@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAdmin } from '@/lib/auth'
 import { sendNotificationEmail } from '@/lib/email'
+import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
+import { contactRequestSchema, escapeHtml, formatValidationError } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -36,12 +38,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { name, company, email, phone, message } = body
+    const body = await request.json().catch(() => ({}))
+    const parsed = contactRequestSchema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
+    const { name, company, email, phone, message } = parsed.data
 
-    if (!name || !email || !message) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
-    }
+    const rateLimit = await enforceRateLimit(
+      request,
+      { keyPrefix: 'contact', limit: 5, windowMs: 60 * 60 * 1000 },
+      email
+    )
+    if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
     const contactRequest = await prisma.contactRequest.create({
       data: {
@@ -61,7 +68,7 @@ export async function POST(request: Request) {
         to: notificationTarget,
         subject: `New contact request from ${name}`,
         text: `A new contact request has been submitted.\n\nName: ${name}\nCompany: ${company || '-'}\nEmail: ${email}\nPhone: ${phone || '-'}\nMessage:\n${message}\n\nView requests in the admin panel: ${appUrl}/admin`,
-        html: `<p>A new contact request has been submitted.</p><ul><li><strong>Name:</strong> ${name}</li><li><strong>Company:</strong> ${company || '-'}</li><li><strong>Email:</strong> ${email}</li><li><strong>Phone:</strong> ${phone || '-'}</li></ul><p><strong>Message:</strong></p><p>${message.replace(/\n/g, '<br />')}</p><p><a href="${appUrl}/admin">Open admin panel</a></p>`,
+        html: `<p>A new contact request has been submitted.</p><ul><li><strong>Name:</strong> ${escapeHtml(name)}</li><li><strong>Company:</strong> ${escapeHtml(company || '-')}</li><li><strong>Email:</strong> ${escapeHtml(email)}</li><li><strong>Phone:</strong> ${escapeHtml(phone || '-')}</li></ul><p><strong>Message:</strong></p><p>${escapeHtml(message).replace(/\n/g, '<br />')}</p><p><a href="${appUrl}/admin">Open admin panel</a></p>`,
       }).catch((emailError) => {
         console.error('Failed to send contact request notification:', emailError)
       })
@@ -71,7 +78,7 @@ export async function POST(request: Request) {
       to: email,
       subject: 'We received your request',
       text: `Hello ${name},\n\nWe received your request and our team will contact you shortly.\n\nThank you,\nQHSSE Consultant`,
-      html: `<p>Hello ${name},</p><p>We received your request and our team will contact you shortly.</p><p>Thank you,<br />QHSSE Consultant</p>`,
+      html: `<p>Hello ${escapeHtml(name)},</p><p>We received your request and our team will contact you shortly.</p><p>Thank you,<br />QHSSE Consultant</p>`,
     }).catch((emailError) => {
       console.error('Failed to send contact request confirmation:', emailError)
     })
@@ -86,7 +93,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { error: error.message || 'Failed to submit contact request' },
+      { error: 'Unable to submit your request at this time' },
       { status: 500 }
     )
   }

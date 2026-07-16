@@ -3,6 +3,7 @@ node_modules
 .qwen
 .env
 .env.local
+.env.production
 .env.production.local
 .DS_Store
 *.log

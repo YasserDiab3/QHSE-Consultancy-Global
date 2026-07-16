@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS "RateLimitEntry" (
+  "key" TEXT NOT NULL,
+  "count" INTEGER NOT NULL DEFAULT 0,
+  "resetAt" TIMESTAMP(3) NOT NULL,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "RateLimitEntry_pkey" PRIMARY KEY ("key")
+);
+
+CREATE INDEX IF NOT EXISTS "RateLimitEntry_resetAt_idx" ON "RateLimitEntry" ("resetAt");
+
+ALTER TABLE "RateLimitEntry" ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE "RateLimitEntry" FROM anon, authenticated;

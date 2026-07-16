@@ -4,6 +4,7 @@ import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
+import { enforceRateLimit } from '@/lib/rate-limit'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -39,10 +40,17 @@ export const authOptions: NextAuthOptions = {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
           return null
         }
+
+        const rateLimit = await enforceRateLimit(
+          request,
+          { keyPrefix: 'login', limit: 8, windowMs: 15 * 60 * 1000 },
+          credentials.email
+        )
+        if (!rateLimit.success) return null
 
         try {
           const user = await prisma.user.findUnique({
@@ -125,7 +133,7 @@ export const authOptions: NextAuthOptions = {
       session.user = {
         ...session.user,
         id: token.id ?? '',
-        role: token.role ?? 'CLIENT',
+        role: token.role ?? 'TRAINEE',
         language: token.language ?? 'en',
         name: token.name ?? session.user?.name ?? null,
         email: token.email ?? session.user?.email ?? null,
@@ -143,7 +151,7 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: 'jwt',
-    maxAge: 30 * 24 * 60 * 60,
+    maxAge: 7 * 24 * 60 * 60,
   },
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',

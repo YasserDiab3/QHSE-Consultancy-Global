@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getClientAccountById } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
+import { clientDocumentSchema, financialRecordSchema, formatValidationError } from '@/lib/validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,12 +27,18 @@ export async function POST(request: Request, { params }: { params: { id: string 
   try {
     await requireAdmin()
     const body = await request.json()
+    const client = await getClientAccountById(params.id)
+    if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+
     if (body.type === 'financial') {
-      const item = await prisma.financialRecord.create({ data: { clientId: params.id, title: body.title, amount: body.amount, currency: body.currency || 'EGP', status: body.status || 'PENDING', dueDate: body.dueDate ? new Date(body.dueDate) : null, notes: body.notes } })
+      const parsed = financialRecordSchema.safeParse(body)
+      if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
+      const item = await prisma.financialRecord.create({ data: { clientId: params.id, ...parsed.data, currency: parsed.data.currency || 'EGP', status: parsed.data.status || 'PENDING', dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null } })
       return NextResponse.json(item, { status: 201 })
     }
-    if (!body.title || !body.url) return NextResponse.json({ error: 'Missing document data' }, { status: 400 })
-    const item = await prisma.clientDocument.create({ data: { clientId: params.id, title: body.title, category: body.category || 'SYSTEM', url: body.url, originalName: body.originalName, mimeType: body.mimeType, size: body.size } })
+    const parsed = clientDocumentSchema.safeParse(body)
+    if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
+    const item = await prisma.clientDocument.create({ data: { clientId: params.id, ...parsed.data, category: parsed.data.category || 'SYSTEM' } })
     return NextResponse.json(item, { status: 201 })
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }) }
 }

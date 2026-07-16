@@ -3,6 +3,8 @@ import { getSession } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
 import { createImageRecord } from '@/lib/image-records'
+import { validateImageFile } from '@/lib/file-validation'
+import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
@@ -10,6 +12,13 @@ export async function POST(request: Request) {
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
+
+    const rateLimit = await enforceRateLimit(
+      request,
+      { keyPrefix: 'admin-upload', limit: 30, windowMs: 15 * 60 * 1000 },
+      session.user.id
+    )
+    if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
     const headerList = headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
@@ -23,23 +32,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    if (!file.type.startsWith('image/')) {
-      return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 })
-    }
-
     if (file.size > 8 * 1024 * 1024) {
       return NextResponse.json({ error: 'Image file is too large' }, { status: 400 })
     }
 
     const bytes = await file.arrayBuffer()
-    const imageUrl = `data:${file.type || 'image/jpeg'};base64,${Buffer.from(bytes).toString('base64')}`
+    let imageDetails: { mimeType: string; originalName: string }
+    try {
+      imageDetails = validateImageFile(file, Buffer.from(bytes))
+    } catch (error) {
+      return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid image file' }, { status: 400 })
+    }
+    const imageUrl = `data:${imageDetails.mimeType};base64,${Buffer.from(bytes).toString('base64')}`
 
     const image = await createImageRecord({
       observationId,
       type,
       url: imageUrl,
-      originalName: file.name,
-      mimeType: file.type,
+      originalName: imageDetails.originalName,
+      mimeType: imageDetails.mimeType,
       size: file.size,
     })
 
@@ -55,6 +66,6 @@ export async function POST(request: Request) {
     return NextResponse.json(image, { status: 201 })
   } catch (error: any) {
     console.error('Upload error:', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Unable to upload image at this time' }, { status: 500 })
   }
 }

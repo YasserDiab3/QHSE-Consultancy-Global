@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
+import { prisma } from '@/lib/prisma'
 
 export async function getSession() {
   return await getServerSession(authOptions)
@@ -23,5 +24,14 @@ export async function requireAdmin() {
   if (!session?.user || session.user.role !== 'ADMIN') {
     throw new Error('Forbidden')
   }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true },
+  })
+  if (user?.role !== 'ADMIN') {
+    throw new Error('Forbidden')
+  }
+
   return session
 }
