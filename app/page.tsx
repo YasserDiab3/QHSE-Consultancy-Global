@@ -19,8 +19,6 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
-  ClipboardCheck,
-  Sparkles,
 } from 'lucide-react'
 
 export default function HomePage() {
@@ -134,18 +132,17 @@ export default function HomePage() {
         <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-accent-400/20 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-primary-400/20 blur-3xl" />
 
-        <div className="container-custom relative z-10 pt-24">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_.85fr]">
-          <div className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+        <div className="container-custom relative z-10 pt-20">
+          <div className="mx-auto max-w-4xl text-center">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur-sm">
               <Shield className="h-4 w-4" />
               <span>{t('common.tagline')}</span>
             </div>
-            <h1 className="mb-6 max-w-3xl text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
               {t('home.heroTitle')}
             </h1>
-            <p className="mb-10 max-w-2xl text-xl leading-relaxed text-white/80">{t('home.heroSubtitle')}</p>
-            <div className="flex flex-col gap-4 sm:flex-row">
+            <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-white/80">{t('home.heroSubtitle')}</p>
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link href="/contact" className="btn-primary bg-white px-8 py-4 text-lg text-primary-600 hover:bg-gray-100">
                 {t('home.heroCTA')}
                 <ArrowRight className={`h-5 w-5 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
@@ -154,11 +151,6 @@ export default function HomePage() {
                 {t('home.heroCTA2')}
               </Link>
             </div>
-            <div className="mt-10 flex flex-wrap gap-5 text-sm text-white/80"><span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" />{language === 'ar' ? 'تقارير واضحة وقابلة للتحقق' : 'Clear, verifiable reports'}</span><span className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" />{language === 'ar' ? 'متابعة رقمية للإجراءات' : 'Digital action tracking'}</span></div>
-          </div>
-          <div className="relative mx-auto w-full max-w-md rounded-3xl border border-white/15 bg-white/10 p-5 shadow-2xl shadow-slate-950/20 backdrop-blur-xl">
-            <div className="rounded-2xl bg-white p-5 shadow-xl"><div className="mb-5 flex items-center justify-between"><div><p className="text-xs font-semibold uppercase tracking-[.18em] text-primary-600">QHSSE CONSULTANT</p><h2 className="mt-1 text-lg font-bold text-slate-900">{language === 'ar' ? 'ملخص تشغيلي مباشر' : 'Live operational snapshot'}</h2></div><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><ClipboardCheck className="h-6 w-6" /></div></div><div className="space-y-4">{[[language === 'ar' ? 'حالة الامتثال' : 'Compliance status', '92%', 'bg-emerald-500'], [language === 'ar' ? 'إغلاق الإجراءات' : 'Action closure', '78%', 'bg-primary-500'], [language === 'ar' ? 'مستوى المخاطر' : 'Risk level', language === 'ar' ? 'مراقب' : 'Monitored', 'bg-amber-400']].map(([label, value, color]) => <div key={label}><div className="mb-2 flex items-center justify-between text-sm"><span className="text-slate-600">{label}</span><b className="text-slate-900">{value}</b></div><div className="h-2 overflow-hidden rounded-full bg-slate-100"><div className={`h-full rounded-full ${color}`} style={{ width: value === '92%' ? '92%' : value === '78%' ? '78%' : '58%' }} /></div></div>)}</div><div className="mt-5 flex items-center gap-2 rounded-xl bg-slate-50 p-3 text-xs text-slate-600"><Sparkles className="h-4 w-4 text-accent-500" />{language === 'ar' ? 'حلول متكاملة من الزيارة حتى الإغلاق.' : 'Integrated solutions from visit to closure.'}</div></div>
-          </div>
           </div>
         </div>
       </section>
