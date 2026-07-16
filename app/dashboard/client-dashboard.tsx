@@ -23,6 +23,7 @@ import {
   Image as ImageIcon,
   LayoutDashboard,
   BarChart3,
+  FolderOpen,
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import Header from '@/components/Header'
@@ -62,6 +63,17 @@ type Image = {
   id: string
   type: string
   url: string
+}
+
+type ClientDocument = {
+  id: string
+  title: string
+  category: string
+  url: string
+  originalName?: string | null
+  mimeType?: string | null
+  size?: number | null
+  createdAt: string
 }
 
 const OBSERVATION_IMAGE_TYPES = ['BEFORE', 'AFTER', 'EVIDENCE'] as const
@@ -125,7 +137,10 @@ export default function ClientDashboard() {
     dateTo: '',
   })
   const [showFilters, setShowFilters] = useState(false)
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance' | 'documents'>('dashboard')
+  const [documents, setDocuments] = useState<ClientDocument[]>([])
+  const [documentsLoading, setDocumentsLoading] = useState(true)
+  const [documentsError, setDocumentsError] = useState('')
 
   const fetchReports = useCallback(async () => {
     setLoading(true)
@@ -151,6 +166,26 @@ export default function ClientDashboard() {
   useEffect(() => {
     fetchReports()
   }, [fetchReports])
+
+  const fetchDocuments = useCallback(async () => {
+    setDocumentsLoading(true)
+    setDocumentsError('')
+    try {
+      const response = await fetch('/api/client-documents')
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload?.error || 'Unable to load documents')
+      setDocuments(Array.isArray(payload) ? payload : [])
+    } catch (error) {
+      console.error('Failed to fetch client documents:', error)
+      setDocumentsError(language === 'ar' ? 'تعذر تحميل بنك المعلومات حالياً.' : 'Unable to load the knowledge bank right now.')
+    } finally {
+      setDocumentsLoading(false)
+    }
+  }, [language])
+
+  useEffect(() => {
+    void fetchDocuments()
+  }, [fetchDocuments])
 
   const handleDownloadPDF = async (report: Report) => {
     try {
@@ -201,10 +236,11 @@ export default function ClientDashboard() {
               ['dashboard', language === 'ar' ? 'لوحة التحكم' : 'Dashboard', LayoutDashboard],
               ['reports', language === 'ar' ? 'تقارير الزيارات' : 'Visit reports', FileText],
               ['performance', language === 'ar' ? 'مؤشرات الأداء' : 'Performance', BarChart3],
-            ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
+              ['documents', language === 'ar' ? 'بنك المعلومات' : 'Knowledge bank', FolderOpen],
+            ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance' | 'documents'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
           </div>
 
-          {activeTab === 'dashboard' ? <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} /> : activeTab === 'performance' ? <ClientPerformance reports={reports} language={language} /> : <>
+          {activeTab === 'dashboard' ? <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} /> : activeTab === 'performance' ? <ClientPerformance reports={reports} language={language} /> : activeTab === 'documents' ? <ClientKnowledgeBank documents={documents} loading={documentsLoading} error={documentsError} language={language} onRetry={fetchDocuments} /> : <>
 
           {/* Filters */}
           {showFilters && (
@@ -386,6 +422,45 @@ function ClientPerformance({ reports, language }: { reports: Report[]; language:
   const closure = total ? Math.round((closed / total) * 100) : 0
   const compliance = Math.max(0, 100 - count('CRITICAL') * 25 - count('HIGH') * 12 - count('MEDIUM') * 5 - count('LOW') * 2)
   return <div className="space-y-6"><div className="grid gap-4 md:grid-cols-3"><ProfileCard label={language === 'ar' ? 'معدل إغلاق الملاحظات' : 'Observation closure'} value={`${closure}%`} icon={<CheckCircle2 />} /><ProfileCard label={language === 'ar' ? 'درجة التوافق التقديرية' : 'Estimated compliance'} value={`${compliance}%`} icon={<TrendingUp />} /><ProfileCard label={language === 'ar' ? 'المخاطر العالية والحرجة' : 'High & critical risks'} value={count('HIGH') + count('CRITICAL')} icon={<AlertTriangle />} /></div><div className="card"><h2 className="mb-5 text-lg font-bold text-gray-900">{language === 'ar' ? 'توزيع مستويات المخاطر' : 'Risk distribution'}</h2><div className="space-y-4">{[['CRITICAL', 'حرجة', 'bg-red-500'], ['HIGH', 'عالية', 'bg-orange-500'], ['MEDIUM', 'متوسطة', 'bg-amber-400'], ['LOW', 'منخفضة', 'bg-emerald-500']].map(([level, ar, color]) => <div key={level}><div className="mb-1 flex justify-between text-sm"><span>{language === 'ar' ? ar : level}</span><span>{count(level)}</span></div><div className="h-3 rounded-full bg-gray-100"><div className={`h-3 rounded-full ${color}`} style={{ width: `${total ? (count(level) / total) * 100 : 0}%` }} /></div></div>)}</div></div></div>
+}
+
+function ClientKnowledgeBank({
+  documents,
+  loading,
+  error,
+  language,
+  onRetry,
+}: {
+  documents: ClientDocument[]
+  loading: boolean
+  error: string
+  language: string
+  onRetry: () => Promise<void>
+}) {
+  const formatSize = (size?: number | null) => {
+    if (!size) return language === 'ar' ? 'حجم غير محدد' : 'Size unavailable'
+    if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`
+    return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  }
+
+  return (
+    <section className="space-y-6">
+      <div className="overflow-hidden rounded-3xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-white p-6 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex rounded-2xl bg-primary-100 p-3 text-primary-700"><FolderOpen className="h-6 w-6" /></div>
+            <h2 className="text-2xl font-bold text-slate-900">{language === 'ar' ? 'بنك المعلومات والملفات' : 'Knowledge bank & files'}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{language === 'ar' ? 'كل المستندات والملفات التي يشاركها فريق الاستشارات مع مؤسستك متاحة هنا للعرض والتنزيل.' : 'All documents and files shared with your organization by the consulting team are available here.'}</p>
+          </div>
+          <div className="rounded-2xl border border-primary-100 bg-white px-5 py-3 text-center"><p className="text-2xl font-bold text-primary-700">{documents.length}</p><p className="text-xs font-medium text-slate-500">{language === 'ar' ? 'ملف متاح' : 'available files'}</p></div>
+        </div>
+      </div>
+
+      {loading ? <div className="card flex justify-center py-16"><Loader2 className="h-8 w-8 animate-spin text-primary-500" /></div> : error ? <div className="card text-center"><p className="font-medium text-red-600">{error}</p><button onClick={() => void onRetry()} className="btn-secondary mt-4 px-4 py-2">{language === 'ar' ? 'إعادة المحاولة' : 'Try again'}</button></div> : documents.length === 0 ? <div className="card py-16 text-center"><FolderOpen className="mx-auto h-14 w-14 text-slate-300" /><h3 className="mt-4 text-lg font-bold text-slate-900">{language === 'ar' ? 'لا توجد ملفات مشتركة حتى الآن' : 'No shared files yet'}</h3><p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{language === 'ar' ? 'ستظهر هنا الملفات التي يرفعها المدير أو الاستشاري والمخصصة لمؤسستك.' : 'Files uploaded by the administrator or consultant for your organization will appear here.'}</p></div> : <div className="grid gap-4 md:grid-cols-2">
+        {documents.map((document) => <article key={document.id} className="group rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"><div className="flex items-start gap-4"><div className="rounded-xl bg-primary-50 p-3 text-primary-700"><FileText className="h-6 w-6" /></div><div className="min-w-0 flex-1"><h3 className="truncate font-bold text-slate-900" title={document.title}>{document.title}</h3><p className="mt-1 text-sm text-slate-500">{document.category || (language === 'ar' ? 'مستند' : 'Document')}</p><div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500"><span>{formatSize(document.size)}</span><span>{new Date(document.createdAt).toLocaleDateString(language === 'ar' ? 'ar-EG' : 'en-US')}</span></div></div></div><a href={document.url} download={document.originalName || undefined} target="_blank" rel="noopener noreferrer" className="btn-secondary mt-5 flex w-full justify-center px-4 py-2 text-sm"><Download className="h-4 w-4" />{language === 'ar' ? 'عرض / تحميل الملف' : 'View / download file'}</a></article>)}
+      </div>}
+    </section>
+  )
 }
 
 function ProfileCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) { return <div className="card"><div className="flex items-center justify-between"><span className="text-sm text-gray-600">{label}</span><span className="text-primary-600">{icon}</span></div><p className="mt-3 text-3xl font-bold text-gray-900">{value}</p></div> }
