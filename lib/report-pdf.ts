@@ -91,7 +91,11 @@ function drawBox(context: CanvasRenderingContext2D, x: number, y: number, width:
 }
 
 export async function downloadClientReportPdf(report: ReportPdfData, language: string) {
-  await document.fonts.ready
+  if (typeof document === 'undefined' || typeof window === 'undefined') {
+    throw new Error('PDF export is only available in the browser')
+  }
+
+  await document.fonts?.ready
   const isArabic = language === 'ar'
   const canvas = document.createElement('canvas')
   canvas.width = 1240
@@ -100,10 +104,13 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   if (!context) throw new Error('Unable to prepare report export')
 
   const reportUrl = `${window.location.origin}/dashboard?report=${encodeURIComponent(report.id)}`
-  const [logo, qr] = await Promise.all([
+  const [logoResult, qrResult] = await Promise.allSettled([
     imageData(`${window.location.origin}/brand/qhsse-logo-stacked.svg`),
     QRCode.toDataURL(reportUrl, { width: 180, margin: 1, errorCorrectionLevel: 'M' }).then(imageData),
   ])
+  const logo = logoResult.status === 'fulfilled' ? logoResult.value : undefined
+  const qr = qrResult.status === 'fulfilled' ? qrResult.value : undefined
+  const observations = Array.isArray(report.observations) ? report.observations : []
 
   const value = (arabic?: string, english?: string) => repairMojibake(isArabic ? arabic || english || '-' : english || arabic || '-')
   const siteName = value(report.siteNameAr, report.siteName)
@@ -113,10 +120,10 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     year: 'numeric', month: 'long', day: 'numeric',
   })
   const risks = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 }
-  report.observations.forEach((item) => {
+  observations.forEach((item) => {
     if (item.riskLevel in risks) risks[item.riskLevel as keyof typeof risks] += 1
   })
-  const openPoints = report.observations.filter((item) => !['CLOSED', 'RESOLVED'].includes(item.status)).length
+  const openPoints = observations.filter((item) => !['CLOSED', 'RESOLVED'].includes(item.status)).length
   const weightedScore = Math.max(0, 100 - risks.CRITICAL * 25 - risks.HIGH * 12 - risks.MEDIUM * 5 - risks.LOW * 2)
   const isFoodSafety = report.category === 'FOOD_SAFETY'
   const formCode = isFoodSafety ? 'QHSSE-FS-VISIT-01' : 'QHSSE-VISIT-01'
@@ -134,7 +141,16 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   context.fillRect(0, 0, canvas.width, canvas.height)
 
   // A clean white document header, matching the approved visit-report style.
-  context.drawImage(logo, 62, 38, 110, 110)
+  if (logo) {
+    context.drawImage(logo, 62, 38, 110, 110)
+  } else {
+    context.fillStyle = '#8b4d00'
+    context.beginPath()
+    context.arc(117, 93, 42, 0, Math.PI * 2)
+    context.fill()
+    text('700 13px Arial', '#ffffff', 'center')
+    write('QHSSE', 117, 98)
+  }
   text('700 44px Cairo, Arial', '#666666', 'center')
   write(isArabic ? 'تقرير زيارة' : 'VISIT REPORT', canvas.width / 2, 84)
   context.fillStyle = '#a3a3a3'
@@ -178,7 +194,7 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   const scoreY = assessmentTop + 162
   const cards = [
     [isArabic ? 'درجة التوافق' : 'Compliance score', `${weightedScore}%`, '#95d14c'],
-    [isArabic ? 'إجمالي الملاحظات' : 'Total observations', String(report.observations.length), '#e8b941'],
+    [isArabic ? 'إجمالي الملاحظات' : 'Total observations', String(observations.length), '#e8b941'],
     [isArabic ? 'نقاط مفتوحة' : 'Open points', String(openPoints), '#db6b5e'],
   ]
   cards.forEach(([label, metric, color], index) => {
@@ -235,7 +251,7 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   observationHeaders.forEach((header, index) => write(header, columns[index], tableY + 24))
   let rowY = tableY + 36
   const maxRowsY = 1440
-  report.observations.forEach((observation, index) => {
+  observations.forEach((observation, index) => {
     const title = value(observation.titleAr, observation.title)
     text('500 14px Cairo, Arial', '#222222', isArabic ? 'right' : 'left')
     const lines = wrapText(context, title, 590).slice(0, 2)
@@ -255,7 +271,7 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     }
     rowY += height
   })
-  if (report.observations.length === 0) {
+  if (observations.length === 0) {
     drawBox(context, 62, rowY, 1116, 64, '#fafcfc')
     text('500 16px Cairo, Arial', '#666666', 'center')
     write(isArabic ? 'لا توجد ملاحظات مسجلة في هذا التقرير حتى الآن.' : 'No observations have been recorded for this report yet.', canvas.width / 2, rowY + 40)
@@ -264,7 +280,15 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   // Centered verification footer with the form version and report number.
   context.fillStyle = '#777777'
   context.fillRect(62, 1540, 1116, 3)
-  context.drawImage(qr, canvas.width / 2 - 56, 1552, 112, 112)
+  if (qr) {
+    context.drawImage(qr, canvas.width / 2 - 56, 1552, 112, 112)
+  } else {
+    context.strokeStyle = '#777777'
+    context.lineWidth = 2
+    context.strokeRect(canvas.width / 2 - 56, 1552, 112, 112)
+    text('700 12px Arial', '#555555', 'center')
+    write('VERIFY', canvas.width / 2, 1613)
+  }
   text('700 13px Cairo, Arial', '#303030', 'center')
   context.direction = 'ltr'
   write('SCAN TO OPEN REPORT', canvas.width / 2, 1680)
