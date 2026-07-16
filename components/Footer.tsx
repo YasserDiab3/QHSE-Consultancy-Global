@@ -16,7 +16,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <Link
               href="/"
-              className="mb-5 inline-flex items-center overflow-hidden rounded-[26px] border border-white/15 bg-white p-3 shadow-lg shadow-black/10"
+              className="mb-5 inline-flex items-center"
             >
               <BrandLogo variant="stacked" className="h-[120px] w-[120px] md:h-[140px] md:w-[140px]" />
             </Link>
