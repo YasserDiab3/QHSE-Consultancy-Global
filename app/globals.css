@@ -94,6 +94,46 @@
   }
 }
 
+@keyframes heroInspectionMotion {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+@keyframes heroScanLine {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  20%, 72% { opacity: 0.9; }
+  50% { transform: translateY(170px); }
+}
+
+@keyframes heroStatusPing {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(187, 247, 208, 0.55); transform: scale(1); }
+  50% { box-shadow: 0 0 0 11px rgba(187, 247, 208, 0); transform: scale(1.06); }
+}
+
+.hero-inspection-motion {
+  animation: heroInspectionMotion 14s ease-in-out infinite;
+}
+
+.hero-scan-line {
+  animation: heroScanLine 7s ease-in-out infinite;
+}
+
+.hero-status-ping {
+  animation: heroStatusPing 2.8s ease-in-out infinite;
+}
+
+.hero-status-ping-delayed {
+  animation-delay: 1.35s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-inspection-motion,
+  .hero-scan-line,
+  .hero-status-ping {
+    animation: none;
+  }
+}
+
 /* RTL Support */
 [dir="rtl"] .rtl-flip {
   transform: scaleX(-1);

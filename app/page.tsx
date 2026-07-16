@@ -170,9 +170,12 @@ export default function HomePage() {
                     fill
                     priority
                     sizes="(min-width: 1024px) 48vw, 100vw"
-                    className="object-cover"
+                    className="hero-inspection-motion object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-950/70 via-transparent to-primary-950/10" />
+                  <div className="hero-scan-line absolute inset-x-[8%] top-[24%] h-px bg-accent-200/70" />
+                  <span className="hero-status-ping absolute left-[13%] top-[19%] h-3 w-3 rounded-full bg-accent-300" />
+                  <span className="hero-status-ping hero-status-ping-delayed absolute right-[16%] top-[35%] h-2.5 w-2.5 rounded-full bg-white/90" />
                 </div>
                 <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white">
                   <div>
