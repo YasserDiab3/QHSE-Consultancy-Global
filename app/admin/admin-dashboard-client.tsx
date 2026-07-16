@@ -15,6 +15,7 @@ import {
   MessageSquare,
   TrendingUp,
   Users,
+  FolderOpen,
 } from 'lucide-react'
 import Header from '@/components/Header'
 import AdminReports from './admin-reports'
@@ -23,6 +24,7 @@ import AdminActivityLog from './admin-activity-log'
 import AdminContactRequests from './admin-contact-requests'
 import AdminJobs from './admin-jobs'
 import AdminTraining from './admin-training'
+import AdminKnowledgeBank from './admin-knowledge-bank'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 
@@ -54,7 +56,7 @@ type ReportFilterPreset = {
 } | null
 
 type RequestStatusPreset = 'ALL' | 'NEW' | 'CONTACTED' | 'CLOSED'
-type AdminTab = 'overview' | 'reports' | 'clients' | 'training' | 'jobs' | 'requests' | 'activity'
+type AdminTab = 'overview' | 'reports' | 'clients' | 'knowledge' | 'training' | 'jobs' | 'requests' | 'activity'
 
 export default function AdminDashboardClient() {
   const { t, language, dir } = useLanguage()
@@ -112,6 +114,7 @@ export default function AdminDashboardClient() {
       { id: 'overview' as const, label: t('dashboard.title'), icon: BarChart3 },
       { id: 'reports' as const, label: t('admin.reports'), icon: FileText },
       { id: 'clients' as const, label: t('admin.clients'), icon: Users },
+      { id: 'knowledge' as const, label: language === 'ar' ? 'بنك المعلومات' : 'Knowledge Bank', icon: FolderOpen },
       { id: 'training' as const, label: language === 'ar' ? 'التدريب' : 'Training', icon: GraduationCap },
       { id: 'jobs' as const, label: language === 'ar' ? 'الوظائف' : 'Jobs', icon: BriefcaseBusiness },
       { id: 'requests' as const, label: language === 'ar' ? 'طلبات التواصل' : 'Contact Requests', icon: MessageSquare },
@@ -182,6 +185,7 @@ export default function AdminDashboardClient() {
             <AdminReports onDataChanged={fetchStats} filterPreset={reportFilterPreset} />
           )}
           {activeTab === 'clients' && <AdminClients onDataChanged={fetchStats} />}
+          {activeTab === 'knowledge' && <AdminKnowledgeBank />}
           {activeTab === 'training' && <AdminTraining onDataChanged={fetchStats} />}
           {activeTab === 'jobs' && <AdminJobs onDataChanged={fetchStats} />}
           {activeTab === 'requests' && (

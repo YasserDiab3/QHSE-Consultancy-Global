@@ -41,6 +41,7 @@ model Client {
   updatedAt     DateTime  @default(now()) @updatedAt @map("updatedat")
   reports       Report[]
   documents     ClientDocument[]
+  knowledgeFolders KnowledgeFolder[]
   financialRecords FinancialRecord[]
 
   @@index([userId])
@@ -51,6 +52,8 @@ model ClientDocument {
   id           String   @id @default(uuid())
   clientId     String
   client       Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  folderId     String?
+  folder       KnowledgeFolder? @relation(fields: [folderId], references: [id], onDelete: SetNull)
   title        String
   category     String   @default("SYSTEM")
   url          String
@@ -60,7 +63,27 @@ model ClientDocument {
   createdAt    DateTime @default(now()) @map("createdat")
 
   @@index([clientId, createdAt(sort: Desc)])
+  @@index([folderId])
   @@map("ClientDocument")
+}
+
+model KnowledgeFolder {
+  id          String            @id @default(uuid())
+  clientId    String
+  client      Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  parentId    String?
+  parent      KnowledgeFolder?  @relation("KnowledgeFolderHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    KnowledgeFolder[] @relation("KnowledgeFolderHierarchy")
+  name        String
+  description String?
+  category    String            @default("SYSTEM")
+  createdAt   DateTime          @default(now()) @map("createdat")
+  updatedAt   DateTime          @default(now()) @updatedAt @map("updatedat")
+  documents   ClientDocument[]
+
+  @@index([clientId, parentId])
+  @@index([clientId, createdAt(sort: Desc)])
+  @@map("KnowledgeFolder")
 }
 
 model FinancialRecord {

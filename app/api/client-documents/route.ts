@@ -22,22 +22,48 @@ export async function GET() {
       return NextResponse.json({ error: 'Client profile not found' }, { status: 404 })
     }
 
-    const documents = await prisma.clientDocument.findMany({
-      where: { clientId },
-      orderBy: { createdAt: 'desc' },
-      select: {
-        id: true,
-        title: true,
-        category: true,
-        url: true,
-        originalName: true,
-        mimeType: true,
-        size: true,
-        createdAt: true,
-      },
-    })
+    const documentSelect = {
+      id: true,
+      folderId: true,
+      title: true,
+      category: true,
+      url: true,
+      originalName: true,
+      mimeType: true,
+      size: true,
+      createdAt: true,
+    } as const
 
-    return NextResponse.json(documents)
+    let folders: Array<{ id: string; parentId: string | null; name: string; category: string }> = []
+    let documents: Array<{
+      id: string
+      folderId: string | null
+      title: string
+      category: string
+      url: string
+      originalName: string | null
+      mimeType: string | null
+      size: number | null
+      createdAt: Date
+    }>
+
+    try {
+      ;[folders, documents] = await Promise.all([
+        prisma.knowledgeFolder.findMany({
+          where: { clientId },
+          select: { id: true, parentId: true, name: true, category: true },
+          orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
+        }),
+        prisma.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: 'desc' }, select: documentSelect }),
+      ])
+    } catch (error: any) {
+      // Keep the existing client document library available until the folder
+      // migration has been applied to an older database.
+      if (error?.code !== 'P2021') throw error
+      documents = await prisma.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: 'desc' }, select: documentSelect })
+    }
+
+    return NextResponse.json({ folders, documents })
   } catch (error) {
     console.error('Failed to load client documents:', error)
     return NextResponse.json({ error: 'Unable to load documents' }, { status: 500 })
