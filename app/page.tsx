@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLanguage } from '@/context'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
@@ -27,8 +27,45 @@ import {
 export default function HomePage() {
   const { t, dir, language } = useLanguage()
   const partnersRef = useRef<HTMLDivElement>(null)
+  const [activeHeroSlide, setActiveHeroSlide] = useState(0)
 
   const allServiceCards = getAllServiceCards(t, language)
+
+  const heroSlides = [
+    {
+      src: '/images/qhsse-hero-inspection.png',
+      altAr: 'فريق استشاري خلال مراجعة ميدانية لسلامة الغذاء والجودة',
+      altEn: 'Consulting team conducting a food safety and quality review',
+      labelAr: 'سلامة الغذاء والجودة',
+      labelEn: 'Food safety & quality',
+    },
+    {
+      src: '/images/qhsse-hero-industrial-inspection.png',
+      altAr: 'استشاريون خلال تفتيش السلامة في منشأة صناعية',
+      altEn: 'Consultants conducting an industrial safety inspection',
+      labelAr: 'تفتيش السلامة المهنية',
+      labelEn: 'Occupational safety inspection',
+    },
+    {
+      src: '/images/qhsse-hero-safety-training.png',
+      altAr: 'جلسة تدريب عملية لفريق السلامة والجودة',
+      altEn: 'Practical safety and quality training session',
+      labelAr: 'التدريب وبناء القدرات',
+      labelEn: 'Training & capability building',
+    },
+  ]
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
+    }
+
+    const timer = window.setInterval(() => {
+      setActiveHeroSlide((current) => (current + 1) % heroSlides.length)
+    }, 5200)
+
+    return () => window.clearInterval(timer)
+  }, [heroSlides.length])
 
   const whyFeatures = [
     {
@@ -170,17 +207,44 @@ export default function HomePage() {
                     fill
                     priority
                     sizes="(min-width: 1024px) 48vw, 100vw"
-                    className="hero-inspection-motion object-cover"
+                    className={`object-cover transition-opacity duration-1000 ease-in-out ${activeHeroSlide === 0 ? 'hero-inspection-motion opacity-100' : 'opacity-0'}`}
                   />
+                  {heroSlides.slice(1).map((slide, offset) => {
+                    const index = offset + 1
+                    return (
+                      <Image
+                        key={slide.src}
+                        src={slide.src}
+                        alt={language === 'ar' ? slide.altAr : slide.altEn}
+                        fill
+                        sizes="(min-width: 1024px) 48vw, 100vw"
+                        className={`object-cover transition-opacity duration-1000 ease-in-out ${activeHeroSlide === index ? 'hero-inspection-motion opacity-100' : 'opacity-0'}`}
+                      />
+                    )
+                  })}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary-950/70 via-transparent to-primary-950/10" />
                   <div className="hero-scan-line absolute inset-x-[8%] top-[24%] h-px bg-accent-200/70" />
                   <span className="hero-status-ping absolute left-[13%] top-[19%] h-3 w-3 rounded-full bg-accent-300" />
                   <span className="hero-status-ping hero-status-ping-delayed absolute right-[16%] top-[35%] h-2.5 w-2.5 rounded-full bg-white/90" />
                 </div>
-                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white">
+                <div className="absolute inset-x-0 bottom-0 z-10 flex items-end justify-between gap-4 p-5 text-white">
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/65">QHSSE CONSULTANT</p>
-                    <p className="mt-1 text-sm font-semibold">{language === 'ar' ? 'زيارة ميدانية • تحسين مستمر' : 'On-site review • continuous improvement'}</p>
+                    <p className="mt-1 text-sm font-semibold" aria-live="polite">
+                      {language === 'ar' ? heroSlides[activeHeroSlide].labelAr : heroSlides[activeHeroSlide].labelEn}
+                    </p>
+                    <div className="mt-3 flex items-center gap-2">
+                      {heroSlides.map((slide, index) => (
+                        <button
+                          key={slide.src}
+                          type="button"
+                          onClick={() => setActiveHeroSlide(index)}
+                          className={`h-1.5 rounded-full transition-all duration-300 ${index === activeHeroSlide ? 'w-8 bg-white' : 'w-4 bg-white/40 hover:bg-white/70'}`}
+                          aria-label={language === 'ar' ? `عرض المشهد ${index + 1}` : `Show scene ${index + 1}`}
+                          aria-current={index === activeHeroSlide ? 'true' : undefined}
+                        />
+                      ))}
+                    </div>
                   </div>
                   <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm"><ShieldCheck className="h-5 w-5 text-accent-200" /></span>
                 </div>
