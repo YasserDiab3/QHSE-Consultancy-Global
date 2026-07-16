@@ -19,6 +19,9 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
+  ShieldCheck,
+  FileText,
 } from 'lucide-react'
 
 export default function HomePage() {
@@ -119,8 +122,8 @@ export default function HomePage() {
     <div className="min-h-screen">
       <Header />
 
-      <section className="relative flex min-h-[90vh] items-center overflow-hidden bg-gradient-to-br from-primary-800 via-primary-700 to-primary-600">
-        <div className="absolute inset-0 opacity-10">
+      <section className="relative overflow-hidden bg-primary-800">
+        <div className="absolute inset-0 opacity-[0.07]">
           <div
             className="absolute inset-0"
             style={{
@@ -129,28 +132,77 @@ export default function HomePage() {
             }}
           />
         </div>
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-accent-400/20 blur-3xl" />
-        <div className="absolute bottom-0 left-0 h-96 w-96 rounded-full bg-primary-400/20 blur-3xl" />
+        <div className="absolute -right-24 top-24 h-96 w-96 rounded-full bg-accent-400/15 blur-3xl" />
+        <div className="absolute -bottom-28 left-0 h-96 w-96 rounded-full bg-primary-400/20 blur-3xl" />
 
-        <div className="container-custom relative z-10 pt-20">
-          <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur-sm">
+        <div className="container-custom relative z-10 py-28 pt-32 lg:py-32 lg:pt-36">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.02fr_0.98fr] lg:gap-16">
+            <div className={dir === 'rtl' ? 'text-right' : 'text-left'}>
+              <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm text-white/90 backdrop-blur-sm">
               <Shield className="h-4 w-4" />
               <span>{t('common.tagline')}</span>
             </div>
-            <h1 className="mb-6 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+              <h1 className="mb-6 max-w-2xl text-4xl font-bold leading-[1.15] text-white md:text-5xl lg:text-6xl">
               {t('home.heroTitle')}
             </h1>
-            <p className="mx-auto mb-10 max-w-2xl text-xl leading-relaxed text-white/80">{t('home.heroSubtitle')}</p>
-            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <p className="mb-9 max-w-xl text-lg leading-relaxed text-white/80 md:text-xl">{t('home.heroSubtitle')}</p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:justify-start">
               <Link href="/contact" className="btn-primary bg-white px-8 py-4 text-lg text-primary-600 hover:bg-gray-100">
                 {t('home.heroCTA')}
                 <ArrowRight className={`h-5 w-5 ${dir === 'rtl' ? 'rotate-180' : ''}`} />
               </Link>
-              <Link href="/services" className="btn-secondary border-white px-8 py-4 text-lg text-white hover:bg-white/10">
-                {t('home.heroCTA2')}
+              <Link href="/services" className="inline-flex items-center justify-center rounded-lg border border-white/70 px-8 py-4 text-lg font-semibold text-white transition-colors hover:bg-white/10">
+                {t('home.heroCTA2') || (language === 'ar' ? 'استكشف خدماتنا' : 'Explore services')}
               </Link>
+              </div>
+              <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/75">
+                <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" />{language === 'ar' ? 'حلول قابلة للتطبيق' : 'Practical solutions'}</span>
+                <span className="inline-flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-accent-300" />{language === 'ar' ? 'خبرة ميدانية موثوقة' : 'Trusted field expertise'}</span>
+              </div>
             </div>
+            <div className="relative mx-auto w-full max-w-[580px] lg:mx-0">
+              <div className="absolute -inset-3 rounded-[2rem] border border-white/10 bg-white/[0.04]" />
+              <div className="relative overflow-hidden rounded-[1.55rem] border border-white/15 bg-primary-950 shadow-2xl shadow-primary-950/30">
+                <div className="relative aspect-[4/3]">
+                  <Image
+                    src="/images/qhsse-hero-inspection.png"
+                    alt={language === 'ar' ? 'فريق استشاري خلال مراجعة ميدانية لسلامة الغذاء والجودة' : 'Consulting team conducting a food safety and quality review'}
+                    fill
+                    priority
+                    sizes="(min-width: 1024px) 48vw, 100vw"
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-primary-950/70 via-transparent to-primary-950/10" />
+                </div>
+                <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 p-5 text-white">
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.2em] text-white/65">QHSSE CONSULTANT</p>
+                    <p className="mt-1 text-sm font-semibold">{language === 'ar' ? 'زيارة ميدانية • تحسين مستمر' : 'On-site review • continuous improvement'}</p>
+                  </div>
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/15 backdrop-blur-sm"><ShieldCheck className="h-5 w-5 text-accent-200" /></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="relative z-20 -mt-8 pb-8">
+        <div className="container-custom">
+          <div className="grid overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl shadow-primary-950/10 md:grid-cols-3">
+            {[
+              { icon: ClipboardCheck, title: language === 'ar' ? 'تقييم واضح' : 'Clear assessment', desc: language === 'ar' ? 'نراجع الواقع الميداني ونرتب الأولويات.' : 'We review your site and prioritise what matters.' },
+              { icon: FileText, title: language === 'ar' ? 'خطة قابلة للتنفيذ' : 'Actionable plan', desc: language === 'ar' ? 'توصيات عملية تناسب منشأتك وفريقك.' : 'Practical recommendations for your facility and team.' },
+              { icon: TrendingUp, title: language === 'ar' ? 'تحسن يمكن قياسه' : 'Measurable improvement', desc: language === 'ar' ? 'نتابع الأداء حتى تتحول التوصية إلى نتيجة.' : 'We follow performance through to results.' },
+            ].map((item, index) => (
+              <div key={item.title} className={`flex gap-4 p-6 md:p-7 ${index < 2 ? 'border-b border-gray-100 md:border-b-0 md:border-e' : ''}`}>
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600"><item.icon className="h-5 w-5" /></div>
+                <div>
+                  <h2 className="font-bold text-gray-900">{item.title}</h2>
+                  <p className="mt-1 text-sm leading-6 text-gray-600">{item.desc}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
