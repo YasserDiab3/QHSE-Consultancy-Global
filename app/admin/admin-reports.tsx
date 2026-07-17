@@ -180,7 +180,7 @@ export default function AdminReports({
     } finally {
       setLoading(false)
     }
-  }, [filterPreset?.riskLevel, filterPreset?.status])
+  }, [filterPreset])
 
   useEffect(() => {
     fetchData()

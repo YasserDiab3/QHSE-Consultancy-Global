@@ -8,17 +8,18 @@ import { deleteClientAccount, getClientAccountById, updateClientAccount } from '
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await requireAdmin()
     const body = await request.json()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
     const { name, email, password, companyName, companyNameAr, phone, address } = body
 
-    const existingClient = await getClientAccountById(params.id)
+    const existingClient = await getClientAccountById(id)
 
     if (!existingClient) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
@@ -51,7 +52,7 @@ export async function PUT(
       data: userUpdateData,
     })
 
-    await updateClientAccount(params.id, {
+    await updateClientAccount(id, {
       companyName,
       companyNameAr,
       phone,
@@ -62,12 +63,12 @@ export async function PUT(
       session.user.id,
       'CLIENT_UPDATED',
       'client',
-      params.id,
+      id,
       `Updated client account for ${companyName}`,
       ip
     )
 
-    const updatedClient = await getClientAccountById(params.id)
+    const updatedClient = await getClientAccountById(id)
     return NextResponse.json(updatedClient)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: error.message === 'Forbidden' ? 403 : 500 })
@@ -76,14 +77,15 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await requireAdmin()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
-    const client = await getClientAccountById(params.id)
+    const client = await getClientAccountById(id)
 
     if (!client) {
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
@@ -93,12 +95,12 @@ export async function DELETE(
       session.user.id,
       'CLIENT_DELETED',
       'client',
-      params.id,
+      id,
       `Deleted client account for ${client.companyName}`,
       ip
     )
 
-    await deleteClientAccount(params.id)
+    await deleteClientAccount(id)
     await prisma.user.delete({
       where: { id: client.userId },
     }).catch(() => undefined)

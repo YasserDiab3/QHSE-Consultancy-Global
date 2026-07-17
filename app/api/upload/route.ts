@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     )
     if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const formData = await request.formData()
 

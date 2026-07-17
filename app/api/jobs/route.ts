@@ -47,7 +47,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await requireAdmin()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 

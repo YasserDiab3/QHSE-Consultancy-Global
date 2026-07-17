@@ -7,6 +7,10 @@ type SendEmailInput = {
   html?: string
 }
 
+function sanitizeHeader(value: string) {
+  return value.replace(/[\r\n]+/g, ' ').trim()
+}
+
 function getSmtpConfig() {
   const host = process.env.SMTP_HOST
   const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined
@@ -21,6 +25,10 @@ function getSmtpConfig() {
     host,
     port,
     secure: port === 465,
+    requireTLS: port === 587,
+    tls: {
+      rejectUnauthorized: true,
+    },
     auth: {
       user,
       pass,
@@ -37,14 +45,22 @@ export async function sendNotificationEmail(input: SendEmailInput) {
   }
 
   const transporter = nodemailer.createTransport(smtpConfig)
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER
+  const from = sanitizeHeader(process.env.SMTP_FROM || process.env.SMTP_USER || '')
+  const to = sanitizeHeader(input.to)
+  const subject = sanitizeHeader(input.subject)
+
+  if (!from || !to || !subject) {
+    throw new Error('Invalid email notification headers')
+  }
 
   await transporter.sendMail({
     from,
-    to: input.to,
-    subject: input.subject,
+    to,
+    subject,
     text: input.text,
     html: input.html,
+    disableFileAccess: true,
+    disableUrlAccess: true,
   })
 
   return { sent: true as const }

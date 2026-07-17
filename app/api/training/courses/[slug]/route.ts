@@ -5,14 +5,15 @@ import { ensureTrainingEnrollment, getTrainingCourseBySlug, listTrainingQuestion
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET(_request: Request, { params }: { params: { slug: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   try {
     const session = await getSession()
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const course = await getTrainingCourseBySlug(params.slug)
+    const course = await getTrainingCourseBySlug(slug)
     if (!course) {
       return NextResponse.json({ error: 'Training course not found' }, { status: 404 })
     }

@@ -5,14 +5,15 @@ import { getTrainingCertificateByCode } from '@/lib/training-records'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET(_request: Request, { params }: { params: { code: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+  const { code } = await params
   try {
     const session = await getSession()
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const certificate = await getTrainingCertificateByCode(params.code)
+    const certificate = await getTrainingCertificateByCode(code)
     if (!certificate) {
       return NextResponse.json({ error: 'Certificate not found' }, { status: 404 })
     }

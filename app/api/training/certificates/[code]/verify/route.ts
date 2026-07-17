@@ -5,9 +5,10 @@ import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET(_request: Request, { params }: { params: { code: string } }) {
+export async function GET(_request: Request, { params }: { params: Promise<{ code: string }> }) {
+  const { code: certificateCode } = await params
   try {
-    const code = params.code.trim().toUpperCase()
+    const code = certificateCode.trim().toUpperCase()
     if (!/^QHSSE-TR-\d{4}-[A-Z0-9-]{6,40}$/.test(code)) {
       return NextResponse.json({ valid: false, error: 'Certificate not found' }, { status: 404 })
     }

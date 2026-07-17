@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       questions: Array.isArray(body.questions) ? body.questions : [],
     })
 
-    const headerList = headers()
+    const headerList = await headers()
     await logActivity(
       session.user.id,
       'TRAINING_COURSE_CREATED',

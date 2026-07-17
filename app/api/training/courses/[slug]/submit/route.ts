@@ -9,7 +9,8 @@ import { formatValidationError, trainingAnswersSchema } from '@/lib/validation'
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function POST(request: Request, { params }: { params: { slug: string } }) {
+export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params
   try {
     const session = await getSession()
     if (!session?.user) {
@@ -23,7 +24,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
     )
     if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
-    const course = await getTrainingCourseBySlug(params.slug)
+    const course = await getTrainingCourseBySlug(slug)
     if (!course) {
       return NextResponse.json({ error: 'Training course not found' }, { status: 404 })
     }
@@ -39,7 +40,7 @@ export async function POST(request: Request, { params }: { params: { slug: strin
       answers,
     })
 
-    const headerList = headers()
+    const headerList = await headers()
     await logActivity(
       session.user.id,
       result.passed ? 'TRAINING_PASSED' : 'TRAINING_FAILED',

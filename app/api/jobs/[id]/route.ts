@@ -18,11 +18,12 @@ function normalizeText(value: unknown) {
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await requireAdmin()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 
@@ -35,7 +36,7 @@ export async function PUT(
     }
 
     const job = await prisma.jobOpening.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title,
         titleAr: normalizeText(body.titleAr),
@@ -74,22 +75,23 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await requireAdmin()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
     await prisma.jobOpening.delete({
-      where: { id: params.id },
+      where: { id },
     })
 
     await logActivity(
       session.user.id,
       'JOB_DELETED',
       'job',
-      params.id,
+      id,
       'Deleted job opening',
       ip
     )

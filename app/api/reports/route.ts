@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 

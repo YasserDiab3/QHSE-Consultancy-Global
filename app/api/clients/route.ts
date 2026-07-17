@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   try {
     const session = await requireAdmin()
     const body = await request.json()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
     const { name, email, password, companyName, companyNameAr, phone, address } = body

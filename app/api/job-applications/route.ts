@@ -48,7 +48,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const session = await getSession()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const formData = await request.formData()
     const parsed = jobApplicationSchema.safeParse({

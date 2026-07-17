@@ -53,7 +53,7 @@ function hashIdentifier(value: string) {
   return createHash('sha256').update(`${salt}:${value}`).digest('hex')
 }
 
-function useMemoryBucket(key: string, config: RateLimitConfig): RateLimitResult {
+function getMemoryBucket(key: string, config: RateLimitConfig): RateLimitResult {
   const now = new Date()
   const current = memoryBuckets.get(key)
   const bucket = !current || current.resetAt <= now
@@ -96,7 +96,7 @@ export async function enforceRateLimit(
     `
 
     const bucket = rows[0]
-    if (!bucket) return useMemoryBucket(key, config)
+    if (!bucket) return getMemoryBucket(key, config)
 
     return {
       success: bucket.count <= config.limit,
@@ -105,7 +105,7 @@ export async function enforceRateLimit(
     }
   } catch {
     // Keeps basic abuse protection active while a deployment is waiting for its migration.
-    return useMemoryBucket(key, config)
+    return getMemoryBucket(key, config)
   }
 }
 

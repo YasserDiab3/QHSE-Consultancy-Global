@@ -18,8 +18,8 @@ export function getCountryNameFromCode(countryCode?: string, locale = 'en') {
   }
 }
 
-export function getVisitorGeoDetails() {
-  const headerList = headers()
+export async function getVisitorGeoDetails() {
+  const headerList = await headers()
   const countryCode =
     normalizeCountryCode(headerList.get('x-vercel-ip-country')) ||
     normalizeCountryCode(headerList.get('cf-ipcountry')) ||

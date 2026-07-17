@@ -18,11 +18,12 @@ function normalizeText(value: unknown) {
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await requireAdmin()
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 
@@ -32,7 +33,7 @@ export async function PATCH(
     }
 
     const application = await prisma.jobApplication.update({
-      where: { id: params.id },
+      where: { id },
       data: { status },
       include: {
         jobOpening: true,
@@ -43,7 +44,7 @@ export async function PATCH(
       session.user.id,
       'JOB_APPLICATION_UPDATED',
       'job-application',
-      params.id,
+      id,
       `Updated application status to ${status}`,
       ip
     )

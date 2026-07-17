@@ -11,15 +11,16 @@ export const revalidate = 0
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await getSession()
     if (!session || !['ADMIN', 'CLIENT'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()
 
@@ -28,13 +29,13 @@ export async function PUT(
     if (session.user.role === 'CLIENT') {
       const clientId = await getClientIdByUserId(session.user.id)
       const reports = clientId ? await listReportRecords({ clientId }) : []
-      if (!reports.some((report) => report.observations.some((observation) => observation.id === params.id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      await updateObservationRecord(params.id, { clientResponse, correctiveAction, correctiveActionStatus: correctiveActionStatus || 'IN_PROGRESS' })
-      await logActivity(session.user.id, 'CLIENT_CORRECTIVE_ACTION', 'observation', params.id, 'Client added a response or corrective action', ip)
-      return NextResponse.json({ id: params.id, clientResponse, correctiveAction, correctiveActionStatus: correctiveActionStatus || 'IN_PROGRESS' })
+      if (!reports.some((report) => report.observations.some((observation) => observation.id === id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      await updateObservationRecord(id, { clientResponse, correctiveAction, correctiveActionStatus: correctiveActionStatus || 'IN_PROGRESS' })
+      await logActivity(session.user.id, 'CLIENT_CORRECTIVE_ACTION', 'observation', id, 'Client added a response or corrective action', ip)
+      return NextResponse.json({ id, clientResponse, correctiveAction, correctiveActionStatus: correctiveActionStatus || 'IN_PROGRESS' })
     }
 
-    await updateObservationRecord(params.id, {
+    await updateObservationRecord(id, {
       title,
       titleAr,
       description,
@@ -48,7 +49,7 @@ export async function PUT(
     })
 
     const observation = {
-      id: params.id,
+      id,
       title,
       titleAr,
       description,
@@ -62,7 +63,7 @@ export async function PUT(
       session.user.id,
       'OBSERVATION_UPDATED',
       'observation',
-      params.id,
+      id,
       `Updated observation`,
       ip
     )
@@ -75,20 +76,21 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   try {
     const session = await getSession()
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const headerList = headers()
+    const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
-    await deleteObservationRecord(params.id)
+    await deleteObservationRecord(id)
 
-    await logActivity(session.user.id, 'OBSERVATION_DELETED', 'observation', params.id, `Deleted observation`, ip)
+    await logActivity(session.user.id, 'OBSERVATION_DELETED', 'observation', id, `Deleted observation`, ip)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

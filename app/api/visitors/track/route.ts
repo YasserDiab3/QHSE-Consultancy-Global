@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     )
     if (!rateLimit.success) return rateLimitResponse(rateLimit)
 
-    const geo = getVisitorGeoDetails()
+    const geo = await getVisitorGeoDetails()
 
     if (isBotUserAgent(geo.userAgent)) {
       return NextResponse.json({ skipped: true })
