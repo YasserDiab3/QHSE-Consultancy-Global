@@ -31,6 +31,7 @@ import { downloadClientReportPdf } from '@/lib/report-pdf'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 import ClientKnowledgeBank from '@/components/ClientKnowledgeBank'
+import ClientProfilePanel from '@/components/ClientProfilePanel'
 
 type Report = {
   id: string
@@ -240,6 +241,10 @@ export default function ClientDashboard() {
                 {t('common.filter')}
               </button>
             </div>
+          </div>
+
+          <div className="mb-6">
+            <ClientProfilePanel language={language} />
           </div>
 
           <div className="mb-6 flex w-fit items-center gap-1 rounded-xl border border-gray-200 bg-white p-1">

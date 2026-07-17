@@ -8,6 +8,7 @@ type RawClientRow = {
   companyNameAr: string | null
   phone: string | null
   address: string | null
+  contactInfo: string | null
   userId: string
   userName: string
   userEmail: string
@@ -31,6 +32,7 @@ type SchemaInfo = {
     companyNameAr: string | null
     phone: string | null
     address: string | null
+    contactInfo: string | null
     createdAt: string | null
     updatedAt: string | null
   }
@@ -148,6 +150,7 @@ async function loadSchemaInfo(): Promise<SchemaInfo> {
       ]),
       phone: resolveOptionalColumn(clientColumns, ['phone', 'phone_number', 'phonenumber']),
       address: resolveOptionalColumn(clientColumns, ['address', 'clientAddress', 'client_address']),
+      contactInfo: resolveOptionalColumn(clientColumns, ['contactInfo', 'contact_info', 'contactinfo']),
       createdAt: resolveOptionalColumn(clientColumns, ['createdAt', 'created_at', 'createdat']),
       updatedAt: resolveOptionalColumn(clientColumns, ['updatedAt', 'updated_at', 'updatedat']),
     },
@@ -181,6 +184,7 @@ function mapClientRow(row: RawClientRow) {
     companyNameAr: row.companyNameAr ?? undefined,
     phone: row.phone ?? undefined,
     address: row.address ?? undefined,
+    contactInfo: row.contactInfo ?? undefined,
     userId: row.userId,
     user: {
       id: row.userId,
@@ -211,6 +215,7 @@ export async function listClientAccounts() {
       ${selectExpr('c', schema.client.companyNameAr, 'companyNameAr')},
       ${selectExpr('c', schema.client.phone, 'phone')},
       ${selectExpr('c', schema.client.address, 'address')},
+      ${selectExpr('c', schema.client.contactInfo, 'contactInfo')},
       u.${quoteIdentifier(schema.user.id)} AS "userId",
       u.${quoteIdentifier(schema.user.name)} AS "userName",
       u.${quoteIdentifier(schema.user.email)} AS "userEmail",
@@ -240,6 +245,7 @@ export async function getClientAccountById(id: string) {
       ${selectExpr('c', schema.client.companyNameAr, 'companyNameAr')},
       ${selectExpr('c', schema.client.phone, 'phone')},
       ${selectExpr('c', schema.client.address, 'address')},
+      ${selectExpr('c', schema.client.contactInfo, 'contactInfo')},
       u.${quoteIdentifier(schema.user.id)} AS "userId",
       u.${quoteIdentifier(schema.user.name)} AS "userName",
       u.${quoteIdentifier(schema.user.email)} AS "userEmail",
@@ -342,6 +348,24 @@ export async function updateClientAccount(
     updates.push(`${quoteIdentifier(schema.client.address)} = ${sqlValue(input.address)}`)
   }
 
+  if (schema.client.updatedAt) {
+    updates.push(`${quoteIdentifier(schema.client.updatedAt)} = CURRENT_TIMESTAMP`)
+  }
+
+  await prisma.$executeRawUnsafe(`
+    UPDATE ${quoteIdentifier(schema.clientTable)}
+    SET ${updates.join(', ')}
+    WHERE ${quoteIdentifier(schema.client.id)} = ${sqlValue(clientId)}
+  `)
+}
+
+export async function updateClientContactInfo(clientId: string, contactInfo: string) {
+  const schema = await getSchemaInfo()
+  if (!schema.client.contactInfo) {
+    throw new Error('Client contact information is not available in the current database')
+  }
+
+  const updates = [`${quoteIdentifier(schema.client.contactInfo)} = ${sqlValue(contactInfo)}`]
   if (schema.client.updatedAt) {
     updates.push(`${quoteIdentifier(schema.client.updatedAt)} = CURRENT_TIMESTAMP`)
   }
