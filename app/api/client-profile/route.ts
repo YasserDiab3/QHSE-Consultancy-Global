@@ -37,7 +37,7 @@ export async function GET() {
         user: client.user,
       },
       settings: { logoDataUrl: settings.logoDataUrl, showProfile: settings.showProfile !== false },
-    })
+    }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' } })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to load profile'
     return NextResponse.json({ error: message }, { status: message === 'Forbidden' ? 403 : 500 })
