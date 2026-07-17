@@ -30,6 +30,7 @@ import Header from '@/components/Header'
 import { downloadClientReportPdf } from '@/lib/report-pdf'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
+import ClientKnowledgeBank from '@/components/ClientKnowledgeBank'
 
 type Report = {
   id: string
@@ -434,7 +435,7 @@ function ClientPerformance({ reports, language }: { reports: Report[]; language:
   return <div className="space-y-6"><div className="grid gap-4 md:grid-cols-3"><ProfileCard label={language === 'ar' ? 'معدل إغلاق الملاحظات' : 'Observation closure'} value={`${closure}%`} icon={<CheckCircle2 />} /><ProfileCard label={language === 'ar' ? 'درجة التوافق التقديرية' : 'Estimated compliance'} value={`${compliance}%`} icon={<TrendingUp />} /><ProfileCard label={language === 'ar' ? 'المخاطر العالية والحرجة' : 'High & critical risks'} value={count('HIGH') + count('CRITICAL')} icon={<AlertTriangle />} /></div><div className="card"><h2 className="mb-5 text-lg font-bold text-gray-900">{language === 'ar' ? 'توزيع مستويات المخاطر' : 'Risk distribution'}</h2><div className="space-y-4">{[['CRITICAL', 'حرجة', 'bg-red-500'], ['HIGH', 'عالية', 'bg-orange-500'], ['MEDIUM', 'متوسطة', 'bg-amber-400'], ['LOW', 'منخفضة', 'bg-emerald-500']].map(([level, ar, color]) => <div key={level}><div className="mb-1 flex justify-between text-sm"><span>{language === 'ar' ? ar : level}</span><span>{count(level)}</span></div><div className="h-3 rounded-full bg-gray-100"><div className={`h-3 rounded-full ${color}`} style={{ width: `${total ? (count(level) / total) * 100 : 0}%` }} /></div></div>)}</div></div></div>
 }
 
-function ClientKnowledgeBank({
+function LegacyClientKnowledgeBank({
   documents,
   folders,
   loading,
