@@ -12,12 +12,13 @@ function getRuntimeDatabaseUrl() {
   try {
     const url = new URL(databaseUrl)
 
-    // Supabase's transaction pooler (port 6543) does not support Prisma's
-    // prepared statements reliably. Use the shared session pooler for runtime
-    // traffic instead, where prepared statements are supported.
-    if (url.hostname.endsWith('.pooler.supabase.com') && url.port === '6543') {
-      url.port = '5432'
-      url.searchParams.delete('pgbouncer')
+    // Serverless instances must use Supabase's transaction pooler. The session
+    // pooler has a small fixed client cap and is exhausted when Vercel scales.
+    // Prisma's PgBouncer mode avoids prepared-statement collisions on pooled
+    // connections and one connection per instance prevents connection storms.
+    if (url.hostname.endsWith('.pooler.supabase.com')) {
+      url.port = '6543'
+      url.searchParams.set('pgbouncer', 'true')
       url.searchParams.set('connection_limit', '1')
     }
 
@@ -39,4 +40,6 @@ export const prisma =
     },
   })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+// Reusing one client per warm runtime is important in serverless production as
+// well; otherwise separate bundled modules can each consume a pool connection.
+globalForPrisma.prisma = prisma
