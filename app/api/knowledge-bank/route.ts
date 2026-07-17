@@ -152,7 +152,25 @@ export async function DELETE(request: Request) {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
     const clientId = searchParams.get('clientId')
-    if (!id || !clientId) return NextResponse.json({ error: 'Document and client are required' }, { status: 400 })
+    const type = searchParams.get('type') || 'document'
+    if (!id || !clientId) return NextResponse.json({ error: 'Item and client are required' }, { status: 400 })
+
+    if (type === 'folder') {
+      const folder = await prisma.knowledgeFolder.findFirst({ where: { id, clientId } })
+      if (!folder) return NextResponse.json({ error: 'Folder not found' }, { status: 404 })
+
+      const childCount = await prisma.knowledgeFolder.count({ where: { parentId: folder.id } })
+      if (childCount > 0) {
+        return NextResponse.json({ error: 'Move or delete subfolders before deleting this folder' }, { status: 409 })
+      }
+
+      await prisma.clientDocument.updateMany({ where: { folderId: folder.id }, data: { folderId: null } })
+      await prisma.knowledgeFolder.delete({ where: { id: folder.id } })
+      await logActivity(session.user.id, 'KNOWLEDGE_FOLDER_DELETED', 'knowledge_folder', folder.id, `Deleted knowledge folder ${folder.name}; its files were moved to the root folder`)
+      return NextResponse.json({ success: true, filesMovedToRoot: true })
+    }
+
+    if (type !== 'document') return NextResponse.json({ error: 'Unsupported knowledge bank item type' }, { status: 400 })
 
     const document = await prisma.clientDocument.findFirst({ where: { id, clientId } })
     if (!document) return NextResponse.json({ error: 'Document not found' }, { status: 404 })

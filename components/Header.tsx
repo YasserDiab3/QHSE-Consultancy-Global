@@ -53,7 +53,7 @@ export default function Header() {
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        useSolidHeader ? 'border-b border-slate-200/80 bg-white/95 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl' : 'bg-gradient-to-b from-slate-950/40 to-transparent'
+        useSolidHeader ? 'border-b border-primary-100/80 bg-white/95 shadow-[0_10px_32px_rgba(15,76,129,0.08)] backdrop-blur-xl' : 'bg-gradient-to-b from-primary-950/85 via-primary-900/45 to-transparent'
       }`}
     >
       <div className="w-full px-4 sm:px-6 lg:px-10">
@@ -81,7 +81,9 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 xl:px-4 ${
-                  useSolidHeader
+                  pathname === link.href
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : useSolidHeader
                     ? 'text-slate-700 hover:bg-primary-50 hover:text-primary-700'
                     : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}
