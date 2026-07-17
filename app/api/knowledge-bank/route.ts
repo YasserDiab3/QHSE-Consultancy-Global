@@ -39,16 +39,37 @@ export async function GET(request: Request) {
     const client = await getClientAccountById(clientId)
     if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
-    const [folders, documents] = await Promise.all([
-      prisma.knowledgeFolder.findMany({
-        where: { clientId },
-        orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
-      }),
-      prisma.clientDocument.findMany({
+    let folders: Array<{ id: string; parentId: string | null; name: string; category: string }> = []
+    let documents: Array<Record<string, unknown>> = []
+
+    try {
+      ;[folders, documents] = await Promise.all([
+        prisma.knowledgeFolder.findMany({
+          where: { clientId },
+          select: { id: true, parentId: true, name: true, category: true },
+          orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
+        }),
+        prisma.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: 'desc' } }),
+      ])
+    } catch {
+      // Older databases can still serve document management while the optional
+      // folder migration is waiting to be applied.
+      const legacyDocuments = await prisma.clientDocument.findMany({
         where: { clientId },
         orderBy: { createdAt: 'desc' },
-      }),
-    ])
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          url: true,
+          originalName: true,
+          mimeType: true,
+          size: true,
+          createdAt: true,
+        },
+      })
+      documents = legacyDocuments.map((document) => ({ ...document, folderId: null }))
+    }
 
     return NextResponse.json({ client, folders, documents })
   } catch (error) {
