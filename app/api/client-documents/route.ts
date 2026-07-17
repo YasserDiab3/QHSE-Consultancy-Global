@@ -59,8 +59,22 @@ export async function GET() {
     } catch (error: any) {
       // Keep the existing client document library available until the folder
       // migration has been applied to an older database.
-      if (error?.code !== 'P2021') throw error
-      documents = await prisma.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: 'desc' }, select: documentSelect })
+      if (!['P2021', 'P2022'].includes(error?.code)) throw error
+      const legacyDocuments = await prisma.clientDocument.findMany({
+        where: { clientId },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          url: true,
+          originalName: true,
+          mimeType: true,
+          size: true,
+          createdAt: true,
+        },
+      })
+      documents = legacyDocuments.map((document) => ({ ...document, folderId: null }))
     }
 
     return NextResponse.json({ folders, documents })
