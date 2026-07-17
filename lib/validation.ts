@@ -59,13 +59,13 @@ const clientDocumentMimeTypes = [
 export const clientDocumentSchema = z.object({
   title: z.string().trim().min(1).max(180),
   category: z.string().trim().min(1).max(50).optional(),
-  url: z.string().max(12 * 1024 * 1024).refine(
+  url: z.string().max(4.2 * 1024 * 1024).refine(
     (value) => value.startsWith('https://') || clientDocumentMimeTypes.some((mime) => value.startsWith(`data:${mime};base64,`)),
     'Document URL or file type is not allowed'
   ),
   originalName: optionalText(180),
   mimeType: z.enum(clientDocumentMimeTypes).optional(),
-  size: z.coerce.number().int().min(1).max(8 * 1024 * 1024).optional(),
+  size: z.coerce.number().int().min(1).max(3 * 1024 * 1024).optional(),
 })
 
 export const financialRecordSchema = z.object({
