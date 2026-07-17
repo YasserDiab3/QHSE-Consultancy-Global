@@ -16,6 +16,23 @@ export default function ClientKnowledgeBank({ documents, folders, loading, error
 
   useEffect(() => { if (selected !== root && !folderMap.has(selected)) setSelected(root) }, [folderMap, selected])
 
+  useEffect(() => {
+    if (!preview?.url.startsWith('data:')) return
+    const mime = preview.mimeType?.toLowerCase() || preview.url.match(/^data:([^;,]+)/i)?.[1]?.toLowerCase() || ''
+    const pdf = mime === 'application/pdf' || /\.pdf(?:$|[?#])/i.test(preview.originalName || preview.title)
+    if (!pdf) return
+    let active = true
+    fetch(preview.url)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const objectUrl = URL.createObjectURL(blob)
+        if (active) setPreview((current) => current?.url === preview.url ? { ...current, url: objectUrl } : current)
+        else URL.revokeObjectURL(objectUrl)
+      })
+      .catch(() => undefined)
+    return () => { active = false }
+  }, [preview])
+
   const path = (id?: string | null) => {
     const names: string[] = []
     let current = id ? folderMap.get(id) : undefined
