@@ -1,1 +1,1 @@
-export { default } from './admin-knowledge-bank-panel'
+export { default } from './admin-knowledge-bank-explorer'
