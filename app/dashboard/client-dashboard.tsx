@@ -1,5 +1,8 @@
 'use client'
 
+import NextImage from 'next/image'
+import { CardGridSkeleton } from '@/components/Skeleton'
+
 import { useLanguage } from '@/context'
 import { useEffect, useState, useCallback } from 'react'
 import {
@@ -14,7 +17,6 @@ import {
   MapPin,
   ChevronLeft,
   ChevronRight,
-  Loader2,
   X,
   Image as ImageIcon,
   LayoutDashboard,
@@ -116,10 +118,13 @@ function ObservationImages({
           </div>
           <div className="flex gap-2 overflow-x-auto">
             {group.items.map((img) => (
-              <img
+              <NextImage
                 key={img.id}
                 src={img.url}
                 alt={group.label}
+                width={64}
+                height={64}
+                unoptimized
                 className="h-16 w-16 rounded-lg border border-gray-200 object-cover"
               />
             ))}
@@ -326,9 +331,7 @@ export default function ClientDashboard() {
           ) : (
             <div className="space-y-4">
               {loading ? (
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
-                </div>
+                <CardGridSkeleton count={4} />
               ) : reports.length === 0 ? (
                 <div className="card text-center py-12">
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />

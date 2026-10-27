@@ -3,6 +3,7 @@ import { getSession } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
 import { createObservationRecord } from '@/lib/observation-records'
+import { notifyCriticalObservation } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -46,6 +47,17 @@ export async function POST(request: Request) {
       status: status || 'OPEN',
       sortOrder: sortOrder || 0,
       images: [],
+    }
+
+    if (riskLevel === 'CRITICAL') {
+      void notifyCriticalObservation({
+        reportId,
+        observationTitle: title,
+        observationTitleAr: titleAr,
+        description,
+        descriptionAr,
+        riskLevel,
+      }).catch((err) => console.error('Failed to notify critical risk observation:', err))
     }
 
     await logActivity(

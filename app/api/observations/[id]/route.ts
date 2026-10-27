@@ -5,6 +5,8 @@ import { headers } from 'next/headers'
 import { deleteObservationRecord, updateObservationRecord } from '@/lib/observation-records'
 import { getClientIdByUserId } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
+import { prisma } from '@/lib/prisma'
+import { notifyCriticalObservation } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -57,6 +59,24 @@ export async function PUT(
       riskLevel,
       status,
       sortOrder,
+    }
+
+    if (riskLevel === 'CRITICAL') {
+      void prisma.observation.findUnique({
+        where: { id },
+        select: { reportId: true },
+      }).then((obs) => {
+        if (obs?.reportId) {
+          return notifyCriticalObservation({
+            reportId: obs.reportId,
+            observationTitle: title || 'Critical Observation',
+            observationTitleAr: titleAr,
+            description,
+            descriptionAr,
+            riskLevel: 'CRITICAL',
+          })
+        }
+      }).catch((err) => console.error('Failed to notify critical risk update:', err))
     }
 
     await logActivity(

@@ -10,18 +10,18 @@ type BrandLogoProps = {
 const CONFIG = {
   header: {
     src: '/brand/qhsse-logo-header.svg',
-    width: 1024,
-    height: 1024,
+    width: 280,
+    height: 70,
   },
   stacked: {
     src: '/brand/qhsse-logo-stacked.svg',
-    width: 1024,
-    height: 1024,
+    width: 200,
+    height: 200,
   },
   mark: {
     src: '/brand/qhsse-logo-mark.svg',
-    width: 1024,
-    height: 1024,
+    width: 100,
+    height: 100,
   },
 } as const
 

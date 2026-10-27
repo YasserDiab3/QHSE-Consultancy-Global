@@ -1,5 +1,7 @@
 'use client'
 
+import NextImage from 'next/image'
+
 import { useLanguage } from '@/context'
 import { useState, useCallback, useEffect } from 'react'
 import {
@@ -89,10 +91,13 @@ function ObservationImages({
           </div>
           <div className="flex gap-2 overflow-x-auto">
             {group.items.map((img) => (
-              <img
+              <NextImage
                 key={img.id}
                 src={img.url}
                 alt={group.label}
+                width={64}
+                height={64}
+                unoptimized
                 className="h-16 w-16 rounded-lg border border-gray-200 object-cover"
               />
             ))}
