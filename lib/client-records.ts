@@ -244,6 +244,15 @@ export async function listClientAccounts() {
   return rows.map(mapClientRow)
 }
 
+export async function countClientAccounts(): Promise<number> {
+  const schema = await getSchemaInfo()
+  const rows = await prisma.$queryRawUnsafe<{ count: string | number | bigint }[]>(`
+    SELECT COUNT(*)::int AS "count"
+    FROM ${quoteIdentifier(schema.clientTable)}
+  `)
+  return Number(rows[0]?.count ?? 0)
+}
+
 export async function getClientAccountById(id: string) {
   const schema = await getSchemaInfo()
 

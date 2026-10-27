@@ -80,18 +80,22 @@ export default function AdminContactRequests({
     setLoading(true)
     try {
       const res = await fetch('/api/contact')
+      if (res.status === 401 || res.status === 403) {
+        return
+      }
       if (!res.ok) {
         throw new Error(copy.loadError)
       }
 
       setRequests(await res.json())
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch contact requests:', error)
-      toast.error(copy.loadError)
+      const isNetwork = error?.name === 'TypeError' || error?.message?.includes('fetch')
+      toast.error(isNetwork ? (language === 'ar' ? 'تعذر الاتصال بالخادم' : 'Connection failed') : copy.loadError)
     } finally {
       setLoading(false)
     }
-  }, [copy.loadError])
+  }, [copy.loadError, language])
 
   useEffect(() => {
     void fetchRequests()

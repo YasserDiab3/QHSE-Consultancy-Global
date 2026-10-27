@@ -114,6 +114,7 @@ type ListReportOptions = {
   dateTo?: string | null
   riskLevel?: string | null
   take?: number
+  includeImages?: boolean
 }
 
 type CreateReportInput = {
@@ -309,7 +310,7 @@ async function getSchemaInfo() {
   return schemaInfoPromise
 }
 
-async function loadObservations(reportIds: string[]) {
+async function loadObservations(reportIds: string[], includeImages = true) {
   if (reportIds.length === 0) {
     return new Map<string, any[]>()
   }
@@ -350,6 +351,7 @@ async function loadObservations(reportIds: string[]) {
     let imagesByObservationId = new Map<string, any[]>()
 
     if (
+      includeImages &&
       observationIds.length > 0 &&
       schema.imageTable &&
       schema.image.id &&
@@ -509,7 +511,7 @@ export async function listReportRecords(options: ListReportOptions = {}) {
     ${limitClause}
   `)
 
-  const observationsByReportId = await loadObservations(rows.map((row) => row.id))
+  const observationsByReportId = await loadObservations(rows.map((row) => row.id), options.includeImages !== false)
   const mapped = rows.map((row) => mapReportRow(row, observationsByReportId))
 
   if (!options.riskLevel) {

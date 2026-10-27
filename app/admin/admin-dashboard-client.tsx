@@ -64,9 +64,21 @@ export default function AdminDashboardClient() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<AdminTab>('overview')
+  const [visitedTabs, setVisitedTabs] = useState<Record<string, boolean>>({ overview: true })
   const [reportFilterPreset, setReportFilterPreset] = useState<ReportFilterPreset>(null)
   const [requestFilterPreset, setRequestFilterPreset] = useState<RequestStatusPreset>('ALL')
   const contentAnchorRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    try {
+      const cached = sessionStorage.getItem('qhsse_admin_stats')
+      if (cached) {
+        const parsed = JSON.parse(cached)
+        setStats(parsed)
+        setLoading(false)
+      }
+    } catch {}
+  }, [])
 
   const fetchStats = useCallback(async (isRefresh = false) => {
     if (isRefresh || !stats) {
@@ -76,15 +88,27 @@ export default function AdminDashboardClient() {
       const res = await fetch('/api/dashboard')
       const data = await res.json().catch(() => null)
 
+      if (res.status === 401 || res.status === 403) {
+        toast.error(language === 'ar' ? 'انتهت الجلسة، يرجى إعادة تسجيل الدخول' : 'Session expired, please sign in again')
+        return
+      }
+
       if (!res.ok || !data) {
         throw new Error(data?.error || 'Failed to load dashboard stats')
       }
 
       setStats(data)
-    } catch (error) {
+      try {
+        sessionStorage.setItem('qhsse_admin_stats', JSON.stringify(data))
+      } catch {}
+    } catch (error: any) {
       console.error('Failed to fetch stats:', error)
       if (!stats) setStats(null)
-      toast.error(language === 'ar' ? 'تعذر تحميل بيانات لوحة التحكم' : 'Failed to load dashboard data')
+      const isNetwork = error?.name === 'TypeError' || error?.message?.includes('fetch')
+      const msg = isNetwork
+        ? (language === 'ar' ? 'تعذر الاتصال بالخادم، يرجى التحقق من الشبكة' : 'Connection failed, please check your network')
+        : (language === 'ar' ? 'تعذر تحميل بيانات لوحة التحكم' : 'Failed to load dashboard data')
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -102,6 +126,7 @@ export default function AdminDashboardClient() {
 
   const activateTab = useCallback((tab: AdminTab) => {
     setActiveTab(tab)
+    setVisitedTabs((prev) => ({ ...prev, [tab]: true }))
 
     requestAnimationFrame(() => {
       contentAnchorRef.current?.scrollIntoView({
@@ -183,30 +208,44 @@ export default function AdminDashboardClient() {
               onOpenRequests={openRequests}
             />
           </div>
-          <div className={activeTab === 'reports' ? 'block' : 'hidden'}>
-            <AdminReports onDataChanged={() => fetchStats(true)} filterPreset={reportFilterPreset} />
-          </div>
-          <div className={activeTab === 'clients' ? 'block' : 'hidden'}>
-            <AdminClients onDataChanged={() => fetchStats(true)} />
-          </div>
-          <div className={activeTab === 'knowledge' ? 'block' : 'hidden'}>
-            <AdminKnowledgeBank />
-          </div>
-          <div className={activeTab === 'training' ? 'block' : 'hidden'}>
-            <AdminTraining onDataChanged={() => fetchStats(true)} />
-          </div>
-          <div className={activeTab === 'jobs' ? 'block' : 'hidden'}>
-            <AdminJobs onDataChanged={() => fetchStats(true)} />
-          </div>
-          <div className={activeTab === 'requests' ? 'block' : 'hidden'}>
-            <AdminContactRequests
-              statusFilter={requestFilterPreset}
-              onDataChanged={() => fetchStats(true)}
-            />
-          </div>
-          <div className={activeTab === 'activity' ? 'block' : 'hidden'}>
-            <AdminActivityLog />
-          </div>
+          {visitedTabs.reports && (
+            <div className={activeTab === 'reports' ? 'block' : 'hidden'}>
+              <AdminReports onDataChanged={() => fetchStats(true)} filterPreset={reportFilterPreset} />
+            </div>
+          )}
+          {visitedTabs.clients && (
+            <div className={activeTab === 'clients' ? 'block' : 'hidden'}>
+              <AdminClients onDataChanged={() => fetchStats(true)} />
+            </div>
+          )}
+          {visitedTabs.knowledge && (
+            <div className={activeTab === 'knowledge' ? 'block' : 'hidden'}>
+              <AdminKnowledgeBank />
+            </div>
+          )}
+          {visitedTabs.training && (
+            <div className={activeTab === 'training' ? 'block' : 'hidden'}>
+              <AdminTraining onDataChanged={() => fetchStats(true)} />
+            </div>
+          )}
+          {visitedTabs.jobs && (
+            <div className={activeTab === 'jobs' ? 'block' : 'hidden'}>
+              <AdminJobs onDataChanged={() => fetchStats(true)} />
+            </div>
+          )}
+          {visitedTabs.requests && (
+            <div className={activeTab === 'requests' ? 'block' : 'hidden'}>
+              <AdminContactRequests
+                statusFilter={requestFilterPreset}
+                onDataChanged={() => fetchStats(true)}
+              />
+            </div>
+          )}
+          {visitedTabs.activity && (
+            <div className={activeTab === 'activity' ? 'block' : 'hidden'}>
+              <AdminActivityLog />
+            </div>
+          )}
         </div>
       </main>
     </div>

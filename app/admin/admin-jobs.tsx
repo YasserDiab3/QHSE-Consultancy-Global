@@ -165,14 +165,19 @@ export default function AdminJobs({
       const res = await fetch('/api/jobs', { cache: 'no-store' })
       const data = await res.json().catch(() => null)
 
+      if (res.status === 401 || res.status === 403) {
+        return
+      }
+
       if (!res.ok) {
         throw new Error(data?.error || 'Failed to load jobs')
       }
 
       setJobs(data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load jobs:', error)
-      toast.error(language === 'ar' ? 'تعذر تحميل الوظائف' : 'Failed to load jobs')
+      const isNetwork = error?.name === 'TypeError' || error?.message?.includes('fetch')
+      toast.error(isNetwork ? (language === 'ar' ? 'تعذر الاتصال بالخادم' : 'Connection failed') : (language === 'ar' ? 'تعذر تحميل الوظائف' : 'Failed to load jobs'))
     } finally {
       setLoading(false)
     }
@@ -184,14 +189,19 @@ export default function AdminJobs({
       const res = await fetch('/api/job-applications', { cache: 'no-store' })
       const data = await res.json().catch(() => null)
 
+      if (res.status === 401 || res.status === 403) {
+        return
+      }
+
       if (!res.ok) {
         throw new Error(data?.error || 'Failed to load job applications')
       }
 
       setApplications(data)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load job applications:', error)
-      toast.error(language === 'ar' ? 'تعذر تحميل طلبات التوظيف' : 'Failed to load job applications')
+      const isNetwork = error?.name === 'TypeError' || error?.message?.includes('fetch')
+      toast.error(isNetwork ? (language === 'ar' ? 'تعذر الاتصال بالخادم' : 'Connection failed') : (language === 'ar' ? 'تعذر تحميل طلبات التوظيف' : 'Failed to load job applications'))
     } finally {
       setApplicationsLoading(false)
     }
