@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {
   escapeCsvCell,
   buildObservationsMatrixCsv,
+  buildAuditLogCsv,
   extractObservationsFromReports,
   MatrixObservationItem,
   ReportWithObservations,
@@ -111,4 +112,35 @@ test('extractObservationsFromReports combines observations across reports', () =
   assert.equal(extracted.length, 3)
   assert.equal(extracted[0].siteName, 'Site Alpha')
   assert.equal(extracted[2].siteName, 'Site Beta')
+})
+
+
+test('buildAuditLogCsv generates UTF-8 BOM CSV with audit records in Arabic and English', () => {
+  const mockLogs = [
+    {
+      id: 'log-1',
+      action: 'UPDATE_REPORT',
+      entityType: 'report',
+      entityId: 'rep-123',
+      details: 'Updated risk level to HIGH',
+      ipAddress: '192.168.1.0',
+      createdAt: '2026-10-27T12:00:00.000Z',
+      user: {
+        name: 'Admin User',
+        email: 'admin@qhsse.com',
+        role: 'ADMIN',
+      },
+    },
+  ]
+
+  const csvAr = buildAuditLogCsv(mockLogs as any, 'ar')
+  assert.equal(csvAr.charCodeAt(0), 0xfeff)
+  assert.ok(csvAr.includes('"معرّف السجل"'))
+  assert.ok(csvAr.includes('"UPDATE_REPORT"'))
+  assert.ok(csvAr.includes('"admin@qhsse.com"'))
+
+  const csvEn = buildAuditLogCsv(mockLogs as any, 'en')
+  assert.equal(csvEn.charCodeAt(0), 0xfeff)
+  assert.ok(csvEn.includes('"Log ID"'))
+  assert.ok(csvEn.includes('"Timestamp"'))
 })

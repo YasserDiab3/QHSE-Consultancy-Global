@@ -501,13 +501,215 @@ function ClientOverview({ reports, language, onReports }: { reports: Report[]; l
 }
 
 function ClientPerformance({ reports, language }: { reports: Report[]; language: string }) {
+  const isAr = language === 'ar'
   const observations = reports.flatMap((report) => report.observations)
   const count = (level: string) => observations.filter((item) => item.riskLevel === level).length
   const total = observations.length
   const closed = observations.filter((item) => ['CLOSED', 'RESOLVED'].includes(item.status)).length
-  const closure = total ? Math.round((closed / total) * 100) : 0
+  const closureRate = total ? Math.round((closed / total) * 100) : 0
+  const activeCritical = observations.filter(
+    (item) => ['CRITICAL', 'HIGH'].includes(item.riskLevel) && !['CLOSED', 'RESOLVED'].includes(item.status)
+  ).length
   const compliance = Math.max(0, 100 - count('CRITICAL') * 25 - count('HIGH') * 12 - count('MEDIUM') * 5 - count('LOW') * 2)
-  return <div className="space-y-6"><div className="grid gap-4 md:grid-cols-3"><ProfileCard label={language === 'ar' ? 'معدل إغلاق الملاحظات' : 'Observation closure'} value={`${closure}%`} icon={<CheckCircle2 />} /><ProfileCard label={language === 'ar' ? 'درجة التوافق التقديرية' : 'Estimated compliance'} value={`${compliance}%`} icon={<TrendingUp />} /><ProfileCard label={language === 'ar' ? 'المخاطر العالية والحرجة' : 'High & critical risks'} value={count('HIGH') + count('CRITICAL')} icon={<AlertTriangle />} /></div><div className="card"><h2 className="mb-5 text-lg font-bold text-gray-900">{language === 'ar' ? 'توزيع مستويات المخاطر' : 'Risk distribution'}</h2><div className="space-y-4">{[['CRITICAL', 'حرجة', 'bg-red-500'], ['HIGH', 'عالية', 'bg-orange-500'], ['MEDIUM', 'متوسطة', 'bg-amber-400'], ['LOW', 'منخفضة', 'bg-emerald-500']].map(([level, ar, color]) => <div key={level}><div className="mb-1 flex justify-between text-sm"><span>{language === 'ar' ? ar : level}</span><span>{count(level)}</span></div><div className="h-3 rounded-full bg-gray-100"><div className={`h-3 rounded-full ${color}`} style={{ width: `${total ? (count(level) / total) * 100 : 0}%` }} /></div></div>)}</div></div></div>
+
+  // 1. Group by month for timeline trend
+  const monthMap = new Map<string, { monthKey: string; label: string; total: number; closed: number }>()
+  reports.forEach((report) => {
+    const d = new Date(report.date)
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const label = d.toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { year: 'numeric', month: 'short' })
+    const entry = monthMap.get(key) || { monthKey: key, label, total: 0, closed: 0 }
+    const repObs = report.observations || []
+    entry.total += repObs.length
+    entry.closed += repObs.filter((o) => ['CLOSED', 'RESOLVED'].includes(o.status)).length
+    monthMap.set(key, entry)
+  })
+  const monthlyTrends = Array.from(monthMap.values()).sort((a, b) => a.monthKey.localeCompare(b.monthKey)).slice(-6)
+
+  // 2. Group by site for location breakdown
+  const siteMap = new Map<string, { siteName: string; siteNameAr?: string; reportsCount: number; total: number; closed: number; critical: number }>()
+  reports.forEach((report) => {
+    const key = report.siteName
+    const entry = siteMap.get(key) || {
+      siteName: report.siteName,
+      siteNameAr: report.siteNameAr,
+      reportsCount: 0,
+      total: 0,
+      closed: 0,
+      critical: 0,
+    }
+    entry.reportsCount += 1
+    const repObs = report.observations || []
+    entry.total += repObs.length
+    entry.closed += repObs.filter((o) => ['CLOSED', 'RESOLVED'].includes(o.status)).length
+    entry.critical += repObs.filter((o) => ['CRITICAL', 'HIGH'].includes(o.riskLevel) && !['CLOSED', 'RESOLVED'].includes(o.status)).length
+    siteMap.set(key, entry)
+  })
+  const siteBreakdowns = Array.from(siteMap.values())
+
+  return (
+    <div className="space-y-6">
+      {/* Top 4 KPI Cards */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <ProfileCard
+          label={isAr ? 'معدل إغلاق الملاحظات' : 'Observation Closure Rate'}
+          value={`${closureRate}%`}
+          icon={<CheckCircle2 className="h-6 w-6 text-emerald-600" />}
+        />
+        <ProfileCard
+          label={isAr ? 'مؤشر الامتثال التقديري' : 'Safety Compliance Index'}
+          value={`${compliance}%`}
+          icon={<TrendingUp className="h-6 w-6 text-primary-600" />}
+        />
+        <ProfileCard
+          label={isAr ? 'المخاطر الحرجة النشطة' : 'Active Critical Risks'}
+          value={activeCritical}
+          icon={<AlertTriangle className="h-6 w-6 text-rose-600" />}
+        />
+        <ProfileCard
+          label={isAr ? 'إجمالي الملاحظات المرصودة' : 'Total Observations'}
+          value={total}
+          icon={<FileText className="h-6 w-6 text-amber-600" />}
+        />
+      </div>
+
+      {/* Monthly Safety Trend Chart */}
+      <div className="card">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 border-b border-gray-100 pb-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">
+              {isAr ? 'التطور الزمني لمؤشرات السلامة (شهرياً)' : 'Monthly Safety Performance Trend'}
+            </h2>
+            <p className="mt-1 text-xs text-gray-500">
+              {isAr ? 'مقارنة الملاحظات المرصودة مقابل الملاحظات التي تم إغلاقها بنجاح' : 'Comparison of identified observations vs successfully resolved over time'}
+            </p>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-medium">
+            <span className="flex items-center gap-1.5 text-gray-600">
+              <span className="h-3 w-3 rounded bg-amber-400" />
+              {isAr ? 'مرصودة' : 'Identified'}
+            </span>
+            <span className="flex items-center gap-1.5 text-gray-600">
+              <span className="h-3 w-3 rounded bg-emerald-500" />
+              {isAr ? 'تم الحل' : 'Resolved'}
+            </span>
+          </div>
+        </div>
+
+        {monthlyTrends.length === 0 ? (
+          <p className="py-8 text-center text-sm text-gray-500">
+            {isAr ? 'لا توجد بيانات زمنية كافية حالياً' : 'Insufficient timeline data'}
+          </p>
+        ) : (
+          <div className="space-y-4 pt-2">
+            {monthlyTrends.map((trend) => {
+              const maxVal = Math.max(...monthlyTrends.map((t) => t.total), 1)
+              const identifiedWidth = Math.round((trend.total / maxVal) * 100)
+              const resolvedWidth = trend.total ? Math.round((trend.closed / trend.total) * 100) : 0
+
+              return (
+                <div key={trend.monthKey} className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-semibold text-gray-700">
+                    <span>{trend.label}</span>
+                    <span className="text-gray-500">
+                      {isAr ? `${trend.closed} تم إغلاقها من أصل ${trend.total}` : `${trend.closed} resolved of ${trend.total}`} ({resolvedWidth}%)
+                    </span>
+                  </div>
+                  <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-100">
+                    <div
+                      className="absolute top-0 bottom-0 rounded-full bg-amber-300 transition-all duration-500"
+                      style={{ width: `${identifiedWidth}%` }}
+                    />
+                    <div
+                      className="absolute top-0 bottom-0 rounded-full bg-emerald-500 transition-all duration-500"
+                      style={{ width: `${trend.total ? Math.round((trend.closed / maxVal) * 100) : 0}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Risk Level Distribution */}
+        <div className="card">
+          <h2 className="mb-4 text-lg font-bold text-gray-900">
+            {isAr ? 'توزيع مستويات الخطورة' : 'Risk Level Distribution'}
+          </h2>
+          <div className="space-y-4">
+            {[
+              ['CRITICAL', isAr ? 'حرجة جداً' : 'Critical', 'bg-red-500'],
+              ['HIGH', isAr ? 'عالية' : 'High', 'bg-orange-500'],
+              ['MEDIUM', isAr ? 'متوسطة' : 'Medium', 'bg-amber-400'],
+              ['LOW', isAr ? 'منخفضة' : 'Low', 'bg-emerald-500'],
+            ].map(([level, label, color]) => (
+              <div key={level}>
+                <div className="mb-1.5 flex justify-between text-sm">
+                  <span className="font-medium text-gray-700">{label}</span>
+                  <span className="font-semibold text-gray-900">{count(level)}</span>
+                </div>
+                <div className="h-3 rounded-full bg-gray-100">
+                  <div
+                    className={`h-3 rounded-full ${color} transition-all duration-500`}
+                    style={{ width: `${total ? (count(level) / total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Site & Location Performance Breakdown */}
+        <div className="card">
+          <h2 className="mb-4 text-lg font-bold text-gray-900">
+            {isAr ? 'أداء المواقع والفروع الميدانية' : 'Site & Location Breakdown'}
+          </h2>
+          {siteBreakdowns.length === 0 ? (
+            <p className="py-6 text-center text-sm text-gray-500">
+              {isAr ? 'لا توجد مواقع مسجلة' : 'No sites recorded'}
+            </p>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {siteBreakdowns.map((site) => {
+                const siteClosure = site.total ? Math.round((site.closed / site.total) * 100) : 0
+                return (
+                  <div key={site.siteName} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-primary-500" />
+                        <span className="font-medium text-gray-900 text-sm">
+                          {isAr && site.siteNameAr ? site.siteNameAr : site.siteName}
+                        </span>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                        siteClosure >= 80 ? 'bg-emerald-50 text-emerald-700' : siteClosure >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-rose-50 text-rose-700'
+                      }`}>
+                        {siteClosure}% {isAr ? 'إغلاق' : 'Closed'}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs text-gray-500 ps-6">
+                      <span>{site.reportsCount} {isAr ? 'زيارات تفتيشية' : 'Inspection visits'}</span>
+                      {site.critical > 0 ? (
+                        <span className="text-red-600 font-medium">
+                          {site.critical} {isAr ? 'مخاطر حرجة مفتوحة' : 'Open critical risks'}
+                        </span>
+                      ) : (
+                        <span className="text-emerald-600 font-medium">
+                          {isAr ? 'لا توجد مخاطر حرجة' : 'Zero critical risks'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function ProfileCard({ label, value, icon }: { label: string; value: string | number; icon: React.ReactNode }) { return <div className="card"><div className="flex items-center justify-between"><span className="text-sm text-gray-600">{label}</span><span className="text-primary-600">{icon}</span></div><p className="mt-3 text-3xl font-bold text-gray-900">{value}</p></div> }

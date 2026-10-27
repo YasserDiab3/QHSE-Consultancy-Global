@@ -2,7 +2,9 @@
 
 import { useLanguage } from '@/context'
 import { useEffect, useState } from 'react'
-import { Activity, Loader2 } from 'lucide-react'
+import { Activity, Download, Loader2 } from 'lucide-react'
+import { exportAuditLogsToCsv } from '@/lib/export-excel'
+import toast from 'react-hot-toast'
 
 type LogEntry = {
   id: string
@@ -19,7 +21,7 @@ type LogEntry = {
 }
 
 export default function AdminActivityLog() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -50,12 +52,29 @@ export default function AdminActivityLog() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">{t('admin.activityLog')}</h2>
-        <button onClick={fetchLogs} className="btn-secondary px-4 py-2 text-sm">
-          <Activity className="w-4 h-4" />
-          {t('common.refresh')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              if (logs.length === 0) {
+                toast.error(language === 'ar' ? 'لا توجد سجلات لتصديرها' : 'No logs to export')
+                return
+              }
+              exportAuditLogsToCsv(logs, language)
+              toast.success(language === 'ar' ? 'تم تصدير سجل التدقيق إلى Excel' : 'Audit log exported to Excel')
+            }}
+            className="btn-secondary px-4 py-2 text-sm"
+            title={language === 'ar' ? 'تصدير سجل التدقيق إلى ملف Excel' : 'Export audit log to Excel'}
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            {language === 'ar' ? 'تصدير السجل (Excel)' : 'Export Log (Excel)'}
+          </button>
+          <button onClick={fetchLogs} className="btn-secondary px-4 py-2 text-sm">
+            <Activity className="w-4 h-4" />
+            {t('common.refresh')}
+          </button>
+        </div>
       </div>
 
       {loading ? (

@@ -267,3 +267,78 @@ export function exportSingleReportObservationsToCsv(
   const csv = buildObservationsMatrixCsv(observations, language)
   downloadCsvFile(filename, csv)
 }
+
+
+export type AuditLogItem = {
+  id: string
+  action: string
+  entityType?: string | null
+  entityId?: string | null
+  details?: string | null
+  ipAddress?: string | null
+  createdAt: string | Date
+  user?: {
+    name?: string | null
+    email?: string | null
+    role?: string | null
+  } | null
+}
+
+/**
+ * Builds an Excel-compatible CSV string for Activity Logs / Audit Trails with UTF-8 BOM.
+ */
+export function buildAuditLogCsv(
+  items: AuditLogItem[],
+  language: string = 'ar'
+): string {
+  const isAr = language === 'ar'
+
+  const headers = isAr
+    ? ['م', 'معرّف السجل', 'التاريخ والوقت', 'المستخدم', 'البريد الإلكتروني', 'الدور', 'الإجراء', 'النوع', 'المعرّف المرتبط', 'التفاصيل', 'عنوان IP']
+    : ['#', 'Log ID', 'Timestamp', 'User', 'Email', 'Role', 'Action', 'Entity Type', 'Entity ID', 'Details', 'IP Address']
+
+  const headerRow = headers.map(escapeCsvCell).join(',')
+
+  const dataRows = items.map((item, index) => {
+    const rawDate = item.createdAt
+      ? typeof item.createdAt === 'string'
+        ? item.createdAt
+        : item.createdAt.toISOString()
+      : ''
+
+    const row = [
+      index + 1,
+      item.id,
+      rawDate,
+      item.user?.name || '',
+      item.user?.email || '',
+      item.user?.role || '',
+      item.action,
+      item.entityType || '',
+      item.entityId || '',
+      item.details || '',
+      item.ipAddress || '',
+    ]
+
+    return row.map(escapeCsvCell).join(',')
+  })
+
+  return `\uFEFF${[headerRow, ...dataRows].join('\r\n')}`
+}
+
+/**
+ * Exports audit logs directly to an Excel-compatible CSV file.
+ */
+export function exportAuditLogsToCsv(
+  logs: AuditLogItem[],
+  language: string = 'ar'
+): void {
+  const isAr = language === 'ar'
+  const dateStr = new Date().toISOString().split('T')[0]
+  const filename = isAr
+    ? `سجل_التدقيق_والأنشطة_${dateStr}.csv`
+    : `Audit_Activity_Log_${dateStr}.csv`
+
+  const csv = buildAuditLogCsv(logs, language)
+  downloadCsvFile(filename, csv)
+}

@@ -4,7 +4,7 @@ import BrandLogo from '@/components/BrandLogo'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { useLanguage } from '@/context'
 import { signIn, useSession } from 'next-auth/react'
-import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail, ShieldCheck, RotateCw } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
@@ -22,6 +22,17 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [requires2Fa, setRequires2Fa] = useState(false)
+  const [otp, setOtp] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [resendCooldown])
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
@@ -36,6 +47,12 @@ function LoginForm() {
             configuration: 'خطأ في إعدادات الخادم (تأكد من إعداد مفتاح NEXTAUTH_SECRET والاتصال بقاعدة البيانات).',
             genericError: 'تعذر تسجيل الدخول. تحقق من الإعدادات ثم حاول مرة أخرى.',
             portal: 'CLIENT PORTAL',
+            twoFactorTitle: 'التحقق الثنائي (2FA)',
+            twoFactorSubtitle: 'أدخل رمز الأمان المكون من 6 أرقام المرسل إلى بريدك الإلكتروني لتأكيد هويتك.',
+            invalidOtp: 'رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى المحاولة مرة أخرى.',
+            verifyButton: 'تأكيد الدخول',
+            resendCode: 'إعادة إرسال الرمز',
+            backToLogin: 'الرجوع',
           }
         : {
             invalidCredentials: t('auth.invalidCredentials'),
@@ -44,6 +61,12 @@ function LoginForm() {
             configuration: 'Server configuration error. Please verify NEXTAUTH_SECRET and database settings.',
             genericError: 'Unable to sign in. Please check the configuration and try again.',
             portal: 'CLIENT PORTAL',
+            twoFactorTitle: 'Two-Factor Authentication',
+            twoFactorSubtitle: 'Enter the 6-digit verification code sent to your email to verify your identity.',
+            invalidOtp: 'Invalid or expired security code. Please try again.',
+            verifyButton: 'Verify & Sign In',
+            resendCode: 'Resend Code',
+            backToLogin: 'Back to Login',
           },
     [language, t]
   )
@@ -99,9 +122,24 @@ function LoginForm() {
       const result = await signIn('credentials', {
         email,
         password,
+        otp: requires2Fa ? otp : undefined,
         redirect: false,
         callbackUrl,
       })
+
+      if (result?.error === '2FA_REQUIRED') {
+        setRequires2Fa(true)
+        setResendCooldown(30)
+        setFormError(null)
+        toast.success(language === 'ar' ? 'تم إرسال رمز التحقق (2FA) إلى بريدك الإلكتروني' : 'Security code (2FA) sent to your email')
+        return
+      }
+
+      if (result?.error === 'INVALID_2FA_CODE') {
+        setFormError(copy.invalidOtp)
+        toast.error(copy.invalidOtp)
+        return
+      }
 
       if (result?.error) {
         const message = getAuthErrorMessage(result.error) ?? t('common.error')
@@ -160,12 +198,115 @@ function LoginForm() {
             <p className="mb-2 text-eyebrow uppercase text-brand-gold">
               {copy.portal}
             </p>
-            <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">{t('auth.loginTitle')}</h1>
-            <p className="mt-3 text-base leading-7 text-slate-600">{t('auth.loginSubtitle')}</p>
+            <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">
+              {requires2Fa ? copy.twoFactorTitle : t('auth.loginTitle')}
+            </h1>
+            <p className="mt-3 text-base leading-7 text-slate-600">
+              {requires2Fa ? copy.twoFactorSubtitle : t('auth.loginSubtitle')}
+            </p>
           </div>
 
           <div className="px-6 py-7 sm:px-8">
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {requires2Fa ? (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {formError ? (
+                  <div role="alert" className="flex items-start gap-2 rounded-lg border border-danger-100 bg-danger-50 p-3 text-sm text-danger-700">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{formError}</span>
+                  </div>
+                ) : null}
+
+                <div className="rounded-xl border border-primary-100 bg-primary-50/60 p-4 text-center">
+                  <div className="mx-auto mb-2 flex h-11 w-11 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <p className="text-xs font-medium text-slate-600">
+                    {language === 'ar' ? 'تم إرسال الرمز إلى:' : 'Security code sent to:'}
+                  </p>
+                  <p className="font-semibold text-primary-700">{email}</p>
+                </div>
+
+                <div>
+                  <label htmlFor="otp-input" className="label-field text-center text-slate-700">
+                    {language === 'ar' ? 'رمز الأمان (6 أرقام)' : 'Security Code (6 digits)'}
+                  </label>
+                  <input
+                    id="otp-input"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    autoFocus
+                    required
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                    placeholder="123456"
+                    className="input-field text-center text-2xl font-bold tracking-[0.35em] text-slate-900"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || otp.length < 6}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
+                      {language === 'ar' ? 'جاري التحقق...' : 'Verifying...'}
+                    </>
+                  ) : (
+                    copy.verifyButton
+                  )}
+                </button>
+
+                <div className="flex items-center justify-between text-sm pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRequires2Fa(false)
+                      setOtp('')
+                      setFormError(null)
+                    }}
+                    className="flex items-center gap-1 font-medium text-slate-500 hover:text-slate-800"
+                  >
+                    <ArrowLeft className={`h-4 w-4 ${language === 'ar' ? 'rotate-180' : ''}`} />
+                    {copy.backToLogin}
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={resendCooldown > 0 || loading}
+                    onClick={async () => {
+                      if (resendCooldown > 0 || loading) return
+                      setLoading(true)
+                      try {
+                        const res = await signIn('credentials', {
+                          email,
+                          password,
+                          redirect: false,
+                        })
+                        if (res?.error === '2FA_REQUIRED') {
+                          setResendCooldown(30)
+                          toast.success(language === 'ar' ? 'تمت إعادة إرسال الرمز' : 'Code resent')
+                        }
+                      } catch {
+                        toast.error(t('common.error'))
+                      } finally {
+                        setLoading(false)
+                      }
+                    }}
+                    className="flex items-center gap-1 font-medium text-brand-gold hover:text-brand-gold-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    <RotateCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+                    {resendCooldown > 0
+                      ? `${copy.resendCode} (${resendCooldown}s)`
+                      : copy.resendCode}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
               {formError ? (
                 <div
                   role="alert"
@@ -253,6 +394,7 @@ function LoginForm() {
                 )}
               </button>
             </form>
+          )}
 
             <p className="mt-7 text-center text-sm text-slate-600">
               <Link

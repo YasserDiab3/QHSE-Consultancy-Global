@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { purgeExpiredData } from '@/lib/retention'
+import { checkSlaEscalations } from '@/lib/sla-escalation'
 import { logActivity } from '@/lib/activity-log'
 
 export const dynamic = 'force-dynamic'
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
     const visitorRetentionDays = daysParam ? Math.max(1, Math.min(365, parseInt(daysParam, 10) || 90)) : 90
 
     const result = await purgeExpiredData({ visitorRetentionDays })
+    const slaResult = await checkSlaEscalations({ sendEmails: true })
 
     if (session?.user?.id) {
       await logActivity(
@@ -48,14 +50,20 @@ export async function GET(request: Request) {
         'DATA_PURGE',
         'SYSTEM',
         'RETENTION',
-        `Purged ${result.purgedVisitors} visitor sessions and ${result.purgedRateLimits} rate limit entries`
+        `Purged ${result.purgedVisitors} visitor sessions and ${result.purgedRateLimits} rate limit entries. Checked ${slaResult.checkedCount} SLAs (${slaResult.approachingCount} approaching, ${slaResult.overdueCount} overdue).`
       )
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Expired data cleanup completed successfully',
+      message: 'Expired data cleanup and SLA escalation checks completed successfully',
       ...result,
+      slaSummary: {
+        checkedObservations: slaResult.checkedCount,
+        approachingBreach: slaResult.approachingCount,
+        overdue: slaResult.overdueCount,
+        emailsSent: slaResult.emailsSent,
+      },
     })
   } catch (error) {
     console.error('Data purge cron error:', error)

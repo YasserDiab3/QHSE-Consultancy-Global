@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
 import { enforceRateLimit } from '@/lib/rate-limit'
 import { checkAccountLockout, recordFailedAttempt, resetFailedAttempts } from '@/lib/auth-lockout'
+import { issueAdmin2FaOtp, verify2FaOtp } from '@/lib/auth-2fa'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -47,6 +48,7 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        otp: { label: '2FA OTP', type: 'text' },
       },
       async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) {
@@ -85,6 +87,20 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
+          // Enforce 2FA for ADMIN accounts
+          if (user.role === 'ADMIN') {
+            const rawOtp = (credentials as any)?.otp?.trim()
+            if (!rawOtp) {
+              await issueAdmin2FaOtp(user.email, user.language)
+              throw new Error('2FA_REQUIRED')
+            }
+
+            const isValidOtp = await verify2FaOtp(user.email, rawOtp)
+            if (!isValidOtp) {
+              throw new Error('INVALID_2FA_CODE')
+            }
+          }
+
           await resetFailedAttempts(credentials.email)
 
           return {
@@ -95,7 +111,11 @@ export const authOptions: NextAuthOptions = {
             language: user.language,
           }
         } catch (dbError: any) {
-          if (dbError?.message === 'ACCOUNT_LOCKED') {
+          if (
+            dbError?.message === 'ACCOUNT_LOCKED' ||
+            dbError?.message === '2FA_REQUIRED' ||
+            dbError?.message === 'INVALID_2FA_CODE'
+          ) {
             throw dbError
           }
           console.error('Credentials authorization failed:', dbError?.message || dbError)
