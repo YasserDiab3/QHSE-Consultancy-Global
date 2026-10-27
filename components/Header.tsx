@@ -68,7 +68,6 @@ export default function Header() {
         : t('nav.dashboard')
   const isPortal = pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/dashboard' || pathname.startsWith('/dashboard/')
   const useSolidHeader = isPortal || scrolled
-  const isArabicInterface = language === 'ar'
 
   return (
     <header

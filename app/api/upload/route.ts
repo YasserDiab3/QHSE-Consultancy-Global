@@ -6,17 +6,20 @@ import { createImageRecord } from '@/lib/image-records'
 import { validateImageFile } from '@/lib/file-validation'
 import { uploadFile } from '@/lib/storage'
 import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
+import { getClientIdByUserId } from '@/lib/client-records'
+import { listReportRecords } from '@/lib/report-records'
+import { updateObservationRecord } from '@/lib/observation-records'
 
 export async function POST(request: Request) {
   try {
     const session = await getSession()
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'CLIENT'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const rateLimit = await enforceRateLimit(
       request,
-      { keyPrefix: 'admin-upload', limit: 30, windowMs: 15 * 60 * 1000 },
+      { keyPrefix: 'upload-image', limit: 40, windowMs: 15 * 60 * 1000 },
       session.user.id
     )
     if (!rateLimit.success) return rateLimitResponse(rateLimit)
@@ -27,11 +30,27 @@ export async function POST(request: Request) {
 
     const file = formData.get('file') as File
     const observationId = formData.get('observationId') as string
-    const type = (formData.get('type') as string) || 'EVIDENCE'
+    const requestedType = (formData.get('type') as string) || 'EVIDENCE'
 
     if (!file || !observationId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    // Verify client authorization for this specific observation
+    if (session.user.role === 'CLIENT') {
+      const clientId = await getClientIdByUserId(session.user.id)
+      const reports = clientId ? await listReportRecords({ clientId }) : []
+      const ownsObservation = reports.some((report) =>
+        report.observations.some((obs) => obs.id === observationId)
+      )
+
+      if (!ownsObservation) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+
+    // Clients upload proof photos which are categorized as 'AFTER'
+    const finalType = session.user.role === 'CLIENT' ? 'AFTER' : requestedType
 
     if (file.size > 8 * 1024 * 1024) {
       return NextResponse.json({ error: 'Image file is too large' }, { status: 400 })
@@ -53,19 +72,28 @@ export async function POST(request: Request) {
 
     const image = await createImageRecord({
       observationId,
-      type,
+      type: finalType,
       url: imageUrl,
       originalName: imageDetails.originalName,
       mimeType: imageDetails.mimeType,
       size: file.size,
     })
 
+    // If client uploaded proof, advance the action status to pending consultant review
+    if (session.user.role === 'CLIENT') {
+      await updateObservationRecord(observationId, {
+        correctiveActionStatus: 'PENDING_REVIEW',
+      })
+    }
+
     await logActivity(
       session.user.id,
-      'IMAGE_UPLOADED',
+      session.user.role === 'CLIENT' ? 'CLIENT_PROOF_IMAGE_UPLOADED' : 'IMAGE_UPLOADED',
       'image',
       image.id,
-      `Uploaded image for observation ${observationId}`,
+      session.user.role === 'CLIENT'
+        ? `Client uploaded proof photo (AFTER) for observation ${observationId}`
+        : `Uploaded image for observation ${observationId}`,
       ip
     )
 

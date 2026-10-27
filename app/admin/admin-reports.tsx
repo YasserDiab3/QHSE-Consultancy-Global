@@ -13,10 +13,14 @@ import {
   Loader2,
   Image as ImageIcon,
   Download,
+  CheckCircle2,
+  Clock,
+  RotateCcw,
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import toast from 'react-hot-toast'
 import { downloadClientReportPdf } from '@/lib/report-pdf'
+import { exportAllReportsObservationsToCsv, exportSingleReportObservationsToCsv } from '@/lib/export-excel'
 
 type Report = {
   id: string
@@ -267,12 +271,29 @@ export default function AdminReports({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">{t('admin.manageReports')}</h2>
-        <button onClick={() => { resetForm(); setShowForm(true) }} className="btn-primary">
-          <Plus className="w-4 h-4" />
-          {t('admin.addReport')}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => {
+              if (reports.length === 0) {
+                toast.error(language === 'ar' ? 'لا توجد تقارير أو ملاحظات للتصدير' : 'No reports to export')
+                return
+              }
+              exportAllReportsObservationsToCsv(reports as any, language)
+              toast.success(language === 'ar' ? 'تم تصدير مصفوفة الملاحظات إلى Excel بنجاح' : 'Safety matrix exported to Excel')
+            }}
+            className="btn-secondary"
+            title={language === 'ar' ? 'تصدير مصفوفة الملاحظات لجميع التقارير إلى Excel' : 'Export safety matrix to Excel'}
+          >
+            <Download className="w-4 h-4 text-emerald-600" />
+            {language === 'ar' ? 'تصدير مصفوفة الملاحظات (Excel)' : 'Export Safety Matrix (Excel)'}
+          </button>
+          <button onClick={() => { resetForm(); setShowForm(true) }} className="btn-primary">
+            <Plus className="w-4 h-4" />
+            {t('admin.addReport')}
+          </button>
+        </div>
       </div>
 
       {activeFilterLabel && (
@@ -480,7 +501,17 @@ export default function AdminReports({
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => void downloadClientReportPdf(report, language)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title={language === 'ar' ? 'تصدير التقرير' : 'Export report'}>
+                      <button onClick={() => void downloadClientReportPdf(report, language)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title={language === 'ar' ? 'تصدير PDF' : 'Export PDF'}>
+                        <Download className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          exportSingleReportObservationsToCsv(report as any, language)
+                          toast.success(language === 'ar' ? 'تم تصدير ملاحظات التقرير إلى Excel' : 'Exported observations to Excel')
+                        }}
+                        className="p-1.5 rounded text-emerald-600 hover:bg-emerald-50"
+                        title={language === 'ar' ? 'تصدير الملاحظات إلى Excel' : 'Export observations to Excel'}
+                      >
                         <Download className="w-4 h-4" />
                       </button>
                       <button
@@ -662,6 +693,37 @@ function ViewReportModal({
     }
   }
 
+  const reviewCorrectiveAction = async (obsId: string, actionStatus: string, mainStatus: string) => {
+    try {
+      const res = await fetch(`/api/observations/${obsId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: mainStatus,
+          correctiveActionStatus: actionStatus,
+        }),
+      })
+      if (!res.ok) throw new Error()
+      setObservations((prev) =>
+        prev.map((o) =>
+          o.id === obsId
+            ? { ...o, status: mainStatus, correctiveActionStatus: actionStatus }
+            : o
+        )
+      )
+      await onDataChanged?.()
+      toast.success(
+        language === 'ar'
+          ? actionStatus === 'APPROVED'
+            ? 'تم اعتماد الإجراء التصحيحي وإغلاق الملاحظة بنجاح'
+            : 'تم تسجيل طلب تعديل الإجراء وإعادته للمنشأة'
+          : 'Action status updated'
+      )
+    } catch {
+      toast.error(language === 'ar' ? 'تعذر تحديث الحالة' : 'Failed to update action status')
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -790,6 +852,65 @@ function ViewReportModal({
                         <p className="text-sm text-gray-600">{language === 'ar' && obs.descriptionAr ? obs.descriptionAr : obs.description}</p>
                       )}
                       <ObservationImages images={obs.images || []} t={t} />
+
+                      {/* Client Corrective Action (CAPA) Review Box */}
+                      {(obs.clientResponse || obs.correctiveAction || obs.correctiveActionStatus) && (
+                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 p-3 text-xs text-amber-950">
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <span className="font-bold flex items-center gap-1.5 text-slate-800">
+                              <Clock className="w-3.5 h-3.5 text-amber-700" />
+                              {language === 'ar' ? 'إجراء العميل التصحيحي (CAPA):' : 'Client Corrective Action:'}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full font-bold text-[10px] ${
+                                obs.correctiveActionStatus === 'APPROVED'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : obs.correctiveActionStatus === 'REVISION_REQUESTED'
+                                    ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                    : 'bg-amber-100 text-amber-800 border border-amber-300'
+                              }`}
+                            >
+                              {obs.correctiveActionStatus === 'APPROVED'
+                                ? (language === 'ar' ? 'معتمد ومغلق' : 'Approved & Closed')
+                                : obs.correctiveActionStatus === 'REVISION_REQUESTED'
+                                  ? (language === 'ar' ? 'مطلوب تعديل' : 'Revision Requested')
+                                  : (language === 'ar' ? 'بانتظار الاعتماد' : 'Pending Review')}
+                            </span>
+                          </div>
+
+                          {obs.clientResponse && (
+                            <p className="mb-1 text-slate-700">
+                              <span className="font-semibold text-slate-900">{language === 'ar' ? 'رد المنشأة: ' : 'Response: '}</span>
+                              {obs.clientResponse}
+                            </p>
+                          )}
+
+                          {obs.correctiveAction && (
+                            <p className="text-slate-700">
+                              <span className="font-semibold text-slate-900">{language === 'ar' ? 'الإجراء المتخذ: ' : 'Action Taken: '}</span>
+                              {obs.correctiveAction}
+                            </p>
+                          )}
+
+                          {/* Consultant Review Actions */}
+                          <div className="mt-2.5 flex items-center gap-2 pt-2 border-t border-amber-200/60">
+                            <button
+                              onClick={() => void reviewCorrectiveAction(obs.id, 'APPROVED', 'CLOSED')}
+                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-500 shadow-sm transition active:scale-95"
+                            >
+                              <CheckCircle2 className="w-3 h-3" />
+                              {language === 'ar' ? 'اعتماد وإغلاق الملاحظة' : 'Approve & Close'}
+                            </button>
+                            <button
+                              onClick={() => void reviewCorrectiveAction(obs.id, 'REVISION_REQUESTED', 'OPEN')}
+                              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-2 py-1 text-[11px] font-semibold text-amber-800 hover:bg-amber-100/60 transition active:scale-95"
+                            >
+                              <RotateCcw className="w-3 h-3" />
+                              {language === 'ar' ? 'طلب تعديل الإجراء' : 'Request Revision'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-col items-end gap-2">
                       <label className="cursor-pointer rounded-lg border border-gray-200 px-2 py-1 text-xs font-medium text-gray-600 transition hover:bg-gray-100">

@@ -32,9 +32,10 @@ export async function PUT(
       const clientId = await getClientIdByUserId(session.user.id)
       const reports = clientId ? await listReportRecords({ clientId }) : []
       if (!reports.some((report) => report.observations.some((observation) => observation.id === id))) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-      await updateObservationRecord(id, { clientResponse, correctiveAction, correctiveActionStatus: correctiveActionStatus || 'IN_PROGRESS' })
+      const actionStatus = correctiveActionStatus || 'PENDING_REVIEW'
+      await updateObservationRecord(id, { clientResponse, correctiveAction, correctiveActionStatus: actionStatus })
       await logActivity(session.user.id, 'CLIENT_CORRECTIVE_ACTION', 'observation', id, 'Client added a response or corrective action', ip)
-      return NextResponse.json({ id, clientResponse, correctiveAction, correctiveActionStatus: correctiveActionStatus || 'IN_PROGRESS' })
+      return NextResponse.json({ id, clientResponse, correctiveAction, correctiveActionStatus: actionStatus })
     }
 
     await updateObservationRecord(id, {

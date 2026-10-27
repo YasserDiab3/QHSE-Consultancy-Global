@@ -31,6 +31,7 @@ function LoginForm() {
       language === 'ar'
         ? {
             invalidCredentials: 'بيانات تسجيل الدخول غير صحيحة',
+            accountLocked: 'تم قفل الحساب مؤقتاً لمدة 15 دقيقة نظراً لتكرار محاولات الدخول الخاطئة لحماية أمان حسابك.',
             serviceUnavailable: 'خدمة تسجيل الدخول غير متاحة حاليا. حاول مرة أخرى بعد قليل.',
             configuration: 'خطأ في إعدادات الخادم (تأكد من إعداد مفتاح NEXTAUTH_SECRET والاتصال بقاعدة البيانات).',
             genericError: 'تعذر تسجيل الدخول. تحقق من الإعدادات ثم حاول مرة أخرى.',
@@ -38,6 +39,7 @@ function LoginForm() {
           }
         : {
             invalidCredentials: t('auth.invalidCredentials'),
+            accountLocked: 'Account is temporarily locked for 15 minutes due to multiple failed login attempts. Please try again later.',
             serviceUnavailable: t('auth.serviceUnavailable'),
             configuration: 'Server configuration error. Please verify NEXTAUTH_SECRET and database settings.',
             genericError: 'Unable to sign in. Please check the configuration and try again.',
@@ -50,6 +52,10 @@ function LoginForm() {
     (code?: string | null) => {
       if (code === 'CredentialsSignin') {
         return copy.invalidCredentials
+      }
+
+      if (code === 'ACCOUNT_LOCKED') {
+        return copy.accountLocked
       }
 
       if (code === AUTH_SERVICE_UNAVAILABLE) {
@@ -161,8 +167,19 @@ function LoginForm() {
           <div className="px-6 py-7 sm:px-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               {formError ? (
-                <div role="alert" className="flex items-start gap-2 rounded-lg border border-danger-100 bg-danger-50 p-3 text-sm text-danger-700">
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <div
+                  role="alert"
+                  className={`flex items-start gap-2 rounded-lg border p-3 text-sm ${
+                    formError === copy.accountLocked
+                      ? 'border-amber-200 bg-amber-50 text-amber-900 font-medium'
+                      : 'border-danger-100 bg-danger-50 text-danger-700'
+                  }`}
+                >
+                  {formError === copy.accountLocked ? (
+                    <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden="true" />
+                  ) : (
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  )}
                   <span>{formError}</span>
                 </div>
               ) : null}

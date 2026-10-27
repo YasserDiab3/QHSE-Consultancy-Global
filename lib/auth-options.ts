@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
 import { enforceRateLimit } from '@/lib/rate-limit'
+import { checkAccountLockout, recordFailedAttempt, resetFailedAttempts } from '@/lib/auth-lockout'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -52,6 +53,11 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        const lockoutStatus = await checkAccountLockout(credentials.email)
+        if (lockoutStatus.locked) {
+          throw new Error('ACCOUNT_LOCKED')
+        }
+
         const rateLimit = await enforceRateLimit(
           request,
           { keyPrefix: 'login', limit: 8, windowMs: 15 * 60 * 1000 },
@@ -65,14 +71,21 @@ export const authOptions: NextAuthOptions = {
           })
 
           if (!user) {
+            await recordFailedAttempt(credentials.email)
             return null
           }
 
           const isValid = await bcrypt.compare(credentials.password, user.password)
 
           if (!isValid) {
+            const attemptResult = await recordFailedAttempt(credentials.email)
+            if (attemptResult.locked) {
+              throw new Error('ACCOUNT_LOCKED')
+            }
             return null
           }
+
+          await resetFailedAttempts(credentials.email)
 
           return {
             id: user.id,
@@ -82,6 +95,9 @@ export const authOptions: NextAuthOptions = {
             language: user.language,
           }
         } catch (dbError: any) {
+          if (dbError?.message === 'ACCOUNT_LOCKED') {
+            throw dbError
+          }
           console.error('Credentials authorization failed:', dbError?.message || dbError)
           throw new Error(AUTH_SERVICE_UNAVAILABLE)
         }

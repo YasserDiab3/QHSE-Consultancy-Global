@@ -4,19 +4,24 @@ import NextImage from 'next/image'
 import { CardGridSkeleton } from '@/components/Skeleton'
 
 import { useLanguage } from '@/context'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   FileText,
   AlertTriangle,
+  Camera,
+  Check,
   CheckCircle2,
+  Clock,
   TrendingUp,
   Filter,
   Download,
   Eye,
   Calendar,
+  Loader2,
   MapPin,
   ChevronLeft,
   ChevronRight,
+  ShieldAlert,
   X,
   Image as ImageIcon,
   LayoutDashboard,
@@ -26,6 +31,7 @@ import {
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import Header from '@/components/Header'
 import { downloadClientReportPdf } from '@/lib/report-pdf'
+import { exportAllReportsObservationsToCsv, exportSingleReportObservationsToCsv } from '@/lib/export-excel'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 import ClientKnowledgeBank from '@/components/ClientKnowledgeBank'
@@ -231,8 +237,22 @@ export default function ClientDashboard() {
               </h1>
               <p className="text-gray-600 mt-1">{t('reports.subtitle')}</p>
             </div>
-            <div className="flex items-center gap-3">
-              <DashboardSignOutButton />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => {
+                  if (reports.length === 0) {
+                    toast.error(language === 'ar' ? 'لا توجد تقارير أو ملاحظات للتصدير' : 'No reports to export')
+                    return
+                  }
+                  exportAllReportsObservationsToCsv(reports as any, language)
+                  toast.success(language === 'ar' ? 'تم تصدير مصفوفة الملاحظات إلى Excel بنجاح' : 'Observations matrix exported to Excel')
+                }}
+                className="btn-secondary px-4 py-2"
+                title={language === 'ar' ? 'تصدير مصفوفة الملاحظات إلى ملف Excel' : 'Export observations matrix to Excel'}
+              >
+                <Download className="w-4 h-4 text-emerald-600" />
+                {language === 'ar' ? 'تصدير المصفوفة (Excel)' : 'Export Matrix (Excel)'}
+              </button>
               <button
                 onClick={() => setShowFilters(!showFilters)}
                 className="btn-secondary px-4 py-2"
@@ -240,6 +260,7 @@ export default function ClientDashboard() {
                 <Filter className="w-4 h-4" />
                 {t('common.filter')}
               </button>
+              <DashboardSignOutButton />
             </div>
           </div>
 
@@ -327,6 +348,30 @@ export default function ClientDashboard() {
               language={language}
               dir={dir}
               formatDate={formatDate}
+              onObservationUpdated={(obsId, newImg) => {
+                setReports((prev) =>
+                  prev.map((r) =>
+                    r.id === selectedReport.id
+                      ? {
+                          ...r,
+                          observations: r.observations.map((o) =>
+                            o.id === obsId ? { ...o, images: [...(o.images || []), newImg] } : o
+                          ),
+                        }
+                      : r
+                  )
+                )
+                setSelectedReport((prev) =>
+                  prev
+                    ? {
+                        ...prev,
+                        observations: prev.observations.map((o) =>
+                          o.id === obsId ? { ...o, images: [...(o.images || []), newImg] } : o
+                        ),
+                      }
+                    : null
+                )
+              }}
             />
           ) : (
             <div className="space-y-4">
@@ -448,6 +493,7 @@ function ReportDetail({
   language,
   dir,
   formatDate,
+  onObservationUpdated,
 }: {
   report: Report
   onBack: () => void
@@ -456,6 +502,7 @@ function ReportDetail({
   language: string
   dir: string
   formatDate: (date: string) => string
+  onObservationUpdated?: (obsId: string, newImg: Image) => void
 }) {
   return (
     <div className="space-y-6 slide-up">
@@ -484,7 +531,18 @@ function ReportDetail({
               </span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => {
+                exportSingleReportObservationsToCsv(report as any, language)
+                toast.success(language === 'ar' ? 'تم تصدير ملاحظات التقرير إلى Excel بنجاح' : 'Observations exported to Excel')
+              }}
+              className="btn-secondary px-4 py-2 text-sm"
+              title={language === 'ar' ? 'تصدير ملاحظات التقرير إلى ملف Excel' : 'Export report observations to Excel'}
+            >
+              <Download className="w-4 h-4 text-emerald-600" />
+              {language === 'ar' ? 'تصدير الملاحظات (Excel)' : 'Export (Excel)'}
+            </button>
             <button
               onClick={() => void onDownloadPDF(report)}
               className="btn-secondary px-4 py-2 text-sm"
@@ -556,7 +614,14 @@ function ReportDetail({
                       </p>
                     )}
                     <ObservationImages images={obs.images} t={t} />
-                    <ClientActionForm observation={obs} language={language} />
+                    <ClientActionForm
+                      observation={obs}
+                      language={language}
+                      reportDate={report.date}
+                      onImageUploaded={(newImg) => {
+                        onObservationUpdated?.(obs.id, newImg)
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -568,11 +633,281 @@ function ReportDetail({
   )
 }
 
-function ClientActionForm({ observation, language }: { observation: Observation; language: string }) {
+function getSlaDays(riskLevel: string) {
+  switch (riskLevel?.toUpperCase()) {
+    case 'CRITICAL':
+      return 2
+    case 'HIGH':
+      return 7
+    case 'MEDIUM':
+      return 14
+    case 'LOW':
+    default:
+      return 30
+  }
+}
+
+function ClientActionForm({
+  observation,
+  language,
+  reportDate,
+  onImageUploaded,
+}: {
+  observation: Observation
+  language: string
+  reportDate?: string
+  onImageUploaded?: (newImage: Image) => void
+}) {
+  const isArabic = language === 'ar'
   const [response, setResponse] = useState(observation.clientResponse || '')
   const [action, setAction] = useState(observation.correctiveAction || '')
   const [status, setStatus] = useState(observation.correctiveActionStatus || 'IN_PROGRESS')
   const [saving, setSaving] = useState(false)
-  const save = async () => { setSaving(true); try { const result = await fetch(`/api/observations/${observation.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ clientResponse: response, correctiveAction: action, correctiveActionStatus: status }) }); if (!result.ok) throw new Error(); toast.success(language === 'ar' ? 'تم حفظ الرد والإجراء التصحيحي' : 'Response and corrective action saved') } catch { toast.error(language === 'ar' ? 'تعذر الحفظ' : 'Unable to save') } finally { setSaving(false) } }
-  return <div className="mt-4 rounded-xl border border-primary-100 bg-primary-50/60 p-4"><h5 className="font-bold text-primary-900">{language === 'ar' ? 'رد العميل والإجراء التصحيحي' : 'Client response and corrective action'}</h5><textarea value={response} onChange={(event) => setResponse(event.target.value)} className="input-field mt-3 resize-none bg-white" rows={2} placeholder={language === 'ar' ? 'أضف ردك على ملاحظة الاستشاري' : 'Add your response to the consultant observation'} /><textarea value={action} onChange={(event) => setAction(event.target.value)} className="input-field mt-3 resize-none bg-white" rows={2} placeholder={language === 'ar' ? 'الإجراء التصحيحي المتخذ أو المخطط' : 'Corrective action taken or planned'} /><div className="mt-3 flex flex-wrap items-center gap-3"><select value={status} onChange={(event) => setStatus(event.target.value)} className="input-field w-auto bg-white"><option value="IN_PROGRESS">{language === 'ar' ? 'قيد التنفيذ' : 'In progress'}</option><option value="COMPLETED">{language === 'ar' ? 'مكتمل' : 'Completed'}</option><option value="PENDING">{language === 'ar' ? 'بانتظار الإجراء' : 'Pending'}</option></select><button onClick={() => void save()} disabled={saving} className="btn-primary px-4 py-2">{saving ? '...' : language === 'ar' ? 'حفظ الإجراء' : 'Save action'}</button></div></div>
+  const [uploading, setUploading] = useState(false)
+  const [afterImages, setAfterImages] = useState<Image[]>(
+    (observation.images || []).filter((img) => img.type === 'AFTER')
+  )
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const slaDays = getSlaDays(observation.riskLevel)
+  const baseDate = reportDate ? new Date(reportDate) : new Date()
+  const deadline = new Date(baseDate.getTime() + slaDays * 24 * 60 * 60 * 1000)
+  const [now] = useState(() => Date.now())
+  const isClosed = observation.status === 'CLOSED' || observation.correctiveActionStatus === 'APPROVED'
+  const isOverdue = !isClosed && now > deadline.getTime()
+  const daysDiff = Math.ceil((deadline.getTime() - now) / (1000 * 60 * 60 * 24))
+
+  const handleUploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('observationId', observation.id)
+    formData.append('type', 'AFTER')
+
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Failed to upload photo')
+      }
+      const newImg = await res.json()
+      setAfterImages((prev) => [...prev, newImg])
+      setStatus('PENDING_REVIEW')
+      if (onImageUploaded) onImageUploaded(newImg)
+      toast.success(isArabic ? 'تم رفع صورة إثبات المعالجة بنجاح' : 'Rectification photo uploaded')
+    } catch (err: any) {
+      toast.error(err.message || (isArabic ? 'تعذر رفع الصورة' : 'Failed to upload image'))
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const result = await fetch(`/api/observations/${observation.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientResponse: response,
+          correctiveAction: action,
+          correctiveActionStatus: status,
+        }),
+      })
+      if (!result.ok) throw new Error()
+      toast.success(isArabic ? 'تم حفظ الرد والإجراء التصحيحي' : 'Response and corrective action saved')
+    } catch {
+      toast.error(isArabic ? 'تعذر الحفظ' : 'Unable to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const formattedDeadline = deadline.toLocaleDateString(isArabic ? 'ar-EG' : 'en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
+  return (
+    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+      {/* SLA & Status Header */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 pb-3">
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-slate-500" />
+          <span className="text-xs font-semibold text-slate-600">
+            {isArabic ? 'مهلة المعالجة النظامية (SLA):' : 'Corrective SLA Due Date:'}
+          </span>
+          <span className="text-xs font-bold text-slate-800">{formattedDeadline}</span>
+        </div>
+
+        <div>
+          {isClosed ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+              <CheckCircle2 className="h-3 w-3" />
+              {isArabic ? 'معتمد ومغلق' : 'Approved & Closed'}
+            </span>
+          ) : isOverdue ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-800">
+              <ShieldAlert className="h-3 w-3" />
+              {isArabic ? `متأخر عن المهلة (${Math.abs(daysDiff)} يوم)` : `Overdue by ${Math.abs(daysDiff)} days`}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+              <Clock className="h-3 w-3" />
+              {isArabic ? `متبقي ${daysDiff} يوم` : `${daysDiff} days remaining`}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Review Status Banner */}
+      {status === 'PENDING_REVIEW' && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900 flex items-center gap-2">
+          <Clock className="h-4 w-4 shrink-0 text-amber-600" />
+          <span>{isArabic ? 'تم تقديم الإجراء وهو قيد مراجعة واعتماد الاستشاري' : 'Action submitted and pending consultant review.'}</span>
+        </div>
+      )}
+
+      {status === 'APPROVED' && (
+        <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-900 flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+          <span>{isArabic ? 'تم اعتماد هذا الإجراء التصحيحي رسمياً من الاستشاري' : 'This corrective action has been officially approved.'}</span>
+        </div>
+      )}
+
+      {status === 'REVISION_REQUESTED' && (
+        <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-900 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+          <span>{isArabic ? 'طلب الاستشاري إعادة النظر وتعديل الإجراء أو رفع إثبات إضافي' : 'Consultant requested revision on this action.'}</span>
+        </div>
+      )}
+
+      {/* Text inputs */}
+      <div className="mt-3 space-y-2.5">
+        <div>
+          <label className="text-xs font-bold text-slate-700">
+            {isArabic ? 'رد المنشأة / العميل على الملاحظة:' : 'Client response to observation:'}
+          </label>
+          <textarea
+            value={response}
+            onChange={(e) => setResponse(e.target.value)}
+            className="input-field mt-1 resize-none bg-white text-sm"
+            rows={2}
+            placeholder={isArabic ? 'أضف ردك أو توضيح المنشأة بشأن الملاحظة...' : 'Add your company explanation...'}
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-bold text-slate-700">
+            {isArabic ? 'الإجراء التصحيحي المتخذ لمعالجة الخطر (CAPA):' : 'Corrective action taken or planned:'}
+          </label>
+          <textarea
+            value={action}
+            onChange={(e) => setAction(e.target.value)}
+            className="input-field mt-1 resize-none bg-white text-sm"
+            rows={2}
+            placeholder={isArabic ? 'اشرح الإجراء التصحيحي المنفذ لإزالة الخطر وتفادي تكراره...' : 'Describe corrective steps taken...'}
+          />
+        </div>
+      </div>
+
+      {/* Attached After Photos */}
+      <div className="mt-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs font-bold text-slate-700">
+            {isArabic ? 'صور إثبات المعالجة (بعد الإصلاح):' : 'Rectification Proof Photos (After):'}
+          </span>
+
+          <label className="cursor-pointer inline-flex items-center gap-1.5 rounded-lg border border-primary-300 bg-white px-3 py-1 text-xs font-bold text-primary-700 shadow-sm transition hover:bg-primary-50 active:scale-95">
+            {uploading ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {isArabic ? 'جاري الرفع...' : 'Uploading...'}
+              </>
+            ) : (
+              <>
+                <Camera className="h-3.5 w-3.5" />
+                {isArabic ? 'رفع صورة إثبات' : 'Upload Proof Photo'}
+              </>
+            )}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              ref={fileInputRef}
+              disabled={uploading}
+              onChange={handleUploadPhoto}
+            />
+          </label>
+        </div>
+
+        {afterImages.length > 0 && (
+          <div className="mt-2.5 flex gap-2 overflow-x-auto pb-1">
+            {afterImages.map((img) => (
+              <a
+                key={img.id || img.url}
+                href={img.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group relative h-20 w-24 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+              >
+                <NextImage
+                  src={img.url}
+                  alt="Proof"
+                  fill
+                  unoptimized
+                  className="h-full w-full object-cover transition group-hover:scale-105"
+                />
+                <span className="absolute bottom-1 start-1 rounded bg-emerald-600 px-1 py-0.5 text-[9px] font-bold text-white shadow">
+                  {isArabic ? 'بعد المعالجة' : 'After'}
+                </span>
+              </a>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action Controls */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/60 pt-3">
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-500">{isArabic ? 'حالة الإجراء:' : 'Status:'}</span>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="input-field w-auto bg-white py-1 text-xs"
+          >
+            <option value="IN_PROGRESS">{isArabic ? 'قيد التنفيذ' : 'In Progress'}</option>
+            <option value="PENDING_REVIEW">{isArabic ? 'تم الإنجاز (بانتظار الاعتماد)' : 'Submitted for Review'}</option>
+            <option value="COMPLETED">{isArabic ? 'مكتمل' : 'Completed'}</option>
+          </select>
+        </div>
+
+        <button
+          onClick={() => void save()}
+          disabled={saving}
+          className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold"
+        >
+          {saving ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {isArabic ? 'جاري الحفظ...' : 'Saving...'}
+            </>
+          ) : (
+            <>
+              <Check className="h-3.5 w-3.5" />
+              {isArabic ? 'حفظ وإرسال للمراجعة' : 'Save & Submit'}
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  )
 }

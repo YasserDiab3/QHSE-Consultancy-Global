@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { useParams } from 'next/navigation'
+import NextImage from 'next/image'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import BrandLogo from '@/components/BrandLogo'
 import Header from '@/components/Header'
@@ -14,11 +15,9 @@ import {
   Calendar,
   Check,
   CheckCircle2,
-  Clock,
   Copy,
   Download,
   ExternalLink,
-  Eye,
   FileCheck,
   FileText,
   ImageIcon,
@@ -52,6 +51,7 @@ const riskLabels: Record<string, { ar: string; en: string }> = {
 
 export default function ReportVerifyPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const { language } = useLanguage()
   const isArabic = language === 'ar'
   const [report, setReport] = useState<ReportPdfData | null>(null)
@@ -206,7 +206,7 @@ export default function ReportVerifyPage() {
                   e.preventDefault()
                   const target = (e.currentTarget.elements.namedItem('retryCode') as HTMLInputElement)?.value?.trim()
                   if (target) {
-                    window.location.href = `/reports/verify/${encodeURIComponent(target)}`
+                    router.push(`/reports/verify/${encodeURIComponent(target)}`)
                   }
                 }}
                 className="mx-auto mt-6 flex max-w-md items-center gap-2"
@@ -506,11 +506,13 @@ export default function ReportVerifyPage() {
                                     className="group relative overflow-hidden rounded-xl border border-slate-200 bg-slate-100 shadow-sm"
                                   >
                                     <a href={img.url} target="_blank" rel="noopener noreferrer" className="block">
-                                      <img
+                                      <NextImage
                                         src={img.url}
                                         alt={img.originalName || 'Evidence'}
+                                        width={400}
+                                        height={200}
+                                        unoptimized
                                         className="h-40 w-full object-cover transition duration-200 group-hover:scale-105"
-                                        loading="lazy"
                                       />
                                       <span
                                         className={`absolute bottom-2 start-2 rounded-md px-2 py-0.5 text-xs font-bold shadow ${
@@ -553,7 +555,7 @@ export default function ReportVerifyPage() {
                     e.preventDefault()
                     const target = (e.currentTarget.elements.namedItem('searchCode') as HTMLInputElement)?.value?.trim()
                     if (target) {
-                      window.location.href = `/reports/verify/${encodeURIComponent(target)}`
+                      router.push(`/reports/verify/${encodeURIComponent(target)}`)
                     }
                   }}
                   className="mx-auto mt-4 flex max-w-md items-center gap-2"
