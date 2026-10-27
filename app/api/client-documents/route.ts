@@ -14,13 +14,21 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    if (session.user.role !== 'CLIENT') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-    }
+    let clientId: string | null = null
 
-    const clientId = await getClientIdByUserId(session.user.id)
-    if (!clientId) {
-      return NextResponse.json({ error: 'Client profile not found' }, { status: 404 })
+    if (session.user.role === 'CLIENT') {
+      clientId = await getClientIdByUserId(session.user.id)
+      if (!clientId) {
+        return NextResponse.json({ documents: [], folders: [] }, { status: 200 })
+      }
+    } else if (session.user.role === 'ADMIN') {
+      const urlClientId = new URL(request.url).searchParams.get('clientId')
+      clientId = urlClientId || null
+      if (!clientId) {
+        return NextResponse.json({ documents: [], folders: [] }, { status: 200 })
+      }
+    } else {
+      return NextResponse.json({ documents: [], folders: [] }, { status: 200 })
     }
 
     const pagination = parsePagination(new URL(request.url).searchParams)

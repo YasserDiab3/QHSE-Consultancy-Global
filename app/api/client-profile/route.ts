@@ -26,6 +26,18 @@ async function currentClient() {
 
 export async function GET() {
   try {
+    const session = await getSession()
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    if (session.user.role !== 'CLIENT') {
+      return NextResponse.json({
+        client: null,
+        settings: { showProfile: false },
+      }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' } })
+    }
+
     const { client } = await currentClient()
     const settings = readSettings(client.contactInfo)
     return NextResponse.json({

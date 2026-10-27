@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { getSession } from '@/lib/auth'
 import ClientDashboard from './client-dashboard'
 
 interface DashboardPageProps {
@@ -11,6 +12,19 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   if (reportId) {
     redirect(`/reports/verify/${encodeURIComponent(reportId)}`)
+  }
+
+  const session = await getSession()
+  if (!session?.user) {
+    redirect('/login')
+  }
+
+  if (session.user.role === 'ADMIN') {
+    redirect('/admin')
+  }
+
+  if (session.user.role === 'TRAINEE') {
+    redirect('/training')
   }
 
   return <ClientDashboard />
