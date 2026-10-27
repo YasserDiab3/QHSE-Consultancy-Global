@@ -1,16 +1,20 @@
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 
-type Observation = {
+export type Observation = {
+  id?: string
   title: string
   titleAr?: string
   description?: string
   descriptionAr?: string
   riskLevel: string
   status: string
+  sortOrder?: number
+  correctiveAction?: string
+  correctiveActionStatus?: string
 }
 
-type ReportPdfData = {
+export type ReportPdfData = {
   id: string
   date: string
   siteName: string
@@ -106,14 +110,14 @@ function drawBox(context: CanvasRenderingContext2D, x: number, y: number, width:
   context.strokeRect(x, y, width, height)
 }
 
-export async function downloadClientReportPdf(report: ReportPdfData, language: string) {
+export async function createReportPdfDoc(report: ReportPdfData, language: string = 'ar'): Promise<jsPDF> {
   if (typeof document === 'undefined' || typeof window === 'undefined') {
     throw new Error('PDF export is only available in the browser')
   }
 
   await document.fonts?.ready
   const isArabic = language === 'ar'
-  const reportUrl = `${window.location.origin}/dashboard?report=${encodeURIComponent(report.id)}`
+  const reportUrl = `${window.location.origin}/reports/verify/${encodeURIComponent(report.id)}`
   const [logoResult, qrResult] = await Promise.allSettled([
     imageData(`${window.location.origin}/brand/qhsse-logo-stacked.svg`),
     QRCode.toDataURL(reportUrl, { width: 180, margin: 1, errorCorrectionLevel: 'M' }).then(imageData),
@@ -143,17 +147,20 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
   const scores = report.assessmentScores || {}
   const pages: HTMLCanvasElement[] = []
 
-  let context: CanvasRenderingContext2D | null = null
-  const canvas = document.createElement('canvas')
+  let canvas: HTMLCanvasElement
+  let context: CanvasRenderingContext2D
 
   const startPage = () => {
+    canvas = document.createElement('canvas')
     canvas.width = PAGE_WIDTH
     canvas.height = PAGE_HEIGHT
-    context = canvas.getContext('2d')
-    if (!context) throw new Error('Unable to prepare report export')
-    context.fillStyle = '#ffffff'
-    context.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT)
-    return context
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Unable to prepare report export')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, PAGE_WIDTH, PAGE_HEIGHT)
+    context = ctx
+    pages.push(canvas)
+    return ctx
   }
 
   startPage()
@@ -216,7 +223,7 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     pageContext.font = '700 13px Cairo, Arial'
     pageContext.textAlign = 'center'
     pageContext.direction = 'ltr'
-    pageContext.fillText('SCAN TO OPEN REPORT', PAGE_WIDTH / 2, FOOTER_LINE_Y + 134)
+    pageContext.fillText('SCAN TO VERIFY REPORT', PAGE_WIDTH / 2, FOOTER_LINE_Y + 134)
     pageContext.fillStyle = '#666666'
     pageContext.font = '500 13px Cairo, Arial'
     pageContext.fillText(
@@ -354,7 +361,6 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     const height = Math.max(42, lines.length * 21 + 14)
 
     if (rowY + height > MAX_ROWS_Y) {
-      pages.push(canvas)
       startPage()
       drawContinuationHeader()
       rowY = drawTableHeader(168)
@@ -387,8 +393,6 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     )
   }
 
-  pages.push(canvas)
-
   const pdf = new jsPDF({ unit: 'px', format: [PAGE_WIDTH, PAGE_HEIGHT] })
   pages.forEach((page, index) => {
     const pageContext = page.getContext('2d')
@@ -397,5 +401,16 @@ export async function downloadClientReportPdf(report: ReportPdfData, language: s
     if (index > 0) pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT])
     pdf.addImage(page.toDataURL('image/jpeg', 0.96), 'JPEG', 0, 0, PAGE_WIDTH, PAGE_HEIGHT)
   })
-  pdf.save(`qhsse-report-${report.id}.pdf`)
+
+  return pdf
+}
+
+export async function generateClientReportPdfBlob(report: ReportPdfData, language: string = 'ar'): Promise<Blob> {
+  const pdf = await createReportPdfDoc(report, language)
+  return pdf.output('blob')
+}
+
+export async function downloadClientReportPdf(report: ReportPdfData, language: string = 'ar', filename?: string) {
+  const pdf = await createReportPdfDoc(report, language)
+  pdf.save(filename || `qhsse-report-${report.id}.pdf`)
 }
