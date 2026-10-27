@@ -68,10 +68,12 @@ export default function AdminDashboardClient() {
   const [requestFilterPreset, setRequestFilterPreset] = useState<RequestStatusPreset>('ALL')
   const contentAnchorRef = useRef<HTMLDivElement | null>(null)
 
-  const fetchStats = useCallback(async () => {
-    setLoading(true)
+  const fetchStats = useCallback(async (isRefresh = false) => {
+    if (isRefresh || !stats) {
+      setLoading(true)
+    }
     try {
-      const res = await fetch('/api/dashboard', { cache: 'no-store' })
+      const res = await fetch('/api/dashboard')
       const data = await res.json().catch(() => null)
 
       if (!res.ok || !data) {
@@ -81,22 +83,22 @@ export default function AdminDashboardClient() {
       setStats(data)
     } catch (error) {
       console.error('Failed to fetch stats:', error)
-      setStats(null)
+      if (!stats) setStats(null)
       toast.error(language === 'ar' ? 'تعذر تحميل بيانات لوحة التحكم' : 'Failed to load dashboard data')
     } finally {
       setLoading(false)
     }
-  }, [language])
+  }, [language, stats])
 
   useEffect(() => {
     void fetchStats()
   }, [fetchStats])
 
   useEffect(() => {
-    if (activeTab === 'overview') {
+    if (activeTab === 'overview' && !stats) {
       void fetchStats()
     }
-  }, [activeTab, fetchStats])
+  }, [activeTab, fetchStats, stats])
 
   const activateTab = useCallback((tab: AdminTab) => {
     setActiveTab(tab)
@@ -169,10 +171,10 @@ export default function AdminDashboardClient() {
             ))}
           </div>
 
-          {activeTab === 'overview' && (
+          <div className={activeTab === 'overview' ? 'block' : 'hidden'}>
             <OverviewTab
               stats={stats}
-              loading={loading}
+              loading={loading && !stats}
               t={t}
               dir={dir}
               language={language}
@@ -180,21 +182,31 @@ export default function AdminDashboardClient() {
               onOpenClients={openClients}
               onOpenRequests={openRequests}
             />
-          )}
-          {activeTab === 'reports' && (
-            <AdminReports onDataChanged={fetchStats} filterPreset={reportFilterPreset} />
-          )}
-          {activeTab === 'clients' && <AdminClients onDataChanged={fetchStats} />}
-          {activeTab === 'knowledge' && <AdminKnowledgeBank />}
-          {activeTab === 'training' && <AdminTraining onDataChanged={fetchStats} />}
-          {activeTab === 'jobs' && <AdminJobs onDataChanged={fetchStats} />}
-          {activeTab === 'requests' && (
+          </div>
+          <div className={activeTab === 'reports' ? 'block' : 'hidden'}>
+            <AdminReports onDataChanged={() => fetchStats(true)} filterPreset={reportFilterPreset} />
+          </div>
+          <div className={activeTab === 'clients' ? 'block' : 'hidden'}>
+            <AdminClients onDataChanged={() => fetchStats(true)} />
+          </div>
+          <div className={activeTab === 'knowledge' ? 'block' : 'hidden'}>
+            <AdminKnowledgeBank />
+          </div>
+          <div className={activeTab === 'training' ? 'block' : 'hidden'}>
+            <AdminTraining onDataChanged={() => fetchStats(true)} />
+          </div>
+          <div className={activeTab === 'jobs' ? 'block' : 'hidden'}>
+            <AdminJobs onDataChanged={() => fetchStats(true)} />
+          </div>
+          <div className={activeTab === 'requests' ? 'block' : 'hidden'}>
             <AdminContactRequests
               statusFilter={requestFilterPreset}
-              onDataChanged={fetchStats}
+              onDataChanged={() => fetchStats(true)}
             />
-          )}
-          {activeTab === 'activity' && <AdminActivityLog />}
+          </div>
+          <div className={activeTab === 'activity' ? 'block' : 'hidden'}>
+            <AdminActivityLog />
+          </div>
         </div>
       </main>
     </div>

@@ -159,8 +159,13 @@ export default function ClientDashboard() {
   const [documentsLoading, setDocumentsLoading] = useState(true)
   const [documentsError, setDocumentsError] = useState('')
 
-  const fetchReports = useCallback(async () => {
-    setLoading(true)
+  const reportsLoadedRef = useRef(false)
+  const documentsLoadedRef = useRef(false)
+
+  const fetchReports = useCallback(async (isFilterChange = false) => {
+    if (isFilterChange || !reportsLoadedRef.current) {
+      setLoading(true)
+    }
     try {
       const params = new URLSearchParams()
       if (filters.status) params.set('status', filters.status)
@@ -172,6 +177,7 @@ export default function ClientDashboard() {
       if (res.ok) {
         const data = await res.json()
         setReports(data)
+        reportsLoadedRef.current = true
       }
     } catch (error) {
       console.error('Failed to fetch reports:', error)
@@ -181,11 +187,13 @@ export default function ClientDashboard() {
   }, [filters])
 
   useEffect(() => {
-    fetchReports()
+    void fetchReports(true)
   }, [fetchReports])
 
-  const fetchDocuments = useCallback(async () => {
-    setDocumentsLoading(true)
+  const fetchDocuments = useCallback(async (forceRefresh = false) => {
+    if (forceRefresh || !documentsLoadedRef.current) {
+      setDocumentsLoading(true)
+    }
     setDocumentsError('')
     try {
       const response = await fetch('/api/client-documents')
@@ -193,6 +201,7 @@ export default function ClientDashboard() {
       if (!response.ok) throw new Error(payload?.error || 'Unable to load documents')
       setDocuments(Array.isArray(payload?.documents) ? payload.documents : [])
       setFolders(Array.isArray(payload?.folders) ? payload.folders : [])
+      documentsLoadedRef.current = true
     } catch (error) {
       console.error('Failed to fetch client documents:', error)
       setDocumentsError(language === 'ar' ? 'تعذر تحميل بنك المعلومات حالياً.' : 'Unable to load the knowledge bank right now.')
@@ -277,9 +286,27 @@ export default function ClientDashboard() {
             ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance' | 'documents'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
           </div>
 
-          {activeTab === 'dashboard' ? <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} /> : activeTab === 'performance' ? <ClientPerformance reports={reports} language={language} /> : activeTab === 'documents' ? <ClientKnowledgeBank documents={documents} folders={folders} loading={documentsLoading} error={documentsError} language={language} onRetry={fetchDocuments} /> : <>
+          <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
+            <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} />
+          </div>
 
-          {/* Filters */}
+          <div className={activeTab === 'performance' ? 'block' : 'hidden'}>
+            <ClientPerformance reports={reports} language={language} />
+          </div>
+
+          <div className={activeTab === 'documents' ? 'block' : 'hidden'}>
+            <ClientKnowledgeBank
+              documents={documents}
+              folders={folders}
+              loading={documentsLoading}
+              error={documentsError}
+              language={language}
+              onRetry={() => fetchDocuments(true)}
+            />
+          </div>
+
+          <div className={activeTab === 'reports' ? 'block' : 'hidden'}>
+            {/* Filters */}
           {showFilters && (
             <div className="card mb-6 slide-up">
               <div className="flex items-center justify-between mb-4">
@@ -459,7 +486,7 @@ export default function ClientDashboard() {
               )}
             </div>
           )}
-          </>}
+          </div>
         </div>
       </main>
     </div>

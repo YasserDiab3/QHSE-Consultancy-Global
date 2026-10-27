@@ -108,12 +108,26 @@ function resolveOptionalColumn(columns: string[], candidates: string[]) {
 }
 
 async function loadSchemaInfo(): Promise<SchemaInfo> {
-  const rows = await prisma.$queryRaw<ColumnRow[]>(Prisma.sql`
-    SELECT table_name, column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND lower(table_name) IN (${Prisma.join(['client', 'user', 'report'])})
-  `)
+  let rows: ColumnRow[]
+  try {
+    rows = await prisma.$queryRaw<ColumnRow[]>(Prisma.sql`
+      SELECT c.relname as table_name, a.attname as column_name
+      FROM pg_class c
+      JOIN pg_namespace n ON n.oid = c.relnamespace
+      JOIN pg_attribute a ON a.attrelid = c.oid
+      WHERE n.nspname = 'public'
+        AND a.attnum > 0
+        AND NOT a.attisdropped
+        AND lower(c.relname) IN (${Prisma.join(['client', 'user', 'report'])})
+    `)
+  } catch {
+    rows = await prisma.$queryRaw<ColumnRow[]>(Prisma.sql`
+      SELECT table_name, column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND lower(table_name) IN (${Prisma.join(['client', 'user', 'report'])})
+    `)
+  }
 
   const clientTable = resolveTableName(rows, ['Client', 'client'], 'Client')
   const userTable = resolveTableName(rows, ['User', 'user'], 'User')

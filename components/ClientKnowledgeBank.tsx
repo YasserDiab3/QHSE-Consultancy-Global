@@ -51,8 +51,8 @@ export default function ClientKnowledgeBank({ documents, folders, loading, error
   const isPdf = (document: Document) => fileType(document) === 'application/pdf' || /\.pdf(?:$|[?#])/i.test(document.originalName || document.title)
   const canPreview = (document: Document) => isImage(document) || isPdf(document)
 
-  if (loading) return <ExplorerSkeleton />
-  if (error) return <div className="card text-center"><p className="font-medium text-red-600">{error}</p><button onClick={() => void onRetry()} className="btn-secondary mt-4 px-4 py-2">{t('إعادة المحاولة', 'Try again')}</button></div>
+  if (loading && documents.length === 0 && folders.length === 0) return <ExplorerSkeleton />
+  if (error && documents.length === 0 && folders.length === 0) return <div className="card text-center"><p className="font-medium text-red-600">{error}</p><button onClick={() => void onRetry()} className="btn-secondary mt-4 px-4 py-2">{t('إعادة المحاولة', 'Try again')}</button></div>
 
   return <section className="space-y-5" dir={ar ? 'rtl' : 'ltr'}>
     <header className="relative overflow-hidden rounded-3xl border border-primary-100 bg-white p-5 shadow-sm sm:p-6">

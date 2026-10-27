@@ -37,7 +37,9 @@ export async function GET(request: Request) {
         return NextResponse.json([])
       }
     } else if (session.user.role === 'ADMIN') {
-      await backfillMissingReportConsultantIds(session.user.id)
+      void backfillMissingReportConsultantIds(session.user.id).catch((err) =>
+        console.error('Failed to backfill missing consultant IDs:', err)
+      )
     } else {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
@@ -71,6 +73,7 @@ export async function GET(request: Request) {
         },
         {
           headers: {
+            'Cache-Control': 'private, no-cache, stale-while-revalidate=60',
             'X-Page': String(pagination.page),
             'X-Page-Size': String(pagination.pageSize),
           },
@@ -78,7 +81,11 @@ export async function GET(request: Request) {
       )
     }
 
-    return NextResponse.json(reports)
+    return NextResponse.json(reports, {
+      headers: {
+        'Cache-Control': 'private, no-cache, stale-while-revalidate=60',
+      },
+    })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

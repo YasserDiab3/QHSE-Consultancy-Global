@@ -101,7 +101,10 @@ export async function GET(request: Request) {
       total = documents.length
     }
 
-    const headers = paginationHeaders(total, pagination)
+    const headers = {
+      ...paginationHeaders(total, pagination),
+      'Cache-Control': 'private, no-cache, stale-while-revalidate=60',
+    }
 
     if (pagination.requested) {
       return NextResponse.json(
