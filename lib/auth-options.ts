@@ -8,6 +8,13 @@ import { enforceRateLimit } from '@/lib/rate-limit'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
+if (process.env.VERCEL) {
+  process.env.AUTH_TRUST_HOST = 'true'
+  if (process.env.NEXTAUTH_URL && process.env.NEXTAUTH_URL.includes('localhost')) {
+    delete process.env.NEXTAUTH_URL
+  }
+}
+
 declare module 'next-auth' {
   interface Session {
     user: {

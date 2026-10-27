@@ -71,20 +71,31 @@ function wrapText(context: CanvasRenderingContext2D, text: string, maxWidth: num
 }
 
 async function imageData(url: string) {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error('Unable to load report branding')
-  const blob = await response.blob()
-  const objectUrl = URL.createObjectURL(blob)
-  try {
+  if (url.startsWith('data:')) {
     return await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image()
       image.onload = () => resolve(image)
       image.onerror = () => reject(new Error('Unable to load report image'))
-      image.src = objectUrl
+      image.src = url
     })
-  } finally {
-    URL.revokeObjectURL(objectUrl)
   }
+
+  const response = await fetch(url)
+  if (!response.ok) throw new Error('Unable to load report branding')
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  return await new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl)
+      resolve(image)
+    }
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl)
+      reject(new Error('Unable to load report image'))
+    }
+    image.src = objectUrl
+  })
 }
 
 function drawBox(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, color = '#ffffff') {

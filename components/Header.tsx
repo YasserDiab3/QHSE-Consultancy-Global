@@ -76,55 +76,57 @@ export default function Header() {
         useSolidHeader ? 'border-b border-primary-100/80 bg-white/95 shadow-[0_10px_32px_rgba(15,76,129,0.08)] backdrop-blur-xl' : 'bg-gradient-to-b from-primary-950/85 via-primary-900/45 to-transparent'
       }`}
     >
-      <div className="container-custom">
-        <div dir={isArabicInterface ? 'rtl' : 'ltr'} className="flex h-[72px] items-center gap-3 md:h-[84px]">
-          {/* Logo */}
-          <Link
-            href="/"
-            className="group flex shrink-0 items-center gap-2 transition-transform duration-300 hover:scale-[1.03]"
-            aria-label="QHSSE Consultant — home"
-          >
-            <BrandLogo
-              variant="header"
-              priority
-              className={`transition-all duration-300 ${
-                useSolidHeader
-                  ? 'h-[46px] w-[46px] md:h-[54px] md:w-[54px]'
-                  : 'h-[50px] w-[50px] md:h-[58px] md:w-[58px]'
-              }`}
-            />
-            <span className="hidden flex-col leading-none sm:flex">
-              <span className={`text-sm font-extrabold tracking-[0.08em] ${useSolidHeader ? 'text-primary-900' : 'text-white'}`}>
-                QHSSE
-              </span>
-              <span className={`mt-1 text-[10px] font-semibold tracking-[0.24em] ${useSolidHeader ? 'text-slate-500' : 'text-white/75'}`}>
-                CONSULTANT
-              </span>
-            </span>
-          </Link>
-
-          {/* Desktop Navigation */}
-          <nav dir={language === 'ar' ? 'rtl' : 'ltr'} className={`hidden items-center gap-1 lg:flex ${useSolidHeader ? '' : 'rounded-2xl border border-white/15 bg-white/5 px-2 py-1.5 backdrop-blur-sm'}`}>
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                aria-current={pathname === link.href ? 'page' : undefined}
-                className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 xl:px-4 ${
-                  pathname === link.href
-                    ? 'bg-primary-600 text-white shadow-sm'
-                    : useSolidHeader
-                    ? 'text-slate-700 hover:bg-primary-50 hover:text-primary-700'
-                    : 'text-white/90 hover:text-white hover:bg-white/10'
+      <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-12">
+        <div className="flex h-[72px] items-center justify-between gap-4 md:h-[84px]">
+          {/* Logo & Navigation */}
+          <div className="flex items-center gap-6 xl:gap-8">
+            <Link
+              href="/"
+              className="group flex shrink-0 items-center gap-2 transition-transform duration-300 hover:scale-[1.03]"
+              aria-label="QHSSE Consultant — home"
+            >
+              <BrandLogo
+                variant="header"
+                priority
+                className={`transition-all duration-300 ${
+                  useSolidHeader
+                    ? 'h-[46px] w-[46px] md:h-[54px] md:w-[54px]'
+                    : 'h-[50px] w-[50px] md:h-[58px] md:w-[58px]'
                 }`}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+              />
+              <span className="hidden flex-col leading-none sm:flex">
+                <span className={`text-sm font-extrabold tracking-[0.08em] ${useSolidHeader ? 'text-primary-900' : 'text-white'}`}>
+                  QHSSE
+                </span>
+                <span className={`mt-1 text-[10px] font-semibold tracking-[0.24em] ${useSolidHeader ? 'text-slate-500' : 'text-white/75'}`}>
+                  CONSULTANT
+                </span>
+              </span>
+            </Link>
 
-          {/* Right side */}
-          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className={`${isArabicInterface ? 'me-auto' : 'ms-auto'} flex shrink-0 items-center gap-2 md:gap-3`}>
+            {/* Desktop Navigation */}
+            <nav className={`hidden items-center gap-1 lg:flex ${useSolidHeader ? '' : 'rounded-2xl border border-white/15 bg-white/5 px-2 py-1.5 backdrop-blur-sm'}`}>
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  aria-current={pathname === link.href ? 'page' : undefined}
+                  className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 xl:px-4 ${
+                    pathname === link.href
+                      ? 'bg-primary-600 text-white shadow-sm'
+                      : useSolidHeader
+                      ? 'text-slate-700 hover:bg-primary-50 hover:text-primary-700'
+                      : 'text-white/90 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* Actions & Controls */}
+          <div className="flex shrink-0 items-center gap-2 md:gap-3">
             <LanguageSwitcher />
 
             {session ? (
