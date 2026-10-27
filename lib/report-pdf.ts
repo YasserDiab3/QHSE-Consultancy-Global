@@ -1,6 +1,13 @@
 import { jsPDF } from 'jspdf'
 import QRCode from 'qrcode'
 
+export type ObservationImage = {
+  id?: string
+  type: string
+  url: string
+  originalName?: string
+}
+
 export type Observation = {
   id?: string
   title: string
@@ -12,10 +19,12 @@ export type Observation = {
   sortOrder?: number
   correctiveAction?: string
   correctiveActionStatus?: string
+  images?: ObservationImage[]
 }
 
 export type ReportPdfData = {
   id: string
+  shortCode?: string
   date: string
   siteName: string
   siteNameAr?: string
@@ -110,6 +119,40 @@ function drawBox(context: CanvasRenderingContext2D, x: number, y: number, width:
   context.strokeRect(x, y, width, height)
 }
 
+function drawImageCover(
+  ctx: CanvasRenderingContext2D,
+  img: HTMLImageElement,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  const imgRatio = img.width / img.height
+  const targetRatio = w / h
+  let sWidth = img.width
+  let sHeight = img.height
+  let sx = 0
+  let sy = 0
+
+  if (imgRatio > targetRatio) {
+    sWidth = img.height * targetRatio
+    sx = (img.width - sWidth) / 2
+  } else {
+    sHeight = img.width / targetRatio
+    sy = (img.height - sHeight) / 2
+  }
+
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(x, y, w, h)
+  ctx.clip()
+  ctx.drawImage(img, sx, sy, sWidth, sHeight, x, y, w, h)
+  ctx.restore()
+  ctx.strokeStyle = '#d9dfdd'
+  ctx.lineWidth = 1
+  ctx.strokeRect(x, y, w, h)
+}
+
 export async function createReportPdfDoc(report: ReportPdfData, language: string = 'ar'): Promise<jsPDF> {
   if (typeof document === 'undefined' || typeof window === 'undefined') {
     throw new Error('PDF export is only available in the browser')
@@ -117,14 +160,37 @@ export async function createReportPdfDoc(report: ReportPdfData, language: string
 
   await document.fonts?.ready
   const isArabic = language === 'ar'
+  const shortCode = report.shortCode || `QHSSE-${report.id.substring(0, 8).toUpperCase()}`
   const reportUrl = `${window.location.origin}/reports/verify/${encodeURIComponent(report.id)}`
-  const [logoResult, qrResult] = await Promise.allSettled([
+  const observations = Array.isArray(report.observations) ? report.observations : []
+
+  // Collect image URLs from observations to preload in parallel
+  const obsImagesToLoad: Array<{ url: string; type: string }> = []
+  observations.forEach((obs) => {
+    if (Array.isArray(obs.images)) {
+      obs.images.forEach((img) => {
+        if (img?.url && !obsImagesToLoad.some((item) => item.url === img.url)) {
+          obsImagesToLoad.push({ url: img.url, type: img.type })
+        }
+      })
+    }
+  })
+
+  const [logoResult, qrResult, ...obsImgResults] = await Promise.allSettled([
     imageData(`${window.location.origin}/brand/qhsse-logo-stacked.svg`),
     QRCode.toDataURL(reportUrl, { width: 180, margin: 1, errorCorrectionLevel: 'M' }).then(imageData),
+    ...obsImagesToLoad.map((item) => imageData(item.url)),
   ])
   const logo = logoResult.status === 'fulfilled' ? logoResult.value : undefined
   const qr = qrResult.status === 'fulfilled' ? qrResult.value : undefined
-  const observations = Array.isArray(report.observations) ? report.observations : []
+
+  const loadedObsImages = new Map<string, HTMLImageElement>()
+  obsImagesToLoad.forEach((item, index) => {
+    const res = obsImgResults[index]
+    if (res && res.status === 'fulfilled') {
+      loadedObsImages.set(item.url, res.value)
+    }
+  })
 
   const value = (arabic?: string, english?: string) =>
     repairMojibake(isArabic ? arabic || english || '-' : english || arabic || '-')
@@ -223,11 +289,11 @@ export async function createReportPdfDoc(report: ReportPdfData, language: string
     pageContext.font = '700 13px Cairo, Arial'
     pageContext.textAlign = 'center'
     pageContext.direction = 'ltr'
-    pageContext.fillText('SCAN TO VERIFY REPORT', PAGE_WIDTH / 2, FOOTER_LINE_Y + 134)
+    pageContext.fillText(`SCAN TO VERIFY  •  CODE: ${shortCode}`, PAGE_WIDTH / 2, FOOTER_LINE_Y + 134)
     pageContext.fillStyle = '#666666'
     pageContext.font = '500 13px Cairo, Arial'
     pageContext.fillText(
-      `${formCode}  •  REV. 01  •  Page ${pageNumber} of ${totalPages}`,
+      `${formCode}  •  REV. 01  •  Code: ${shortCode}  •  Page ${pageNumber} of ${totalPages}`,
       PAGE_WIDTH / 2,
       FOOTER_LINE_Y + 158
     )
@@ -260,10 +326,10 @@ export async function createReportPdfDoc(report: ReportPdfData, language: string
   context!.fillRect(42, 158, 1156, 3)
 
   const metaRows = [
-    [isArabic ? 'اليوم' : 'Date', visitDate],
-    [isArabic ? 'العميل' : 'Client', company],
-    [isArabic ? 'الموضوع' : 'Subject', siteName],
-    [isArabic ? 'الموقع - المكان' : 'Location', siteName],
+    [isArabic ? 'اليوم والتاريخ' : 'Date', visitDate],
+    [isArabic ? 'المنشأة / العميل' : 'Client', company],
+    [isArabic ? 'موقع الزيارة' : 'Location', siteName],
+    [isArabic ? 'كود التوثيق الأمني' : 'Verification Code', shortCode],
   ]
   const metaY = 182
   metaRows.forEach(([label, content], index) => {
@@ -391,6 +457,139 @@ export async function createReportPdfDoc(report: ReportPdfData, language: string
       PAGE_WIDTH / 2,
       rowY + 40
     )
+  }
+
+  // Photographic Evidence Appendix
+  const observationsWithPhotos = observations
+    .map((obs, originalIndex) => ({
+      obs,
+      index: originalIndex + 1,
+      images: (obs.images || []).filter((img) => img?.url && loadedObsImages.has(img.url)),
+    }))
+    .filter((item) => item.images.length > 0)
+
+  if (observationsWithPhotos.length > 0) {
+    startPage()
+    drawContinuationHeader()
+
+    text('700 20px Cairo, Arial', '#1e293b', isArabic ? 'right' : 'left')
+    write(
+      isArabic
+        ? 'ملحق التوثيق الفوتوغرافي الميداني (صور المخالفات والأدلة):'
+        : 'Appendix: Field Photographic Evidence & Non-Conformities:',
+      isArabic ? 1175 : 62,
+      165
+    )
+    context!.fillStyle = '#0284c7'
+    context!.fillRect(isArabic ? 650 : 62, 175, 526, 3)
+
+    let photoY = 195
+
+    observationsWithPhotos.forEach((item) => {
+      const obsTitle = value(item.obs.titleAr, item.obs.title)
+      const count = Math.min(item.images.length, 3)
+      const imgHeight = count === 1 ? 260 : 210
+      const cardHeight = imgHeight + 82
+
+      if (photoY + cardHeight > MAX_ROWS_Y) {
+        startPage()
+        drawContinuationHeader()
+        photoY = 160
+      }
+
+      // Draw container card
+      drawBox(context!, 62, photoY, 1116, cardHeight, '#ffffff')
+      context!.fillStyle = '#f8fafc'
+      context!.fillRect(62, photoY, 1116, 36)
+      context!.strokeStyle = '#e2e8f0'
+      context!.strokeRect(62, photoY, 1116, 36)
+
+      // Observation Title Header in Card
+      text('700 14px Cairo, Arial', '#0f172a', isArabic ? 'right' : 'left')
+      const obsLabel = isArabic
+        ? `الملاحظة #${item.index}: ${obsTitle}`
+        : `Observation #${item.index}: ${obsTitle}`
+      write(obsLabel, isArabic ? 1150 : 80, photoY + 23, 850)
+
+      // Risk badge in card header
+      const riskKey = item.obs.riskLevel || 'LOW'
+      const riskBadgeColor =
+        riskKey === 'CRITICAL'
+          ? '#dc2626'
+          : riskKey === 'HIGH'
+            ? '#d97706'
+            : riskKey === 'MEDIUM'
+              ? '#ca8a04'
+              : '#2563eb'
+      context!.fillStyle = riskBadgeColor
+      context!.fillRect(isArabic ? 80 : 1050, photoY + 8, 80, 20)
+      text('700 11px Arial', '#ffffff', 'center')
+      write(riskKey, isArabic ? 120 : 1090, photoY + 22)
+
+      // Render images
+      const imgTop = photoY + 46
+      if (count === 1) {
+        const img = loadedObsImages.get(item.images[0].url)
+        if (img) {
+          const imgW = 460
+          const imgX = (PAGE_WIDTH - imgW) / 2
+          drawImageCover(context!, img, imgX, imgTop, imgW, imgHeight)
+
+          const typeLabel =
+            item.images[0].type === 'BEFORE'
+              ? (isArabic ? 'قبل المعالجة (Non-compliance)' : 'Before Correction')
+              : item.images[0].type === 'AFTER'
+                ? (isArabic ? 'بعد المعالجة (Rectified)' : 'After Rectification')
+                : (isArabic ? 'صورة الدليل الميداني (Evidence)' : 'Field Evidence')
+          text('600 12px Cairo, Arial', '#475569', 'center')
+          write(typeLabel, PAGE_WIDTH / 2, imgTop + imgHeight + 20)
+        }
+      } else if (count === 2) {
+        const imgW = 530
+        const gap = 20
+        const startX = 72
+
+        item.images.slice(0, 2).forEach((imgObj, i) => {
+          const img = loadedObsImages.get(imgObj.url)
+          const imgX = startX + i * (imgW + gap)
+          if (img) {
+            drawImageCover(context!, img, imgX, imgTop, imgW, imgHeight)
+
+            const typeLabel =
+              imgObj.type === 'BEFORE'
+                ? (isArabic ? 'قبل المعالجة (Before)' : 'Before Correction')
+                : imgObj.type === 'AFTER'
+                  ? (isArabic ? 'بعد المعالجة (Rectified)' : 'After Rectification')
+                  : (isArabic ? 'دليل الفحص (Evidence)' : 'Inspection Evidence')
+            text('600 12px Cairo, Arial', '#475569', 'center')
+            write(typeLabel, imgX + imgW / 2, imgTop + imgHeight + 20)
+          }
+        })
+      } else {
+        const imgW = 345
+        const gap = 20
+        const startX = 72
+
+        item.images.slice(0, 3).forEach((imgObj, i) => {
+          const img = loadedObsImages.get(imgObj.url)
+          const imgX = startX + i * (imgW + gap)
+          if (img) {
+            drawImageCover(context!, img, imgX, imgTop, imgW, imgHeight)
+
+            const typeLabel =
+              imgObj.type === 'BEFORE'
+                ? (isArabic ? 'قبل المعالجة' : 'Before')
+                : imgObj.type === 'AFTER'
+                  ? (isArabic ? 'بعد المعالجة' : 'After')
+                  : (isArabic ? 'صورة الدليل' : 'Evidence')
+            text('600 12px Cairo, Arial', '#475569', 'center')
+            write(typeLabel, imgX + imgW / 2, imgTop + imgHeight + 20)
+          }
+        })
+      }
+
+      photoY += cardHeight + 20
+    })
   }
 
   const pdf = new jsPDF({ unit: 'px', format: [PAGE_WIDTH, PAGE_HEIGHT] })

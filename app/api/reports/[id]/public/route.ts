@@ -19,9 +19,12 @@ export async function GET(
       return NextResponse.json({ error: 'Report not found' }, { status: 404 })
     }
 
+    const shortCode = `QHSSE-${report.id.substring(0, 8).toUpperCase()}`
+
     // Public sanitized verification payload - strictly no client credentials or account data
     return NextResponse.json({
       id: report.id,
+      shortCode,
       date: report.date,
       siteName: report.siteName,
       siteNameAr: report.siteNameAr,
@@ -48,6 +51,12 @@ export async function GET(
         sortOrder: obs.sortOrder ?? 0,
         correctiveAction: obs.correctiveAction,
         correctiveActionStatus: obs.correctiveActionStatus,
+        images: (obs.images || []).map((img: any) => ({
+          id: img.id,
+          type: img.type,
+          url: img.url,
+          originalName: img.originalName || null,
+        })),
       })),
     })
   } catch (error: any) {

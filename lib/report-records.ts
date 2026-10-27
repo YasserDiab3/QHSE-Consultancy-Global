@@ -441,7 +441,12 @@ export async function listReportRecords(options: ListReportOptions = {}) {
   const conditions: string[] = []
 
   if (options.id) {
-    conditions.push(`r.${quoteIdentifier(schema.report.id)} = ${sqlValue(options.id)}`)
+    const rawId = options.id.replace(/^QHSSE-/i, '').trim().toLowerCase()
+    if (rawId.length >= 8 && rawId.length < 36) {
+      conditions.push(`r.${quoteIdentifier(schema.report.id)} ILIKE ${sqlValue(rawId + '%')}`)
+    } else {
+      conditions.push(`r.${quoteIdentifier(schema.report.id)} = ${sqlValue(rawId)}`)
+    }
   }
   if (options.clientId) {
     conditions.push(`r.${quoteIdentifier(schema.report.clientId)} = ${sqlValue(options.clientId)}`)
