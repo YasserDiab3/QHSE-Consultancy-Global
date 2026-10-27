@@ -85,7 +85,7 @@ export default function Header() {
             aria-label="QHSSE Consultant — home"
           >
             <BrandLogo
-              variant="mark"
+              variant="header"
               priority
               className={`transition-all duration-300 ${
                 useSolidHeader

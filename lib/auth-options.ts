@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions, DefaultSession } from 'next-auth'
+import type { NextAuthOptions, DefaultSession } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import GoogleProvider from 'next-auth/providers/google'
 import { prisma } from '@/lib/prisma'
@@ -148,15 +148,12 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   session: {
     strategy: 'jwt',
     maxAge: 7 * 24 * 60 * 60,
   },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 }
-
-const handler = NextAuth(authOptions)
-
-export { handler as GET, handler as POST }

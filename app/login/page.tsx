@@ -32,12 +32,14 @@ function LoginForm() {
         ? {
             invalidCredentials: 'بيانات تسجيل الدخول غير صحيحة',
             serviceUnavailable: 'خدمة تسجيل الدخول غير متاحة حاليا. حاول مرة أخرى بعد قليل.',
+            configuration: 'خطأ في إعدادات الخادم (تأكد من إعداد مفتاح NEXTAUTH_SECRET والاتصال بقاعدة البيانات).',
             genericError: 'تعذر تسجيل الدخول. تحقق من الإعدادات ثم حاول مرة أخرى.',
             portal: 'CLIENT PORTAL',
           }
         : {
             invalidCredentials: t('auth.invalidCredentials'),
             serviceUnavailable: t('auth.serviceUnavailable'),
+            configuration: 'Server configuration error. Please verify NEXTAUTH_SECRET and database settings.',
             genericError: 'Unable to sign in. Please check the configuration and try again.',
             portal: 'CLIENT PORTAL',
           },
@@ -52,6 +54,10 @@ function LoginForm() {
 
       if (code === AUTH_SERVICE_UNAVAILABLE) {
         return copy.serviceUnavailable
+      }
+
+      if (code === 'Configuration' || code === 'configuration') {
+        return copy.configuration
       }
 
       if (!code) {
@@ -99,6 +105,15 @@ function LoginForm() {
       }
 
       if (result?.url) {
+        if (result.url.includes('/api/auth/error') || result.url.includes('error=')) {
+          const parsed = new URL(result.url, window.location.origin)
+          const errorCode = parsed.searchParams.get('error')
+          const message = getAuthErrorMessage(errorCode) ?? copy.genericError
+          setFormError(message)
+          toast.error(message)
+          return
+        }
+
         const parsedUrl = result.url.startsWith('http') ? new URL(result.url) : null
         const targetUrl = parsedUrl
           ? `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
