@@ -20,9 +20,29 @@ export default function Header() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 10)
     }
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  useEffect(() => {
+    if (!mobileMenuOpen) return
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMobileMenuOpen(false)
+    }
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [mobileMenuOpen])
 
   const navLinks = [
     { href: '/', label: language === 'ar' ? 'الرئيسية' : 'Home' },
@@ -56,22 +76,31 @@ export default function Header() {
         useSolidHeader ? 'border-b border-primary-100/80 bg-white/95 shadow-[0_10px_32px_rgba(15,76,129,0.08)] backdrop-blur-xl' : 'bg-gradient-to-b from-primary-950/85 via-primary-900/45 to-transparent'
       }`}
     >
-      <div className="w-full px-4 sm:px-6 lg:px-10">
+      <div className="container-custom">
         <div dir={isArabicInterface ? 'rtl' : 'ltr'} className="flex h-[72px] items-center gap-3 md:h-[84px]">
           {/* Logo */}
           <Link
             href="/"
-            className="group flex shrink-0 items-center transition-transform duration-300 hover:scale-[1.03]"
+            className="group flex shrink-0 items-center gap-2 transition-transform duration-300 hover:scale-[1.03]"
+            aria-label="QHSSE Consultant — home"
           >
             <BrandLogo
               variant="header"
               priority
               className={`transition-all duration-300 ${
                 useSolidHeader
-                  ? 'h-[52px] w-[52px] md:h-[60px] md:w-[60px]'
-                  : 'h-[56px] w-[56px] md:h-[64px] md:w-[64px]'
+                  ? 'h-[46px] w-[46px] md:h-[54px] md:w-[54px]'
+                  : 'h-[50px] w-[50px] md:h-[58px] md:w-[58px]'
               }`}
             />
+            <span className="hidden flex-col leading-none sm:flex">
+              <span className={`text-sm font-extrabold tracking-[0.08em] ${useSolidHeader ? 'text-primary-900' : 'text-white'}`}>
+                QHSSE
+              </span>
+              <span className={`mt-1 text-[10px] font-semibold tracking-[0.24em] ${useSolidHeader ? 'text-slate-500' : 'text-white/75'}`}>
+                CONSULTANT
+              </span>
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -80,6 +109,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={pathname === link.href ? 'page' : undefined}
                 className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 xl:px-4 ${
                   pathname === link.href
                     ? 'bg-primary-600 text-white shadow-sm'
@@ -94,7 +124,7 @@ export default function Header() {
           </nav>
 
           {/* Right side */}
-          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className={`${isArabicInterface ? 'mr-auto' : 'ml-auto'} flex shrink-0 items-center gap-2 md:gap-3`}>
+          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className={`${isArabicInterface ? 'me-auto' : 'ms-auto'} flex shrink-0 items-center gap-2 md:gap-3`}>
             <LanguageSwitcher />
 
             {session ? (
@@ -149,7 +179,10 @@ export default function Header() {
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className={`lg:hidden p-2 rounded-lg transition-colors ${
+              aria-expanded={mobileMenuOpen}
+              aria-controls="mobile-navigation"
+              aria-label={mobileMenuOpen ? (language === 'ar' ? 'إغلاق القائمة' : 'Close menu') : (language === 'ar' ? 'فتح القائمة' : 'Open menu')}
+              className={`rounded-lg p-2 transition-colors lg:hidden ${
                 useSolidHeader ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'
               }`}
             >
@@ -160,14 +193,15 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="lg:hidden bg-white rounded-xl shadow-lg border border-gray-200 mb-4 overflow-hidden fade-in">
-            <nav className="p-4 space-y-1">
+          <div id="mobile-navigation" dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-4 max-h-[calc(100vh-96px)] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg fade-in lg:hidden">
+            <nav className="p-4 space-y-1" aria-label={language === 'ar' ? 'التنقل الرئيسي' : 'Main navigation'}>
               {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-3 rounded-lg text-gray-700 hover:text-primary-500 hover:bg-gray-50 font-medium transition-colors"
+                  aria-current={pathname === link.href ? 'page' : undefined}
+                  className="block rounded-lg px-4 py-3 font-medium text-gray-700 transition-colors hover:bg-gray-50 hover:text-primary-500"
                 >
                   {link.label}
                 </Link>

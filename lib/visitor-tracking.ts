@@ -1,4 +1,5 @@
 import { headers } from 'next/headers'
+import { anonymizeIpAddress } from '@/lib/privacy'
 
 function normalizeCountryCode(value: string | null) {
   const code = value?.trim().toUpperCase()
@@ -28,15 +29,15 @@ export async function getVisitorGeoDetails() {
   const city = headerList.get('x-vercel-ip-city') || headerList.get('x-city') || undefined
   const region = headerList.get('x-vercel-ip-country-region') || headerList.get('x-region') || undefined
   const forwardedFor = headerList.get('x-forwarded-for') || ''
-  const ipAddress = forwardedFor.split(',')[0]?.trim() || headerList.get('x-real-ip') || undefined
-  const userAgent = headerList.get('user-agent') || undefined
+  const rawIp = forwardedFor.split(',')[0]?.trim() || headerList.get('x-real-ip') || undefined
+  const userAgent = headerList.get('user-agent')?.slice(0, 256) || undefined
 
   return {
     countryCode,
     countryName: getCountryNameFromCode(countryCode),
     city,
     region,
-    ipAddress,
+    ipAddress: anonymizeIpAddress(rawIp),
     userAgent,
   }
 }

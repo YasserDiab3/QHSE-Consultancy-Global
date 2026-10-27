@@ -32,19 +32,35 @@ async function loadImageData(url: string) {
   }
 }
 
-async function renderArabicText(text: string) {
+async function renderCanvasText(
+  text: string,
+  options: {
+    font?: string
+    color?: string
+    width?: number
+    height?: number
+    rtl?: boolean
+  } = {}
+) {
   await document.fonts.ready
+  const {
+    font = '700 48px Cairo, Arial, sans-serif',
+    color = '#1e4031',
+    width = 1800,
+    height = 150,
+    rtl = /[\u0600-\u06FF]/.test(text),
+  } = options
   const canvas = document.createElement('canvas')
-  canvas.width = 1800
-  canvas.height = 150
+  canvas.width = width
+  canvas.height = height
   const context = canvas.getContext('2d')
-  if (!context) throw new Error('Failed to render Arabic certificate text')
+  if (!context) throw new Error('Failed to render certificate text')
   context.clearRect(0, 0, canvas.width, canvas.height)
-  context.direction = 'rtl'
+  context.direction = rtl ? 'rtl' : 'ltr'
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.font = '700 48px Cairo, Arial, sans-serif'
-  context.fillStyle = '#1e4031'
+  context.font = font
+  context.fillStyle = color
   context.fillText(text, canvas.width / 2, canvas.height / 2, canvas.width - 80)
   return canvas.toDataURL('image/png')
 }
@@ -74,8 +90,20 @@ export async function downloadTrainingCertificatePdf(certificate: CertificatePdf
   })
   const logo = await loadImageData(`${window.location.origin}/brand/qhsse-logo-stacked.svg`)
   const courseTitle = repairMojibake(certificate.courseTitle)
+  const recipientName = repairMojibake(certificate.recipientName || '')
   const containsArabic = /[\u0600-\u06FF]/.test(courseTitle)
-  const arabicCourseTitle = containsArabic ? await renderArabicText(courseTitle) : null
+  const arabicCourseTitle = containsArabic
+    ? await renderCanvasText(courseTitle, { font: '700 48px Cairo, Arial, sans-serif', color: '#1e4031' })
+    : null
+  const recipientHasArabic = /[\u0600-\u06FF]/.test(recipientName)
+  const arabicRecipientName = recipientHasArabic
+    ? await renderCanvasText(recipientName, {
+        font: '700 64px Cairo, Arial, sans-serif',
+        color: '#8B4D00',
+        width: 1800,
+        height: 120,
+      })
+    : null
 
   pdf.setFillColor(246, 248, 250)
   pdf.rect(0, 0, width, height, 'F')
@@ -99,7 +127,11 @@ export async function downloadTrainingCertificatePdf(certificate: CertificatePdf
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(24)
   pdf.setTextColor(139, 77, 0)
-  pdf.text(certificate.recipientName || '-', width / 2, 104, { align: 'center', maxWidth: width - 60 })
+  if (arabicRecipientName) {
+    pdf.addImage(arabicRecipientName, 'PNG', width / 2 - 80, 93, 160, 13)
+  } else {
+    pdf.text(recipientName || '-', width / 2, 104, { align: 'center', maxWidth: width - 60 })
+  }
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(13)
   pdf.setTextColor(75, 85, 99)

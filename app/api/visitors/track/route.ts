@@ -20,6 +20,11 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null)
     const visitorKey = normalizeText(body?.visitorKey)
     const path = normalizeText(body?.path)
+    const consentGranted = body?.consent === true
+
+    if (!consentGranted) {
+      return NextResponse.json({ skipped: true, reason: 'CONSENT_REQUIRED' })
+    }
 
     if (!visitorKey || !path || visitorKey.length > 128 || path.length > 2048 || !path.startsWith('/')) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })

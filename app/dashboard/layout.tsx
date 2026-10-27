@@ -1,31 +1,14 @@
-import { getSession } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
+import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const session = await getSession()
+export const metadata: Metadata = pageMetadata({
+  title: 'Client Portal',
+  description: 'Access reports, corrective actions and client documents.',
+  path: '/dashboard',
+  noIndex: true,
+})
 
-  if (!session) {
-    redirect('/login?callbackUrl=/dashboard')
-  }
-
-  if (session.user.role === 'TRAINEE') {
-    redirect('/training')
-  }
-
-  // The client portal must never be used as a fallback view for administrators.
-  // Apart from preventing a confusing first-login experience, this keeps the
-  // client-specific UI and its data-fetching paths strictly role-scoped.
-  if (session.user.role === 'ADMIN') {
-    redirect('/admin')
-  }
-
-  if (session.user.role !== 'CLIENT') {
-    redirect('/')
-  }
-
+export default function RouteLayout({ children }: { children: ReactNode }) {
   return children
 }

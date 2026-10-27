@@ -131,7 +131,7 @@ export default function TrainingCertificatePage() {
         <Header />
       </div>
 
-      <main className="container-custom py-28 print:container-auto print:p-0">
+      <main className="container-custom py-28 print:p-0">
         <div className="mx-auto mb-6 flex max-w-5xl justify-end gap-3 print:hidden">
           <button type="button" onClick={() => void downloadPdf()} className="btn-primary px-5 py-3">
             <Download className="h-5 w-5" />
@@ -147,7 +147,7 @@ export default function TrainingCertificatePage() {
         </div>
 
         {certificate ? (
-          <section className="mx-auto max-w-5xl rounded-[36px] border border-amber-200 bg-white p-10 shadow-2xl print:min-h-screen print:max-w-none print:rounded-none print:border-0 print:shadow-none">
+          <section id="training-certificate" className="mx-auto max-w-5xl rounded-3xl border border-amber-200 bg-white p-10 shadow-2xl print:min-h-screen print:max-w-none print:rounded-none print:border-0 print:shadow-none">
             <div className="rounded-[28px] border-4 border-double border-[#8B4D00]/35 p-10 text-center">
               <div className="mb-8 flex justify-center">
                 <BrandLogo variant="stacked" priority className="h-[150px] w-[150px]" />

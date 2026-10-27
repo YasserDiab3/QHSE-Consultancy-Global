@@ -233,12 +233,16 @@ model Observation {
   descriptionAr String?
   riskLevel     String
   status        String         @default("OPEN")
+  clientResponse          String?
+  correctiveAction        String?
+  correctiveActionStatus  String?
   sortOrder     Int            @default(0)
   createdAt     DateTime       @default(now()) @map("createdat")
   updatedAt     DateTime       @default(now()) @updatedAt @map("updatedat")
   images        Image[]
 
-  @@index([reportId])
+  @@index([reportId, sortOrder])
+  @@index([status])
   @@map("Observation")
 }
 

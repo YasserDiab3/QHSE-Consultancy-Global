@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getClientAccountById } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
 import { clientDocumentSchema, financialRecordSchema, formatValidationError } from '@/lib/validation'
+import { persistDataUrl } from '@/lib/storage'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +41,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     const parsed = clientDocumentSchema.safeParse(body)
     if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
-    const item = await prisma.clientDocument.create({ data: { clientId: id, ...parsed.data, category: parsed.data.category || 'SYSTEM' } })
+    const storedUrl = await persistDataUrl(parsed.data.url, {
+      folder: 'client-documents',
+      originalName: parsed.data.originalName,
+    })
+    const item = await prisma.clientDocument.create({
+      data: { ...parsed.data, url: storedUrl, clientId: id, category: parsed.data.category || 'SYSTEM' },
+    })
     return NextResponse.json(item, { status: 201 })
   } catch (error: any) { return NextResponse.json({ error: error.message }, { status: 500 }) }
 }

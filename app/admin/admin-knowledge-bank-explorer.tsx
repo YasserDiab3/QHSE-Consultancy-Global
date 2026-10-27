@@ -21,7 +21,7 @@ async function readPayload(response: Response) {
 export default function AdminKnowledgeBankExplorer() {
   const { language } = useLanguage()
   const isArabic = language === 'ar'
-  const label = (ar: string, en: string) => isArabic ? ar : en
+  const label = useCallback((ar: string, en: string) => isArabic ? ar : en, [isArabic])
   const rootId = '__root__'
   const [clients, setClients] = useState<Client[]>([])
   const [clientId, setClientId] = useState('')
@@ -39,8 +39,8 @@ export default function AdminKnowledgeBankExplorer() {
   const visibleFolders = selectedFolderId === rootId ? folders.filter((folder) => !folder.parentId) : folders.filter((folder) => folder.parentId === selectedFolderId)
   const visibleDocuments = selectedFolderId === rootId ? documents.filter((document) => !document.folderId) : documents.filter((document) => document.folderId === selectedFolderId)
 
-  const loadClients = useCallback(async () => { try { const response = await fetch('/api/clients'); const payload = await readPayload(response); setClients(payload as unknown as Client[]); const list = payload as unknown as Client[]; setClientId((value) => value || list[0]?.id || '') } catch (error) { toast.error(error instanceof Error ? error.message : label('تعذر تحميل العملاء', 'Unable to load clients')) } }, [isArabic])
-  const loadBank = useCallback(async () => { if (!clientId) { setFolders([]); setDocuments([]); setLoading(false); return }; setLoading(true); try { const response = await fetch(`/api/knowledge-bank?clientId=${encodeURIComponent(clientId)}`); const payload = await readPayload(response) as { folders?: FolderItem[]; documents?: Document[] }; setFolders(payload.folders || []); setDocuments(payload.documents || []) } catch (error) { toast.error(error instanceof Error ? error.message : label('تعذر تحميل بنك المعلومات', 'Unable to load knowledge bank')) } finally { setLoading(false) } }, [clientId, isArabic])
+  const loadClients = useCallback(async () => { try { const response = await fetch('/api/clients'); const payload = await readPayload(response); setClients(payload as unknown as Client[]); const list = payload as unknown as Client[]; setClientId((value) => value || list[0]?.id || '') } catch (error) { toast.error(error instanceof Error ? error.message : label('تعذر تحميل العملاء', 'Unable to load clients')) } }, [label])
+  const loadBank = useCallback(async () => { if (!clientId) { setFolders([]); setDocuments([]); setLoading(false); return }; setLoading(true); try { const response = await fetch(`/api/knowledge-bank?clientId=${encodeURIComponent(clientId)}`); const payload = await readPayload(response) as { folders?: FolderItem[]; documents?: Document[] }; setFolders(payload.folders || []); setDocuments(payload.documents || []) } catch (error) { toast.error(error instanceof Error ? error.message : label('تعذر تحميل بنك المعلومات', 'Unable to load knowledge bank')) } finally { setLoading(false) } }, [clientId, label])
   useEffect(() => { void loadClients() }, [loadClients])
   useEffect(() => { void loadBank() }, [loadBank])
   useEffect(() => { if (selectedFolderId !== rootId && !folderById.has(selectedFolderId)) setSelectedFolderId(rootId) }, [folderById, selectedFolderId])

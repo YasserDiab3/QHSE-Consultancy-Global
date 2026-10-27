@@ -2,11 +2,12 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { getClientIdByUserId } from '@/lib/client-records'
 import { prisma } from '@/lib/prisma'
+import { buildPaginationMeta, paginationHeaders, parsePagination } from '@/lib/pagination'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const session = await getSession()
     if (!session?.user) {
@@ -21,6 +22,8 @@ export async function GET() {
     if (!clientId) {
       return NextResponse.json({ error: 'Client profile not found' }, { status: 404 })
     }
+
+    const pagination = parsePagination(new URL(request.url).searchParams)
 
     const documentSelect = {
       id: true,
@@ -46,22 +49,35 @@ export async function GET() {
       size: number | null
       createdAt: Date
     }>
+    let total = 0
 
     try {
-      ;[folders, documents] = await Promise.all([
+      const [loadedFolders, documentCount, loadedDocuments] = await Promise.all([
         prisma.knowledgeFolder.findMany({
           where: { clientId },
           select: { id: true, parentId: true, name: true, category: true },
           orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
         }),
-        prisma.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: 'desc' }, select: documentSelect }),
+        prisma.clientDocument.count({ where: { clientId } }),
+        prisma.clientDocument.findMany({
+          where: { clientId },
+          orderBy: { createdAt: 'desc' },
+          skip: pagination.skip,
+          take: pagination.take,
+          select: documentSelect,
+        }),
       ])
+      folders = loadedFolders
+      documents = loadedDocuments
+      total = documentCount
     } catch {
       // Keep the existing client document library available until the folder
       // migration has been applied to an older database.
       const legacyDocuments = await prisma.clientDocument.findMany({
         where: { clientId },
         orderBy: { createdAt: 'desc' },
+        skip: pagination.skip,
+        take: pagination.take,
         select: {
           id: true,
           title: true,
@@ -74,9 +90,23 @@ export async function GET() {
         },
       })
       documents = legacyDocuments.map((document) => ({ ...document, folderId: null }))
+      total = documents.length
     }
 
-    return NextResponse.json({ folders, documents })
+    const headers = paginationHeaders(total, pagination)
+
+    if (pagination.requested) {
+      return NextResponse.json(
+        {
+          folders,
+          documents,
+          pagination: buildPaginationMeta(pagination.page, pagination.pageSize, total),
+        },
+        { headers }
+      )
+    }
+
+    return NextResponse.json({ folders, documents }, { headers })
   } catch (error) {
     console.error('Failed to load client documents:', error)
     return NextResponse.json({ error: 'Unable to load documents' }, { status: 500 })

@@ -1,8 +1,14 @@
 'use client'
 
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
-
-type Language = 'en' | 'ar'
+import {
+  LANGUAGE_COOKIE,
+  LANGUAGE_COOKIE_MAX_AGE,
+  dictionaries,
+  isRtl,
+  normalizeLanguage,
+  type Language,
+} from '@/lib/i18n-config'
 
 interface LanguageContextType {
   language: Language
@@ -12,9 +18,8 @@ interface LanguageContextType {
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined)
-const translationCache: Partial<Record<Language, Record<string, unknown>>> = {}
 
-function getNestedTranslation(obj: Record<string, unknown>, path: string): string {
+function getNestedTranslation(obj: Record<string, unknown>, path: string): string | undefined {
   const value = path.split('.').reduce<unknown>((acc, part) => {
     if (acc && typeof acc === 'object' && part in acc) {
       return (acc as Record<string, unknown>)[part]
@@ -23,63 +28,75 @@ function getNestedTranslation(obj: Record<string, unknown>, path: string): strin
     return undefined
   }, obj)
 
-  return typeof value === 'string' ? value : path
+  return typeof value === 'string' ? value : undefined
 }
 
-async function loadTranslations(lang: Language) {
-  if (translationCache[lang]) {
-    return translationCache[lang]!
-  }
-
-  const response = await fetch(`/locales/${lang}.json`, { cache: 'no-store' })
-  if (!response.ok) {
-    throw new Error(`Failed to load ${lang} translations`)
-  }
-
-  const data = (await response.json()) as Record<string, unknown>
-  translationCache[lang] = data
-  return data
+function translate(messages: Record<string, unknown>, key: string) {
+  return (
+    getNestedTranslation(messages, key) ??
+    getNestedTranslation(dictionaries.en as unknown as Record<string, unknown>, key) ??
+    key
+  )
 }
 
 function applyLanguageAttributes(lang: Language) {
   document.documentElement.lang = lang
-  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
+  document.documentElement.dir = isRtl(lang) ? 'rtl' : 'ltr'
 }
 
-export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('en')
-  const [messages, setMessages] = useState<Record<string, unknown>>({})
+function persistLanguage(lang: Language) {
+  try {
+    window.localStorage.setItem(LANGUAGE_COOKIE, lang)
+  } catch {
+    // Storage can be unavailable in private browsing; the cookie still works.
+  }
+
+  const secure = window.location.protocol === 'https:' ? '; Secure' : ''
+  document.cookie = `${LANGUAGE_COOKIE}=${lang}; Path=/; Max-Age=${LANGUAGE_COOKIE_MAX_AGE}; SameSite=Lax${secure}`
+}
+
+export function LanguageProvider({
+  children,
+  initialLanguage = 'en',
+}: {
+  children: ReactNode
+  initialLanguage?: Language
+}) {
+  const [language, setLanguageState] = useState<Language>(() => normalizeLanguage(initialLanguage))
 
   const setLanguage = useCallback(async (lang: Language) => {
-    const data = await loadTranslations(lang).catch(() => ({}))
-    setMessages(data)
-    setLanguageState(lang)
-    applyLanguageAttributes(lang)
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('preferred-language', lang)
-    }
+    const nextLanguage = normalizeLanguage(lang)
+    setLanguageState(nextLanguage)
+    applyLanguageAttributes(nextLanguage)
+    persistLanguage(nextLanguage)
   }, [])
 
   useEffect(() => {
-    const bootLanguage = async () => {
-      const savedLang =
-        typeof window !== 'undefined'
-          ? ((localStorage.getItem('preferred-language') || 'en') as Language)
-          : 'en'
+    applyLanguageAttributes(language)
 
-      await setLanguage(savedLang)
+    // Migrate visitors who chose a language before the cookie existed.
+    const hasCookie = document.cookie
+      .split('; ')
+      .some((entry) => entry.startsWith(`${LANGUAGE_COOKIE}=`))
+    if (hasCookie) return
+
+    let saved: string | null = null
+    try {
+      saved = window.localStorage.getItem(LANGUAGE_COOKIE)
+    } catch {
+      saved = null
     }
 
-    void bootLanguage()
-  }, [setLanguage])
+    if ((saved === 'ar' || saved === 'en') && saved !== language) {
+      void setLanguage(saved)
+    }
+    // Run once on mount; language changes are handled by setLanguage itself.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
-  const t = useCallback(
-    (key: string) => getNestedTranslation(messages, key),
-    [messages]
-  )
-
-  const dir: 'ltr' | 'rtl' = language === 'ar' ? 'rtl' : 'ltr'
+  const messages = dictionaries[language] as unknown as Record<string, unknown>
+  const t = useCallback((key: string) => translate(messages, key), [messages])
+  const dir: 'ltr' | 'rtl' = isRtl(language) ? 'rtl' : 'ltr'
 
   const value = useMemo(
     () => ({ language, setLanguage, t, dir }),

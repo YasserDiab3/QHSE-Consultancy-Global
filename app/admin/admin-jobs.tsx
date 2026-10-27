@@ -81,7 +81,7 @@ export default function AdminJobs({
 }: {
   onDataChanged?: () => void | Promise<void>
 }) {
-  const { language, dir } = useLanguage()
+  const { language } = useLanguage()
   const [jobs, setJobs] = useState<JobOpening[]>([])
   const [loading, setLoading] = useState(true)
   const [applicationsLoading, setApplicationsLoading] = useState(true)

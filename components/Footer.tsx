@@ -110,13 +110,20 @@ export default function Footer() {
           <p className="text-sm text-gray-400">
             © {new Date().getFullYear()} QHSSE Consultant. {t('common.tagline')}
           </p>
-          <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="#" className="transition-colors hover:text-white">
-              Privacy Policy
-            </a>
-            <a href="#" className="transition-colors hover:text-white">
-              Terms of Service
-            </a>
+          <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
+            <Link href="/privacy" className="transition-colors hover:text-white">
+              {language === 'ar' ? 'سياسة الخصوصية' : 'Privacy policy'}
+            </Link>
+            <Link href="/terms" className="transition-colors hover:text-white">
+              {language === 'ar' ? 'شروط الاستخدام' : 'Terms of service'}
+            </Link>
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event('qhsse-open-consent'))}
+              className="transition-colors hover:text-white"
+            >
+              {language === 'ar' ? 'إعدادات الخصوصية' : 'Privacy settings'}
+            </button>
           </div>
         </div>
       </div>

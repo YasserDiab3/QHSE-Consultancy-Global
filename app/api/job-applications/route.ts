@@ -5,8 +5,10 @@ import { headers } from 'next/headers'
 import { logActivity } from '@/lib/activity-log'
 import { sendNotificationEmail } from '@/lib/email'
 import { validateResumeFile } from '@/lib/file-validation'
+import { uploadFile } from '@/lib/storage'
 import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 import { escapeHtml, formatValidationError, jobApplicationSchema } from '@/lib/validation'
+import { buildPaginationMeta, paginationHeaders, parsePagination } from '@/lib/pagination'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -22,24 +24,41 @@ function normalizeText(value: unknown) {
 
 const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await requireAdmin()
+    const pagination = parsePagination(new URL(request.url).searchParams)
 
-    const applications = await prisma.jobApplication.findMany({
-      include: {
-        jobOpening: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    })
+    const [total, applications] = await prisma.$transaction([
+      prisma.jobApplication.count(),
+      prisma.jobApplication.findMany({
+        include: {
+          jobOpening: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip: pagination.skip,
+        take: pagination.take,
+      }),
+    ])
 
-    return NextResponse.json(applications, {
-      headers: {
-        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
-      },
-    })
+    const headers = {
+      'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+      ...paginationHeaders(total, pagination),
+    }
+
+    if (pagination.requested) {
+      return NextResponse.json(
+        {
+          items: applications,
+          pagination: buildPaginationMeta(pagination.page, pagination.pageSize, total),
+        },
+        { headers }
+      )
+    }
+
+    return NextResponse.json(applications, { headers })
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Failed to load applications' }, { status: error.message === 'Forbidden' ? 403 : 500 })
   }
@@ -98,7 +117,12 @@ export async function POST(request: Request) {
     } catch (error) {
       return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid resume file' }, { status: 400 })
     }
-    const resumeUrl = `data:${resumeDetails.mimeType};base64,${Buffer.from(bytes).toString('base64')}`
+    const resumeUrl = await uploadFile({
+      data: Buffer.from(bytes),
+      contentType: resumeDetails.mimeType,
+      originalName: resumeDetails.originalName,
+      folder: 'resumes',
+    })
 
     const application = await prisma.jobApplication.create({
       data: {

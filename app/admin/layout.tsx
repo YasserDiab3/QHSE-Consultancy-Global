@@ -1,20 +1,14 @@
-import { getSession } from '@/lib/auth'
-import { redirect } from 'next/navigation'
+import type { ReactNode } from 'react'
+import type { Metadata } from 'next'
+import { pageMetadata } from '@/lib/seo'
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const session = await getSession()
+export const metadata: Metadata = pageMetadata({
+  title: 'Admin',
+  description: 'QHSSE Consultant administration.',
+  path: '/admin',
+  noIndex: true,
+})
 
-  if (!session) {
-    redirect('/login?callbackUrl=/admin')
-  }
-
-  if (session.user.role !== 'ADMIN') {
-    redirect('/dashboard')
-  }
-
+export default function RouteLayout({ children }: { children: ReactNode }) {
   return children
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getClientAccountById, getClientIdByUserId, updateClientAccount, updateClientContactInfo } from '@/lib/client-records'
+import { persistDataUrl } from '@/lib/storage'
 
 export const dynamic = 'force-dynamic'
 
@@ -66,18 +67,33 @@ export async function PATCH(request: Request) {
     const showProfile = typeof body.showProfile === 'boolean' ? body.showProfile : existing.showProfile !== false
     const logoDataUrl = body.logoDataUrl === null ? undefined : body.logoDataUrl ?? existing.logoDataUrl
 
-    if (logoDataUrl !== undefined && (typeof logoDataUrl !== 'string' || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i.test(logoDataUrl) || logoDataUrl.length > 1_400_000)) {
-      return NextResponse.json({ error: 'Logo must be a PNG, JPEG, or WebP image smaller than 1 MB' }, { status: 400 })
+    if (logoDataUrl !== undefined) {
+      const isValidDataUrl =
+        typeof logoDataUrl === 'string' &&
+        /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/i.test(logoDataUrl) &&
+        logoDataUrl.length <= 1_400_000
+      const isValidStoredUrl =
+        typeof logoDataUrl === 'string' &&
+        logoDataUrl.length <= 2048 &&
+        (logoDataUrl.startsWith('/api/files/') || logoDataUrl.startsWith('https://'))
+
+      if (!isValidDataUrl && !isValidStoredUrl) {
+        return NextResponse.json({ error: 'Logo must be a PNG, JPEG, or WebP image smaller than 1 MB' }, { status: 400 })
+      }
     }
+
+    const storedLogoUrl = logoDataUrl
+      ? await persistDataUrl(logoDataUrl, { folder: 'branding', originalName: 'client-logo' })
+      : undefined
 
     await updateClientContactInfo(client.id, `${PROFILE_PREFIX}${JSON.stringify({
       ...(existing.legacyContactInfo ? { legacyContactInfo: existing.legacyContactInfo } : {}),
-      ...(logoDataUrl ? { logoDataUrl } : {}),
+      ...(storedLogoUrl ? { logoDataUrl: storedLogoUrl } : {}),
       showProfile,
     })}`)
 
     const updatedClient = await getClientAccountById(client.id)
-    return NextResponse.json({ settings: { logoDataUrl, showProfile }, client: updatedClient ? { companyName: updatedClient.companyName, companyNameAr: updatedClient.companyNameAr, phone: updatedClient.phone, address: updatedClient.address, user: updatedClient.user } : undefined })
+    return NextResponse.json({ settings: { logoDataUrl: storedLogoUrl, showProfile }, client: updatedClient ? { companyName: updatedClient.companyName, companyNameAr: updatedClient.companyNameAr, phone: updatedClient.phone, address: updatedClient.address, user: updatedClient.user } : undefined })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to update profile'
     return NextResponse.json({ error: message }, { status: message === 'Forbidden' ? 403 : 500 })

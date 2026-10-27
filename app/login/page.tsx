@@ -1,12 +1,13 @@
 'use client'
 
 import BrandLogo from '@/components/BrandLogo'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 import { useLanguage } from '@/context'
 import { signIn, useSession } from 'next-auth/react'
-import { Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
+import { AlertCircle, ArrowLeft, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Suspense, useEffect, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import toast from 'react-hot-toast'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
@@ -20,6 +21,7 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
 
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
   const error = searchParams.get('error')
@@ -42,21 +44,24 @@ function LoginForm() {
     [language, t]
   )
 
-  const getAuthErrorMessage = (code?: string | null) => {
-    if (code === 'CredentialsSignin') {
-      return copy.invalidCredentials
-    }
+  const getAuthErrorMessage = useCallback(
+    (code?: string | null) => {
+      if (code === 'CredentialsSignin') {
+        return copy.invalidCredentials
+      }
 
-    if (code === AUTH_SERVICE_UNAVAILABLE) {
-      return copy.serviceUnavailable
-    }
+      if (code === AUTH_SERVICE_UNAVAILABLE) {
+        return copy.serviceUnavailable
+      }
 
-    if (!code) {
-      return null
-    }
+      if (!code) {
+        return null
+      }
 
-    return copy.genericError
-  }
+      return copy.genericError
+    },
+    [copy]
+  )
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -68,13 +73,15 @@ function LoginForm() {
   useEffect(() => {
     const message = getAuthErrorMessage(error)
     if (message) {
+      setFormError(message)
       toast.error(message)
     }
-  }, [copy.genericError, error, language])
+  }, [error, getAuthErrorMessage])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setFormError(null)
 
     try {
       const result = await signIn('credentials', {
@@ -85,7 +92,9 @@ function LoginForm() {
       })
 
       if (result?.error) {
-        toast.error(getAuthErrorMessage(result.error) ?? t('common.error'))
+        const message = getAuthErrorMessage(result.error) ?? t('common.error')
+        setFormError(message)
+        toast.error(message)
         return
       }
 
@@ -103,6 +112,7 @@ function LoginForm() {
       router.replace(callbackUrl)
       router.refresh()
     } catch {
+      setFormError(t('common.error'))
       toast.error(t('common.error'))
     } finally {
       setLoading(false)
@@ -110,83 +120,100 @@ function LoginForm() {
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#f7f9fc] px-4 py-10">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(151,215,0,0.14),_transparent_32%),linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(244,247,252,0.95))]" />
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(139,77,0,0.45) 1px, transparent 1px), linear-gradient(90deg, rgba(139,77,0,0.45) 1px, transparent 1px)',
-          backgroundSize: '36px 36px',
-        }}
-      />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-50 px-4 py-10">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(30,64,175,0.10),_transparent_36%),linear-gradient(135deg,_#ffffff,_#f1f5f9)]" />
+      <div className="absolute end-4 top-4 z-10">
+        <LanguageSwitcher />
+      </div>
 
-      <div className="relative w-full max-w-[560px]">
-        <div className="overflow-hidden rounded-[34px] border border-white/85 bg-white/92 shadow-[0_32px_100px_rgba(15,23,42,0.14)] backdrop-blur-xl">
-          <div className="border-b border-slate-100 bg-gradient-to-b from-[#f9fbf4] to-white px-8 pb-8 pt-10 text-center">
-            <div className="mx-auto mb-5 flex justify-center">
+      <div className="relative w-full max-w-[520px]">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lifted">
+          <div className="border-b border-slate-100 bg-gradient-to-b from-brand-gold-100/40 to-white px-6 pb-7 pt-8 text-center sm:px-8">
+            <div className="mb-4 flex justify-center">
               <BrandLogo
                 variant="stacked"
                 priority
-                className="h-[170px] w-[170px] md:h-[190px] md:w-[190px]"
+                className="h-[96px] w-[96px] md:h-[112px] md:w-[112px]"
               />
             </div>
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.55em] text-[#8B4D00]/72">
+            <p className="mb-2 text-eyebrow uppercase text-brand-gold">
               {copy.portal}
             </p>
-            <h1 className="text-3xl font-bold leading-tight text-slate-900">{t('auth.loginTitle')}</h1>
-            <p className="mt-4 text-lg leading-8 text-slate-600">{t('auth.loginSubtitle')}</p>
+            <h1 className="text-2xl font-bold leading-tight text-slate-900 sm:text-3xl">{t('auth.loginTitle')}</h1>
+            <p className="mt-3 text-base leading-7 text-slate-600">{t('auth.loginSubtitle')}</p>
           </div>
 
-          <div className="px-8 py-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="px-6 py-7 sm:px-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {formError ? (
+                <div role="alert" className="flex items-start gap-2 rounded-lg border border-danger-100 bg-danger-50 p-3 text-sm text-danger-700">
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span>{formError}</span>
+                </div>
+              ) : null}
+
               <div>
-                <label className="label-field text-slate-700">{t('auth.email')}</label>
+                <label htmlFor="login-email" className="label-field text-slate-700">{t('auth.email')}</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Mail className="absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   <input
+                    id="login-email"
+                    name="email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     autoComplete="email"
+                    aria-invalid={Boolean(formError)}
                     placeholder="name@company.com"
-                    className="input-field rounded-2xl border-slate-200 bg-slate-50 py-3 pl-12 text-slate-900 placeholder:text-slate-400 focus:border-[#8B4D00]/35 focus:bg-white focus:ring-4 focus:ring-[#8B4D00]/10"
+                    className="input-field py-3 ps-12"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="label-field text-slate-700">{t('auth.password')}</label>
+                <label htmlFor="login-password" className="label-field text-slate-700">{t('auth.password')}</label>
                 <div className="relative">
-                  <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <Lock className="absolute start-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" aria-hidden="true" />
                   <input
+                    id="login-password"
+                    name="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     autoComplete="current-password"
-                    placeholder="........"
-                    className="input-field rounded-2xl border-slate-200 bg-slate-50 py-3 pl-12 pr-12 text-slate-900 placeholder:text-slate-400 focus:border-[#8B4D00]/35 focus:bg-white focus:ring-4 focus:ring-[#8B4D00]/10"
+                    aria-invalid={Boolean(formError)}
+                    placeholder="••••••••"
+                    className="input-field py-3 pe-12 ps-12"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600"
+                    aria-label={showPassword ? (language === 'ar' ? 'إخفاء كلمة المرور' : 'Hide password') : (language === 'ar' ? 'إظهار كلمة المرور' : 'Show password')}
+                    className="absolute end-3 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                   >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
                   </button>
+                </div>
+                <div className="mt-2 text-end">
+                  <a
+                    href="mailto:support@qhsseconsultant.onmicrosoft.com?subject=Password%20reset%20request"
+                    className="text-sm font-medium text-brand-gold underline-offset-2 hover:text-brand-gold-600 hover:underline"
+                  >
+                    {language === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+                  </a>
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading || status === 'loading'}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#3a4fc4] px-5 py-4 text-base font-semibold text-white shadow-lg shadow-[#3a4fc4]/25 transition hover:bg-[#3147bd] disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary-500 px-5 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-primary-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading || status === 'loading' ? (
                   <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                     {t('auth.loggingIn')}
                   </>
                 ) : (
@@ -195,15 +222,17 @@ function LoginForm() {
               </button>
             </form>
 
-            <p className="mt-8 text-center text-sm text-slate-600">
+            <p className="mt-7 text-center text-sm text-slate-600">
               <Link
                 href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-                className="me-4 font-medium text-[#8B4D00] transition hover:text-[#6b3900]"
+                className="font-medium text-brand-gold transition hover:text-brand-gold-600"
               >
                 {language === 'ar' ? 'إنشاء حساب متدرب' : 'Create trainee account'}
               </Link>
-              <Link href="/" className="font-medium text-[#8B4D00] transition hover:text-[#6b3900]">
-                {'<-'} {t('common.back')}
+              <span className="mx-3 text-slate-300" aria-hidden="true">|</span>
+              <Link href="/" className="inline-flex items-center gap-1.5 font-medium text-brand-gold transition hover:text-brand-gold-600">
+                <ArrowLeft className="h-4 w-4 rtl:rotate-180" aria-hidden="true" />
+                {t('common.back')}
               </Link>
             </p>
           </div>

@@ -3,7 +3,7 @@
 import { useLanguage } from '@/context'
 import Header from '@/components/Header'
 import Footer from '@/components/Footer'
-import { Shield, Award, Heart, Lightbulb, Users, FileSearch, CheckCircle2 } from 'lucide-react'
+import { Shield, Award, Heart, Lightbulb, CheckCircle2 } from 'lucide-react'
 
 export default function AboutPage() {
   const { t } = useLanguage()

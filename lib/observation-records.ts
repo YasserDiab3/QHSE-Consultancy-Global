@@ -55,6 +55,13 @@ function sqlValue(value?: string | null) {
   return `'${escapeSqlString(value)}'`
 }
 
+function sqlInt(value: unknown, fallback = 0) {
+  const numeric = typeof value === 'number' ? value : Number(value)
+  if (!Number.isFinite(numeric)) return String(fallback)
+  const bounded = Math.max(-2147483648, Math.min(2147483647, Math.trunc(numeric)))
+  return String(bounded)
+}
+
 function quoteIdentifier(identifier: string) {
   return `"${identifier.replace(/"/g, '""')}"`
 }
@@ -165,7 +172,7 @@ export async function createObservationRecord(input: ObservationInput) {
   }
   if (schema.observation.sortOrder) {
     columns.push(schema.observation.sortOrder)
-    values.push(String(input.sortOrder ?? 0))
+    values.push(sqlInt(input.sortOrder))
   }
   if (schema.observation.createdAt) {
     columns.push(schema.observation.createdAt)
@@ -210,7 +217,7 @@ export async function updateObservationRecord(id: string, input: Partial<Observa
     updates.push(`${quoteIdentifier(schema.observation.status)} = ${sqlValue(input.status)}`)
   }
   if (schema.observation.sortOrder && typeof input.sortOrder !== 'undefined') {
-    updates.push(`${quoteIdentifier(schema.observation.sortOrder)} = ${input.sortOrder ?? 0}`)
+    updates.push(`${quoteIdentifier(schema.observation.sortOrder)} = ${sqlInt(input.sortOrder)}`)
   }
   if (schema.observation.clientResponse && typeof input.clientResponse !== 'undefined') updates.push(`${quoteIdentifier(schema.observation.clientResponse)} = ${sqlValue(input.clientResponse)}`)
   if (schema.observation.correctiveAction && typeof input.correctiveAction !== 'undefined') updates.push(`${quoteIdentifier(schema.observation.correctiveAction)} = ${sqlValue(input.correctiveAction)}`)

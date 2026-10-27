@@ -4,7 +4,9 @@ import { requireAdmin } from '@/lib/auth'
 import { getClientAccountById } from '@/lib/client-records'
 import { prisma } from '@/lib/prisma'
 import { clientDocumentSchema, formatValidationError } from '@/lib/validation'
+import { deleteStoredFile, persistDataUrl } from '@/lib/storage'
 import { logActivity } from '@/lib/activity-log'
+import { buildPaginationMeta, paginationHeaders, parsePagination } from '@/lib/pagination'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -39,24 +41,37 @@ export async function GET(request: Request) {
     const client = await getClientAccountById(clientId)
     if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
+    const pagination = parsePagination(new URL(request.url).searchParams)
     let folders: Array<{ id: string; parentId: string | null; name: string; category: string }> = []
     let documents: Array<Record<string, unknown>> = []
+    let total = 0
 
     try {
-      ;[folders, documents] = await Promise.all([
+      const [loadedFolders, documentCount, loadedDocuments] = await Promise.all([
         prisma.knowledgeFolder.findMany({
           where: { clientId },
           select: { id: true, parentId: true, name: true, category: true },
           orderBy: [{ parentId: 'asc' }, { name: 'asc' }],
         }),
-        prisma.clientDocument.findMany({ where: { clientId }, orderBy: { createdAt: 'desc' } }),
+        prisma.clientDocument.count({ where: { clientId } }),
+        prisma.clientDocument.findMany({
+          where: { clientId },
+          orderBy: { createdAt: 'desc' },
+          skip: pagination.skip,
+          take: pagination.take,
+        }),
       ])
+      folders = loadedFolders
+      documents = loadedDocuments
+      total = documentCount
     } catch {
       // Older databases can still serve document management while the optional
       // folder migration is waiting to be applied.
       const legacyDocuments = await prisma.clientDocument.findMany({
         where: { clientId },
         orderBy: { createdAt: 'desc' },
+        skip: pagination.skip,
+        take: pagination.take,
         select: {
           id: true,
           title: true,
@@ -69,9 +84,20 @@ export async function GET(request: Request) {
         },
       })
       documents = legacyDocuments.map((document) => ({ ...document, folderId: null }))
+      total = documents.length
     }
 
-    return NextResponse.json({ client, folders, documents })
+    return NextResponse.json(
+      {
+        client,
+        folders,
+        documents,
+        ...(pagination.requested
+          ? { pagination: buildPaginationMeta(pagination.page, pagination.pageSize, total) }
+          : {}),
+      },
+      { headers: paginationHeaders(total, pagination) }
+    )
   } catch (error) {
     console.error('Failed to load knowledge bank:', error)
     return NextResponse.json({ error: 'Unable to load knowledge bank' }, { status: 500 })
@@ -111,13 +137,18 @@ export async function POST(request: Request) {
         if (!folder) return NextResponse.json({ error: 'Folder not found' }, { status: 400 })
       }
 
+      const storedUrl = await persistDataUrl(parsed.data.url, {
+        folder: 'client-documents',
+        originalName: parsed.data.originalName,
+      })
+
       const document = await prisma.clientDocument.create({
         data: {
           clientId: parsed.data.clientId,
           folderId: parsed.data.folderId || null,
           title: parsed.data.title,
           category: parsed.data.category || 'SYSTEM',
-          url: parsed.data.url,
+          url: storedUrl,
           originalName: parsed.data.originalName,
           mimeType: parsed.data.mimeType,
           size: parsed.data.size,
@@ -197,6 +228,7 @@ export async function DELETE(request: Request) {
     if (!document) return NextResponse.json({ error: 'Document not found' }, { status: 404 })
 
     await prisma.clientDocument.delete({ where: { id: document.id } })
+    await deleteStoredFile(document.url)
     await logActivity(session.user.id, 'KNOWLEDGE_DOCUMENT_DELETED', 'client_document', document.id, `Deleted knowledge bank document ${document.title}`)
     return NextResponse.json({ success: true })
   } catch (error) {

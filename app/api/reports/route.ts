@@ -11,6 +11,7 @@ import {
   listReportRecords,
 } from '@/lib/report-records'
 import { normalizeAssessmentScores } from '@/lib/report-assessment'
+import { parsePagination, UNPAGINATED_LIMIT } from '@/lib/pagination'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -41,6 +42,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
+    const pagination = parsePagination(searchParams)
+
     const reports = await listReportRecords({
       clientId,
       status,
@@ -48,7 +51,32 @@ export async function GET(request: Request) {
       dateFrom,
       dateTo,
       category,
+      take: pagination.requested
+        ? Math.min(pagination.skip + pagination.pageSize + 1, UNPAGINATED_LIMIT + 1)
+        : pagination.take,
     })
+
+    if (pagination.requested) {
+      const items = reports.slice(pagination.skip, pagination.skip + pagination.pageSize)
+      return NextResponse.json(
+        {
+          items,
+          pagination: {
+            page: pagination.page,
+            pageSize: pagination.pageSize,
+            countOnPage: items.length,
+            hasNextPage: reports.length > pagination.skip + pagination.pageSize,
+            hasPreviousPage: pagination.page > 1,
+          },
+        },
+        {
+          headers: {
+            'X-Page': String(pagination.page),
+            'X-Page-Size': String(pagination.pageSize),
+          },
+        }
+      )
+    }
 
     return NextResponse.json(reports)
   } catch (error: any) {

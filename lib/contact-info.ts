@@ -7,4 +7,6 @@ export const CONTACT_INFO = {
   whatsappUrl: 'https://wa.me/201117755096',
   phoneUrl: 'tel:+201117755096',
   emailUrl: 'mailto:support@qhsseconsultant.onmicrosoft.com',
+  mapUrl:
+    'https://www.google.com/maps/search/?api=1&query=Cairo+Business+Park+El+Nasr+New+Cairo+1+Cairo+Governorate+11865+Egypt',
 } as const

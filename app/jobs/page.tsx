@@ -7,6 +7,7 @@ import { useLanguage } from '@/context'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import {
+  AlertCircle,
   ArrowRight,
   BriefcaseBusiness,
   Building2,
@@ -58,6 +59,7 @@ export default function JobsPage() {
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [submittedJobId, setSubmittedJobId] = useState<string | null>(null)
   const [fileInputKey, setFileInputKey] = useState(0)
+  const [applicationError, setApplicationError] = useState<string | null>(null)
 
   const copy = useMemo(
     () =>
@@ -75,6 +77,7 @@ export default function JobsPage() {
             phone: 'رقم الهاتف',
             company: 'الشركة الحالية',
             resume: 'رفع السيرة الذاتية',
+            resumeChange: 'تغيير الملف',
             resumeHint: 'الصيغ المقبولة: PDF أو DOC أو DOCX بحد أقصى 5 ميجابايت.',
             coverLetter: 'نبذة أو رسالة تعريفية',
             location: 'الموقع',
@@ -90,6 +93,8 @@ export default function JobsPage() {
             externalApply: 'يوجد رابط تقديم خارجي',
             loadError: 'تعذر تحميل الوظائف',
             requiredResume: 'يرجى رفع السيرة الذاتية قبل إرسال الطلب',
+            applicationPrivacy:
+              'بإرسال الطلب تُعالج بياناتك وسيرتك الذاتية لأغراض التوظيف وفق سياسة الخصوصية، ويُحتفظ بها لمدة تصل إلى 12 شهرًا.',
           }
         : {
             title: 'Jobs',
@@ -104,6 +109,7 @@ export default function JobsPage() {
             phone: 'Phone number',
             company: 'Current company',
             resume: 'Upload resume',
+            resumeChange: 'Change file',
             resumeHint: 'Accepted formats: PDF, DOC, or DOCX up to 5 MB.',
             coverLetter: 'Short profile / cover letter',
             location: 'Location',
@@ -119,6 +125,8 @@ export default function JobsPage() {
             externalApply: 'External application available',
             loadError: 'Failed to load jobs',
             requiredResume: 'Please upload your resume before submitting',
+            applicationPrivacy:
+              'By submitting, your details and CV are processed for recruitment in line with our Privacy Policy and kept for up to 12 months.',
           },
     [language]
   )
@@ -171,11 +179,14 @@ export default function JobsPage() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    setApplicationError(null)
+
     if (!selectedJob) {
       return
     }
 
     if (!resumeFile) {
+      setApplicationError(copy.requiredResume)
       toast.error(copy.requiredResume)
       return
     }
@@ -207,7 +218,9 @@ export default function JobsPage() {
       setSubmittedJobId(selectedJob.id)
       setFileInputKey((current) => current + 1)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : copy.error)
+      const message = error instanceof Error ? error.message : copy.error
+      setApplicationError(message)
+      toast.error(message)
     } finally {
       setSubmitting(false)
     }
@@ -383,84 +396,136 @@ export default function JobsPage() {
                         </div>
                       ) : (
                         <form onSubmit={handleSubmit} className="space-y-4">
+                          {applicationError ? (
+                            <div
+                              id="job-application-error"
+                              role="alert"
+                              className="flex items-start gap-2 rounded-lg border border-danger-100 bg-danger-50 p-3 text-sm text-danger-700"
+                            >
+                              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                              <span>{applicationError}</span>
+                            </div>
+                          ) : null}
+
                           <div>
-                            <label className="label-field">{copy.name} *</label>
+                            <label htmlFor="job-name" className="label-field">
+                              {copy.name} <span aria-hidden="true">*</span>
+                            </label>
                             <input
+                              id="job-name"
                               type="text"
                               required
+                              autoComplete="name"
                               value={formData.name}
                               onChange={(e) => setFormData((current) => ({ ...current, name: e.target.value }))}
                               className="input-field"
                             />
                           </div>
                           <div>
-                            <label className="label-field">{copy.email} *</label>
+                            <label htmlFor="job-email" className="label-field">
+                              {copy.email} <span aria-hidden="true">*</span>
+                            </label>
                             <input
+                              id="job-email"
                               type="email"
                               required
+                              autoComplete="email"
+                              inputMode="email"
                               value={formData.email}
                               onChange={(e) => setFormData((current) => ({ ...current, email: e.target.value }))}
                               className="input-field"
                             />
                           </div>
                           <div>
-                            <label className="label-field">{copy.phone}</label>
+                            <label htmlFor="job-phone" className="label-field">
+                              {copy.phone}
+                            </label>
                             <input
+                              id="job-phone"
                               type="tel"
+                              autoComplete="tel"
+                              inputMode="tel"
                               value={formData.phone}
                               onChange={(e) => setFormData((current) => ({ ...current, phone: e.target.value }))}
                               className="input-field"
                             />
                           </div>
                           <div>
-                            <label className="label-field">{copy.company}</label>
+                            <label htmlFor="job-company" className="label-field">
+                              {copy.company}
+                            </label>
                             <input
+                              id="job-company"
                               type="text"
+                              autoComplete="organization"
                               value={formData.company}
                               onChange={(e) => setFormData((current) => ({ ...current, company: e.target.value }))}
                               className="input-field"
                             />
                           </div>
                           <div>
-                            <label className="label-field">{copy.resume} *</label>
-                            <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4">
-                              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 text-center">
-                                <FileText className="h-8 w-8 text-primary-500" />
-                                <span className="text-sm font-medium text-gray-700">
-                                  {resumeFile ? resumeFile.name : copy.resume}
-                                </span>
-                                <span className="text-xs text-gray-500">{copy.resumeHint}</span>
+                            <label htmlFor="job-resume" className="label-field">
+                              {copy.resume} <span aria-hidden="true">*</span>
+                            </label>
+                            <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4 transition focus-within:border-primary-500 focus-within:ring-2 focus-within:ring-primary-500/20">
+                              <div className="flex flex-col items-center justify-center gap-2 text-center">
+                                <FileText className="h-8 w-8 text-primary-500" aria-hidden="true" />
+                                <label
+                                  htmlFor="job-resume"
+                                  className="cursor-pointer text-sm font-semibold text-primary-600 underline underline-offset-2 hover:text-primary-700"
+                                >
+                                  {resumeFile ? copy.resumeChange : copy.resume}
+                                </label>
+                                {resumeFile ? (
+                                  <p className="break-all text-sm font-medium text-gray-700">{resumeFile.name}</p>
+                                ) : null}
+                                <p id="job-resume-hint" className="text-xs text-gray-500">
+                                  {copy.resumeHint}
+                                </p>
                                 <input
+                                  id="job-resume"
                                   key={fileInputKey}
                                   type="file"
                                   accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                  className="hidden"
+                                  className="sr-only"
+                                  aria-describedby="job-resume-hint"
+                                  aria-invalid={Boolean(applicationError)}
                                   onChange={(event) => {
                                     const file = event.target.files?.[0] || null
                                     setResumeFile(file)
+                                    if (file) setApplicationError(null)
                                   }}
                                 />
-                              </label>
+                              </div>
                             </div>
                           </div>
                           <div>
-                            <label className="label-field">{copy.coverLetter}</label>
+                            <label htmlFor="job-cover-letter" className="label-field">
+                              {copy.coverLetter}
+                            </label>
                             <textarea
+                              id="job-cover-letter"
                               rows={5}
                               value={formData.coverLetter}
                               onChange={(e) => setFormData((current) => ({ ...current, coverLetter: e.target.value }))}
                               className="input-field resize-none"
                             />
                           </div>
+                          <p className="text-xs leading-6 text-slate-500">
+                            {copy.applicationPrivacy}{' '}
+                            <Link href="/privacy" className="font-medium text-brand-gold underline underline-offset-2">
+                              {language === 'ar' ? 'سياسة الخصوصية' : 'Privacy Policy'}
+                            </Link>
+                          </p>
                           <button type="submit" disabled={submitting} className="btn-primary w-full justify-center px-6 py-3">
                             {submitting ? (
                               <>
-                                <Loader2 className="h-5 w-5 animate-spin" />
+                                <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" />
                                 {copy.submitting}
                               </>
                             ) : (
                               <>
-                                <Send className="h-5 w-5" />
+                                <Send className="h-5 w-5" aria-hidden="true" />
                                 {copy.submit}
                               </>
                             )}

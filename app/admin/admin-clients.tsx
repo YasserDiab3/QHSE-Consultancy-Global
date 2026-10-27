@@ -16,7 +16,6 @@ import {
   Lock,
   ArrowRight,
   Eye,
-  FileText,
   Printer,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -139,7 +138,7 @@ export default function AdminClients({
         const data = await res.json()
         toast.error(data.error || t('common.error'))
       }
-    } catch (error) {
+    } catch {
       toast.error(t('common.error'))
     } finally {
       setSubmitting(false)
@@ -158,7 +157,7 @@ export default function AdminClients({
         const data = await res.json().catch(() => null)
         toast.error(data?.error || t('common.error'))
       }
-    } catch (error) {
+    } catch {
       toast.error(t('common.error'))
     }
   }

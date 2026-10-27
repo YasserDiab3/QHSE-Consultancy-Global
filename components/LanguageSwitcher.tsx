@@ -9,12 +9,14 @@ export default function LanguageSwitcher() {
 
   return (
     <button
+      type="button"
       onClick={() => void setLanguage(nextLanguage)}
-      className="inline-flex items-center gap-1.5 rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors duration-200 hover:bg-gray-200"
-      aria-label="Switch language"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white/95 px-3 py-1.5 text-sm font-medium text-slate-700 shadow-sm transition-colors duration-200 hover:bg-white hover:text-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+      aria-label={nextLanguage === 'ar' ? 'التبديل إلى العربية' : 'Switch to English'}
+      title={nextLanguage === 'ar' ? 'العربية' : 'English'}
     >
-      <Globe className="h-4 w-4" />
-      <span>{language === 'en' ? 'العربية' : 'EN'}</span>
+      <Globe className="h-4 w-4" aria-hidden="true" />
+      <span lang={nextLanguage === 'ar' ? 'ar' : 'en'}>{nextLanguage === 'ar' ? 'العربية' : 'EN'}</span>
     </button>
   )
 }

@@ -4,6 +4,7 @@ import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
 import { createImageRecord } from '@/lib/image-records'
 import { validateImageFile } from '@/lib/file-validation'
+import { uploadFile } from '@/lib/storage'
 import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
@@ -43,7 +44,12 @@ export async function POST(request: Request) {
     } catch (error) {
       return NextResponse.json({ error: error instanceof Error ? error.message : 'Invalid image file' }, { status: 400 })
     }
-    const imageUrl = `data:${imageDetails.mimeType};base64,${Buffer.from(bytes).toString('base64')}`
+    const imageUrl = await uploadFile({
+      data: Buffer.from(bytes),
+      contentType: imageDetails.mimeType,
+      originalName: imageDetails.originalName,
+      folder: 'observations',
+    })
 
     const image = await createImageRecord({
       observationId,

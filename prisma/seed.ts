@@ -1,38 +1,91 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
+import { randomBytes } from 'crypto'
 
 const prisma = new PrismaClient()
+const isProduction = process.env.NODE_ENV === 'production'
 
-// Correct bcrypt hash for "admin123"
-const ADMIN_HASH = '$2a$12$iMZSj9t0rQLrrm218UHzf.lx0PcYPS01dFHt.2B/69UCT.SrYf1n.'
-// Correct bcrypt hash for "client123"
-const CLIENT_HASH = '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdP5Y5GyYzS3S3S3'
+function generatePassword() {
+  return randomBytes(18).toString('base64url')
+}
 
 async function main() {
   console.log('Seeding database...')
 
-  // Create admin user
-  const admin = await prisma.user.upsert({
-    where: { email: 'admin@qhsseconsultant.com' },
-    update: { password: ADMIN_HASH },
-    create: {
-      name: 'Admin User',
-      email: 'admin@qhsseconsultant.com',
-      password: ADMIN_HASH,
-      role: 'ADMIN',
-      language: 'en',
-    },
-  })
-  console.log('✓ Created admin user:', admin.email)
+  const adminEmail = (process.env.SEED_ADMIN_EMAIL || (isProduction ? '' : 'admin@qhsse.local'))
+    .trim()
+    .toLowerCase()
 
-  // Create sample clients
+  if (!adminEmail) {
+    throw new Error('SEED_ADMIN_EMAIL is required when seeding a production database.')
+  }
+
+  let adminPassword = process.env.SEED_ADMIN_PASSWORD
+  if (!adminPassword) {
+    if (isProduction) {
+      throw new Error('SEED_ADMIN_PASSWORD is required when seeding a production database.')
+    }
+
+    adminPassword = generatePassword()
+    console.log('Generated development admin password (store it now):', adminPassword)
+  }
+
+  if (adminPassword.length < 12) {
+    throw new Error('SEED_ADMIN_PASSWORD must be at least 12 characters long.')
+  }
+
+  const passwordHash = await bcrypt.hash(adminPassword, 12)
+  const rotatePassword = process.env.SEED_FORCE_ADMIN_PASSWORD === 'true'
+  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } })
+
+  const admin = existingAdmin
+    ? await prisma.user.update({
+        where: { email: adminEmail },
+        data: {
+          role: 'ADMIN',
+          ...(rotatePassword ? { password: passwordHash } : {}),
+        },
+      })
+    : await prisma.user.create({
+        data: {
+          name: 'Administrator',
+          email: adminEmail,
+          password: passwordHash,
+          role: 'ADMIN',
+          language: 'en',
+        },
+      })
+
+  console.log(
+    existingAdmin
+      ? `✓ Admin ${admin.email} already exists; password ${rotatePassword ? 'rotated' : 'left unchanged'}.`
+      : `✓ Created admin user: ${admin.email}`
+  )
+
+  if (process.env.SEED_DEMO_DATA !== 'true') {
+    console.log('Demo clients and reports were skipped. Set SEED_DEMO_DATA=true to create them.')
+    return
+  }
+
+  let demoPassword = process.env.SEED_DEMO_PASSWORD
+  if (!demoPassword) {
+    if (isProduction) {
+      throw new Error('SEED_DEMO_PASSWORD is required when SEED_DEMO_DATA=true in production.')
+    }
+
+    demoPassword = generatePassword()
+    console.log('Generated development demo-client password:', demoPassword)
+  }
+
+  const demoHash = await bcrypt.hash(demoPassword, 12)
+
   const client1 = await prisma.user.upsert({
-    where: { email: 'ahmed@petrocorp.com' },
-    update: { password: CLIENT_HASH },
+    where: { email: 'ahmed@petrocorp.example' },
+    update: {},
     create: {
       name: 'Ahmed Al-Rashid',
-      email: 'ahmed@petrocorp.com',
-      password: CLIENT_HASH,
+      email: 'ahmed@petrocorp.example',
+      password: demoHash,
       role: 'CLIENT',
       language: 'en',
       client: {
@@ -46,15 +99,15 @@ async function main() {
     },
     include: { client: true },
   })
-  console.log('✓ Created client:', client1.client?.companyName)
+  console.log('✓ Demo client:', client1.client?.companyName)
 
   const client2 = await prisma.user.upsert({
-    where: { email: 'sarah@foodtech.com' },
-    update: { password: CLIENT_HASH },
+    where: { email: 'sarah@foodtech.example' },
+    update: {},
     create: {
       name: 'Sarah Johnson',
-      email: 'sarah@foodtech.com',
-      password: CLIENT_HASH,
+      email: 'sarah@foodtech.example',
+      password: demoHash,
       role: 'CLIENT',
       language: 'en',
       client: {
@@ -68,9 +121,8 @@ async function main() {
     },
     include: { client: true },
   })
-  console.log('✓ Created client:', client2.client?.companyName)
+  console.log('✓ Demo client:', client2.client?.companyName)
 
-  // Create sample reports for client 1
   if (client1.client) {
     await prisma.report.upsert({
       where: { id: 'report-petro-1' },
@@ -127,7 +179,7 @@ async function main() {
         },
       },
     })
-    console.log('✓ Created report: PetroCorp Main Facility')
+    console.log('✓ Demo report: PetroCorp Main Facility')
 
     await prisma.report.upsert({
       where: { id: 'report-petro-2' },
@@ -164,10 +216,9 @@ async function main() {
         },
       },
     })
-    console.log('✓ Created report: PetroCorp Warehouse B')
+    console.log('✓ Demo report: PetroCorp Warehouse B')
   }
 
-  // Create sample reports for client 2
   if (client2.client) {
     await prisma.report.upsert({
       where: { id: 'report-food-1' },
@@ -213,19 +264,15 @@ async function main() {
         },
       },
     })
-    console.log('✓ Created report: FoodTech Processing Plant')
+    console.log('✓ Demo report: FoodTech Processing Plant')
   }
 
-  console.log('\n✅ Seeding completed successfully!')
-  console.log('\n📋 Login Credentials:')
-  console.log('  Admin:  admin@qhsseconsultant.com / admin123')
-  console.log('  Client: ahmed@petrocorp.com / client123')
-  console.log('  Client: sarah@foodtech.com / client123')
+  console.log('\n✅ Seeding completed successfully.')
 }
 
 main()
-  .catch((e) => {
-    console.error('Seeding error:', e)
+  .catch((error) => {
+    console.error('Seeding error:', error instanceof Error ? error.message : error)
     process.exit(1)
   })
   .finally(async () => {
