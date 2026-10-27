@@ -91,7 +91,10 @@ export const authOptions: NextAuthOptions = {
           if (user.role === 'ADMIN') {
             const rawOtp = (credentials as any)?.otp?.trim()
             if (!rawOtp) {
-              await issueAdmin2FaOtp(user.email, user.language)
+              const otpResult = await issueAdmin2FaOtp(user.email, user.language)
+              if (!otpResult.smtpConfigured && otpResult.code) {
+                throw new Error(`2FA_REQUIRED_DEV:${otpResult.code}`)
+              }
               throw new Error('2FA_REQUIRED')
             }
 
@@ -114,6 +117,7 @@ export const authOptions: NextAuthOptions = {
           if (
             dbError?.message === 'ACCOUNT_LOCKED' ||
             dbError?.message === '2FA_REQUIRED' ||
+            dbError?.message?.startsWith('2FA_REQUIRED_DEV:') ||
             dbError?.message === 'INVALID_2FA_CODE'
           ) {
             throw dbError
