@@ -12,6 +12,18 @@ function sanitizeHeader(value: string) {
   return value.replace(/[\r\n]+/g, ' ').trim()
 }
 
+export function isGraphApiConfigured(): boolean {
+  return Boolean(
+    process.env.AZURE_TENANT_ID?.trim() &&
+    process.env.AZURE_CLIENT_ID?.trim() &&
+    process.env.AZURE_CLIENT_SECRET?.trim()
+  )
+}
+
+export function isEmailConfigured(): boolean {
+  return isSmtpConfigured() || isGraphApiConfigured()
+}
+
 export function isSmtpConfigured(): boolean {
   const host = process.env.SMTP_HOST?.trim().replace(/^["']|["']$/g, '').toLowerCase()
   const port = process.env.SMTP_PORT?.trim().replace(/^["']|["']$/g, '')
@@ -33,6 +45,68 @@ export function isSmtpConfigured(): boolean {
   }
 
   return true
+}
+
+async function sendViaGraphApi(input: SendEmailInput) {
+  const tenantId = process.env.AZURE_TENANT_ID!.trim().replace(/^["']|["']$/g, '')
+  const clientId = process.env.AZURE_CLIENT_ID!.trim().replace(/^["']|["']$/g, '')
+  const clientSecret = process.env.AZURE_CLIENT_SECRET!.trim().replace(/^["']|["']$/g, '')
+  const senderEmail = sanitizeHeader(process.env.SMTP_FROM || process.env.SMTP_USER || '').replace(/^["']|["']$/g, '')
+
+  const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`
+  const tokenParams = new URLSearchParams({
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: 'https://graph.microsoft.com/.default',
+    grant_type: 'client_credentials',
+  })
+
+  const tokenRes = await fetch(tokenUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: tokenParams.toString(),
+  })
+
+  if (!tokenRes.ok) {
+    const errText = await tokenRes.text()
+    throw new Error(`Graph token failed: ${tokenRes.status} ${errText}`)
+  }
+
+  const tokenData = await tokenRes.json()
+  const accessToken = tokenData.access_token
+
+  const sendUrl = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(senderEmail)}/sendMail`
+  const sendRes = await fetch(sendUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      message: {
+        subject: input.subject,
+        body: {
+          contentType: input.html ? 'HTML' : 'Text',
+          content: input.html || input.text,
+        },
+        toRecipients: [
+          {
+            emailAddress: {
+              address: input.to,
+            },
+          },
+        ],
+      },
+      saveToSentItems: true,
+    }),
+  })
+
+  if (!sendRes.ok) {
+    const errText = await sendRes.text()
+    throw new Error(`Graph sendMail failed: ${sendRes.status} ${errText}`)
+  }
+
+  return { sent: true as const }
 }
 
 function getSmtpConfig() {
@@ -61,6 +135,15 @@ function getSmtpConfig() {
 }
 
 export async function sendNotificationEmail(input: SendEmailInput) {
+  if (isGraphApiConfigured()) {
+    try {
+      return await sendViaGraphApi(input)
+    } catch (graphError: any) {
+      console.error('Failed to send notification email via Microsoft Graph API:', graphError?.message || graphError)
+      return { sent: false as const, reason: 'GRAPH_SEND_FAILED' as const, error: graphError?.message }
+    }
+  }
+
   const smtpConfig = getSmtpConfig()
 
   if (!smtpConfig) {
@@ -96,7 +179,7 @@ export async function sendNotificationEmail(input: SendEmailInput) {
 }
 
 /**
- * Diagnostic utility to verify SMTP credentials and server connectivity.
+ * Diagnostic utility to verify SMTP or Microsoft Graph credentials and connectivity.
  */
 export async function verifySmtpConnection(): Promise<{
   success: boolean
@@ -104,11 +187,52 @@ export async function verifySmtpConnection(): Promise<{
   code?: string
   response?: string
 }> {
+  if (isGraphApiConfigured()) {
+    try {
+      const tenantId = process.env.AZURE_TENANT_ID!.trim().replace(/^["']|["']$/g, '')
+      const clientId = process.env.AZURE_CLIENT_ID!.trim().replace(/^["']|["']$/g, '')
+      const clientSecret = process.env.AZURE_CLIENT_SECRET!.trim().replace(/^["']|["']$/g, '')
+
+      const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`
+      const tokenParams = new URLSearchParams({
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: 'https://graph.microsoft.com/.default',
+        grant_type: 'client_credentials',
+      })
+
+      const tokenRes = await fetch(tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: tokenParams.toString(),
+      })
+
+      if (!tokenRes.ok) {
+        const errText = await tokenRes.text()
+        return {
+          success: false,
+          message: `فشل التحقق من صلاحيات Microsoft Graph API: ${tokenRes.status} ${errText}`,
+          code: 'GRAPH_AUTH_FAILED',
+        }
+      }
+
+      return {
+        success: true,
+        message: 'تم التحقق من حساب Microsoft Graph API بنجاح وجاهز للإرسال السحابي المباشر.',
+      }
+    } catch (err: any) {
+      return {
+        success: false,
+        message: err?.message || 'خطأ في التحقق من Graph API',
+      }
+    }
+  }
+
   const smtpConfig = getSmtpConfig()
   if (!smtpConfig) {
     return {
       success: false,
-      message: 'إعدادات SMTP غير مكتملة في ملف .env',
+      message: 'إعدادات SMTP أو Microsoft Graph غير مكتملة في ملف .env',
       code: 'SMTP_NOT_CONFIGURED',
     }
   }
