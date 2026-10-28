@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { getClientIdByUserId } from '@/lib/client-records'
-import { calculateSlaDeadline, SLA_DAYS } from '@/lib/sla-escalation'
+import { getClientIdByUserId, getClientAccountById } from '@/lib/client-records'
+import { listReportRecords } from '@/lib/report-records'
+import { calculateSlaDeadline } from '@/lib/sla-escalation'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -27,58 +27,52 @@ export async function GET(request: Request) {
       clientId = clientRecordId
     }
 
-    if (!clientId) {
-      const firstClient = await prisma.client.findFirst({ select: { id: true } })
-      if (!firstClient) {
-        return NextResponse.json({ error: 'No clients found' }, { status: 404 })
-      }
-      clientId = firstClient.id
+    let clientInfo = {
+      id: 'all',
+      name: 'All Facilities & Operations',
+      nameAr: 'كافة المنشآت والعمليات التشغيلية',
+      email: session.user.email,
+      phone: null as string | null | undefined,
     }
 
-    const client = await prisma.client.findUnique({
-      where: { id: clientId },
-      include: { user: true },
-    })
-
-    if (!client) {
-      return NextResponse.json({ error: 'Client not found' }, { status: 404 })
+    if (clientId && clientId !== 'all') {
+      const clientRecord = await getClientAccountById(clientId)
+      if (clientRecord) {
+        clientInfo = {
+          id: clientRecord.id,
+          name: clientRecord.companyName,
+          nameAr: clientRecord.companyNameAr || clientRecord.companyName,
+          email: clientRecord.user.email,
+          phone: clientRecord.phone,
+        }
+      }
     }
 
     // Build date filter if year and month specified
-    const dateFilter: any = {}
+    let dateFrom: string | undefined
+    let dateTo: string | undefined
+
     if (yearParam) {
       const year = parseInt(yearParam, 10)
       if (!isNaN(year)) {
         if (monthParam) {
           const month = parseInt(monthParam, 10) - 1
           if (!isNaN(month) && month >= 0 && month <= 11) {
-            const startDate = new Date(year, month, 1)
-            const endDate = new Date(year, month + 1, 0, 23, 59, 59, 999)
-            dateFilter.gte = startDate
-            dateFilter.lte = endDate
+            dateFrom = new Date(year, month, 1).toISOString()
+            dateTo = new Date(year, month + 1, 0, 23, 59, 59, 999).toISOString()
           }
         } else {
-          const startDate = new Date(year, 0, 1)
-          const endDate = new Date(year, 11, 31, 23, 59, 59, 999)
-          dateFilter.gte = startDate
-          dateFilter.lte = endDate
+          dateFrom = new Date(year, 0, 1).toISOString()
+          dateTo = new Date(year, 11, 31, 23, 59, 59, 999).toISOString()
         }
       }
     }
 
-    const reports = await prisma.report.findMany({
-      where: {
-        clientId,
-        ...(dateFilter.gte ? { date: dateFilter } : {}),
-      },
-      include: {
-        observations: {
-          include: {
-            images: true,
-          },
-        },
-      },
-      orderBy: { date: 'desc' },
+    const reports = await listReportRecords({
+      clientId: clientId && clientId !== 'all' ? clientId : undefined,
+      dateFrom,
+      dateTo,
+      includeImages: false,
     })
 
     const totalReports = reports.length
@@ -174,16 +168,10 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      client: {
-        id: client.id,
-        name: client.companyName,
-        nameAr: client.companyNameAr || client.companyName,
-        email: client.user.email,
-        phone: client.phone,
-      },
+      client: clientInfo,
       period: {
         year: yearParam || new Date().getFullYear().toString(),
-        month: monthParam || (new Date().getMonth() + 1).toString(),
+        month: monthParam || '',
       },
       metrics: {
         safetyIndex,
@@ -208,6 +196,10 @@ export async function GET(request: Request) {
         en: executiveEvaluationEn,
       },
       generatedAt: new Date().toISOString(),
+    }, {
+      headers: {
+        'Cache-Control': 'private, no-cache, stale-while-revalidate=60',
+      },
     })
   } catch (error: any) {
     console.error('Executive summary error:', error)

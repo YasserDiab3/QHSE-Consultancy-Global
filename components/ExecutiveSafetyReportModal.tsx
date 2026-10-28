@@ -7,8 +7,6 @@ import {
   X,
   ShieldCheck,
   AlertTriangle,
-  CheckCircle2,
-  Clock,
   TrendingUp,
   Building,
   Loader2,
@@ -76,15 +74,31 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
 
   const [loading, setLoading] = useState(true)
   const [data, setData] = useState<ExecutiveSummaryData | null>(null)
+  const [fetchError, setFetchError] = useState('')
+  const [selectedClient, setSelectedClient] = useState<string>(clientId || '')
+  const [clientsList, setClientsList] = useState<Array<{ id: string; companyName: string; companyNameAr?: string }>>([])
   const [selectedMonth, setSelectedMonth] = useState<string>('')
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString())
+  const [selectedYear] = useState<string>(new Date().getFullYear().toString())
+
+  useEffect(() => {
+    if (isOpen && !clientId) {
+      fetch('/api/clients')
+        .then((res) => (res.ok ? res.json() : []))
+        .then((list) => {
+          if (Array.isArray(list)) setClientsList(list)
+        })
+        .catch(() => undefined)
+    }
+  }, [isOpen, clientId])
 
   const fetchSummary = useCallback(async () => {
     if (!isOpen) return
     setLoading(true)
+    setFetchError('')
     try {
       const params = new URLSearchParams()
-      if (clientId) params.set('clientId', clientId)
+      const targetClient = clientId || selectedClient
+      if (targetClient && targetClient !== 'all') params.set('clientId', targetClient)
       if (selectedYear) params.set('year', selectedYear)
       if (selectedMonth) params.set('month', selectedMonth)
 
@@ -92,13 +106,17 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
       if (res.ok) {
         const json = await res.json()
         setData(json)
+      } else {
+        const errJson = await res.json().catch(() => null)
+        setFetchError(errJson?.error || (isAr ? 'تعذر جلب البيانات التنفيذية' : 'Failed to load executive summary'))
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to load executive summary:', err)
+      setFetchError(isAr ? 'حدث خطأ في الاتصال بالخادم' : 'Connection error occurred')
     } finally {
       setLoading(false)
     }
-  }, [isOpen, clientId, selectedYear, selectedMonth])
+  }, [isOpen, clientId, selectedClient, selectedYear, selectedMonth, isAr])
 
   useEffect(() => {
     if (isOpen) {
@@ -150,6 +168,25 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Filter by Client (Admin Only) */}
+            {!clientId && clientsList.length > 0 && (
+              <div className="flex items-center gap-1.5 text-xs text-slate-600">
+                <Building className="h-3.5 w-3.5 text-slate-400" />
+                <select
+                  value={selectedClient}
+                  onChange={(e) => setSelectedClient(e.target.value)}
+                  className="input-field py-1 text-xs max-w-[180px] truncate"
+                >
+                  <option value="">{isAr ? 'كافة المنشآت والعمليات' : 'All Facilities & Operations'}</option>
+                  {clientsList.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {isAr && c.companyNameAr ? c.companyNameAr : c.companyName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Filter by Month */}
             <div className="flex items-center gap-1.5 text-xs text-slate-600">
               <Calendar className="h-3.5 w-3.5 text-slate-400" />
@@ -186,12 +223,26 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
 
         {/* Report Printable Content Container */}
         <div ref={printRef} className="p-6 sm:p-10 print:p-8">
-          {loading || !data ? (
+          {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-slate-400">
               <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
               <p className="mt-3 text-sm font-medium">
                 {isAr ? 'جاري تجميع المؤشرات والبيانات التنفيذية...' : 'Compiling executive indicators...'}
               </p>
+            </div>
+          ) : fetchError || !data ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <AlertTriangle className="h-10 w-10 text-amber-500 mb-2" />
+              <p className="text-sm font-semibold text-slate-800">
+                {fetchError || (isAr ? 'لا توجد بيانات متاحة للفترة المحددة' : 'No data available for the selected period')}
+              </p>
+              <button
+                type="button"
+                onClick={() => void fetchSummary()}
+                className="btn-secondary mt-4 px-4 py-2 text-xs"
+              >
+                {isAr ? 'إعادة المحاولة' : 'Try Again'}
+              </button>
             </div>
           ) : (
             <div className="space-y-8">
