@@ -264,3 +264,128 @@ export async function notifyCriticalObservation(input: {
   }
 }
 
+/**
+ * Notifies the QHSSE consultant/admin that a client submitted corrective actions or proof photos.
+ */
+export async function notifyConsultantClientAction(input: {
+  observationId: string
+  clientName: string
+  actionType: 'PROOF_UPLOADED' | 'CORRECTIVE_ACTION_SUBMITTED'
+  observationTitle: string
+  siteName?: string
+}) {
+  const targetEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER || 'support@qhsseconsultant.onmicrosoft.com'
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://qhsseconsultant.com').replace(/\/$/, '')
+  const adminUrl = `${appUrl}/admin`
+
+  const isProof = input.actionType === 'PROOF_UPLOADED'
+  const subject = isProof
+    ? `📸 إثبات معالجة جديد: قام العميل ${input.clientName} برفع صورة إثبات - ${input.observationTitle}`
+    : `📝 إجراء تصحيحي جديد: استجابة العميل ${input.clientName} - ${input.observationTitle}`
+
+  const text = `عناية استشاري السلامة،\n\nقام العميل (${input.clientName}) بتقديم ${
+    isProof ? 'صورة إثبات معالجة (بعد الإصلاح)' : 'إجراء تصحيحي ورداً رسمياً'
+  } للملاحظة التالية:\n\n- المنشأة/الموقع: ${input.siteName || '-'}\n- الملاحظة: ${input.observationTitle}\n- كود الملاحظة: ${input.observationId}\n\nيرجى الدخول إلى لوحة الإدارة لمراجعة الإجراء واعتماده:\n${adminUrl}`
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+      <div style="background-color: #0284c7; padding: 18px; border-radius: 12px; text-align: center; color: #ffffff; margin-bottom: 20px;">
+        <h2 style="margin: 0; font-size: 18px;">${isProof ? 'إثبات معالجة جديد من العميل' : 'استجابة جديدة وإجراء تصحيحي'}</h2>
+      </div>
+      <p style="color: #334155; font-size: 14px; line-height: 1.6;">
+        قام ممثل المنشأة <strong>${input.clientName}</strong> بتقديم تحديث على الملاحظة الميدانية بانتظار مراجعتكم واعتمادكم:
+      </p>
+      <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin: 16px 0;">
+        <p style="margin: 0 0 8px; font-size: 13px;"><strong>الموقع:</strong> ${input.siteName || '-'}</p>
+        <p style="margin: 0 0 8px; font-size: 13px;"><strong>الملاحظة:</strong> ${input.observationTitle}</p>
+        <p style="margin: 0; font-size: 13px;"><strong>نوع الإجراء:</strong> ${isProof ? 'صورة إثبات بعد المعالجة' : 'خطة عمل تصحيحية (CAPA)'}</p>
+      </div>
+      <div style="text-align: center; margin-top: 24px;">
+        <a href="${adminUrl}" style="background-color: #0284c7; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+          مراجعة واعتماد الإجراء في لوحة الإدارة
+        </a>
+      </div>
+    </div>
+  `
+
+  return sendNotificationEmail({
+    to: targetEmail,
+    subject,
+    text,
+    html,
+  }).catch((err) => {
+    console.error('[Notification] Failed to notify consultant of client action:', err)
+  })
+}
+
+/**
+ * Notifies the client when the consultant reviews their corrective action (approved or revision requested).
+ */
+export async function notifyClientActionReviewed(input: {
+  observationId: string
+  status: 'APPROVED' | 'REVISION_REQUESTED'
+  observationTitle: string
+  siteName?: string
+}) {
+  try {
+    const obs = await prisma.observation.findUnique({
+      where: { id: input.observationId },
+      include: {
+        report: {
+          include: {
+            client: {
+              include: { user: true },
+            },
+          },
+        },
+      },
+    })
+
+    const clientEmail = obs?.report?.client?.user?.email
+    if (!clientEmail) return
+
+    const isApproved = input.status === 'APPROVED'
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://qhsseconsultant.com').replace(/\/$/, '')
+    const dashboardUrl = `${appUrl}/dashboard`
+
+    const subject = isApproved
+      ? `✅ تم اعتماد الإجراء التصحيحي وإغلاق الملاحظة: ${input.observationTitle}`
+      : `⚠️ مطلوب تعديل على الإجراء التصحيحي: ${input.observationTitle}`
+
+    const text = isApproved
+      ? `عناية إدارة السلامة،\n\nنود إفادتكم بأن استشاري السلامة قد راجع واعتمد الإجراء التصحيحي وإثبات المعالجة المقدم منكم للملاحظة (${input.observationTitle})، وتم إغلاق الملاحظة بنجاح.\n\nرابط البوابة: ${dashboardUrl}`
+      : `عناية إدارة السلامة،\n\nقام استشاري السلامة بمراجعة الإجراء التصحيحي للملاحظة (${input.observationTitle})، ويطلب منكم مراجعة الإجراء أو رفع إثباتات إضافية لاستكمال متطلبات السلامة.\n\nرابط البوابة: ${dashboardUrl}`
+
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
+        <div style="background-color: ${isApproved ? '#059669' : '#d97706'}; padding: 18px; border-radius: 12px; text-align: center; color: #ffffff; margin-bottom: 20px;">
+          <h2 style="margin: 0; font-size: 18px;">${isApproved ? 'اعتماد الإجراء التصحيحي رسمياً' : 'مطلوب مراجعة الإجراء التصحيحي'}</h2>
+        </div>
+        <p style="color: #334155; font-size: 14px; line-height: 1.6;">
+          ${isApproved
+            ? `نفيدكم بأنه تم <strong>اعتماد وإغلاق</strong> الملاحظة الميدانية بنجاح من قِبل استشاري السلامة:`
+            : `يرجى مراجعة الملاحظة الميدانية وتحديث الإجراء أو رفع إثبات إضافي طبقاً لتوجيهات الاستشاري:`}
+        </p>
+        <div style="background-color: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin: 16px 0;">
+          <p style="margin: 0 0 8px; font-size: 13px;"><strong>الملاحظة:</strong> ${input.observationTitle}</p>
+          <p style="margin: 0; font-size: 13px;"><strong>الحالة الحالية:</strong> ${isApproved ? 'معتمد ومغلق (Approved & Closed)' : 'مطلوب تعديل (Revision Requested)'}</p>
+        </div>
+        <div style="text-align: center; margin-top: 24px;">
+          <a href="${dashboardUrl}" style="background-color: ${isApproved ? '#059669' : '#d97706'}; color: #ffffff; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">
+            فتح بوابة العميل
+          </a>
+        </div>
+      </div>
+    `
+
+    await sendNotificationEmail({
+      to: clientEmail,
+      subject,
+      text,
+      html,
+    })
+  } catch (err) {
+    console.error('[Notification] Failed to notify client of action review:', err)
+  }
+}
+

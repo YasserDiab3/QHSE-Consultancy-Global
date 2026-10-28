@@ -9,6 +9,8 @@ import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 import { getClientIdByUserId } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
 import { updateObservationRecord } from '@/lib/observation-records'
+import { notifyConsultantClientAction } from '@/lib/email'
+import { prisma } from '@/lib/prisma'
 
 export async function POST(request: Request) {
   try {
@@ -84,6 +86,22 @@ export async function POST(request: Request) {
       await updateObservationRecord(observationId, {
         correctiveActionStatus: 'PENDING_REVIEW',
       })
+
+      // Dispatch real-time notification to consultant
+      prisma.observation.findUnique({
+        where: { id: observationId },
+        include: { report: true },
+      }).then((obs) => {
+        if (obs) {
+          notifyConsultantClientAction({
+            observationId,
+            clientName: session.user.name || 'Client',
+            actionType: 'PROOF_UPLOADED',
+            observationTitle: obs.title,
+            siteName: obs.report?.siteName,
+          }).catch(() => {})
+        }
+      }).catch(() => {})
     }
 
     await logActivity(

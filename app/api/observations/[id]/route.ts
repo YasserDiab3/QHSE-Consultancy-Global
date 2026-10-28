@@ -6,7 +6,7 @@ import { deleteObservationRecord, updateObservationRecord } from '@/lib/observat
 import { getClientIdByUserId } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
 import { prisma } from '@/lib/prisma'
-import { notifyCriticalObservation } from '@/lib/email'
+import { notifyCriticalObservation, notifyConsultantClientAction, notifyClientActionReviewed } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -35,6 +35,24 @@ export async function PUT(
       const actionStatus = correctiveActionStatus || 'PENDING_REVIEW'
       await updateObservationRecord(id, { clientResponse, correctiveAction, correctiveActionStatus: actionStatus })
       await logActivity(session.user.id, 'CLIENT_CORRECTIVE_ACTION', 'observation', id, 'Client added a response or corrective action', ip)
+
+      if (clientResponse || correctiveAction) {
+        prisma.observation.findUnique({
+          where: { id },
+          include: { report: true },
+        }).then((obs) => {
+          if (obs) {
+            notifyConsultantClientAction({
+              observationId: id,
+              clientName: session.user.name || 'Client',
+              actionType: 'CORRECTIVE_ACTION_SUBMITTED',
+              observationTitle: obs.title,
+              siteName: obs.report?.siteName,
+            }).catch(() => {})
+          }
+        }).catch(() => {})
+      }
+
       return NextResponse.json({ id, clientResponse, correctiveAction, correctiveActionStatus: actionStatus })
     }
 
@@ -50,6 +68,14 @@ export async function PUT(
       correctiveAction,
       correctiveActionStatus,
     })
+
+    if (correctiveActionStatus === 'APPROVED' || correctiveActionStatus === 'REVISION_REQUESTED') {
+      notifyClientActionReviewed({
+        observationId: id,
+        status: correctiveActionStatus,
+        observationTitle: title || 'Observation',
+      }).catch(() => {})
+    }
 
     const observation = {
       id,

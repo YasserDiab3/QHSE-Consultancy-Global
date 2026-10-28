@@ -13,17 +13,22 @@ function isAuthorized(request: Request, adminUser?: { id: string; role: string }
   }
 
   const cronSecret = process.env.CRON_SECRET?.trim()
-  if (!cronSecret) {
+  if (cronSecret) {
+    const authHeader = request.headers.get('authorization')
+    if (authHeader === `Bearer ${cronSecret}`) {
+      return true
+    }
+
+    const customHeader = request.headers.get('x-cron-secret')
+    if (customHeader === cronSecret) {
+      return true
+    }
+
     return false
   }
 
-  const authHeader = request.headers.get('authorization')
-  if (authHeader === `Bearer ${cronSecret}`) {
-    return true
-  }
-
-  const customHeader = request.headers.get('x-cron-secret')
-  if (customHeader === cronSecret) {
+  // If CRON_SECRET is not explicitly set, allow automated Vercel Cron or non-production triggers
+  if (request.headers.get('x-vercel-cron') === '1' || process.env.NODE_ENV !== 'production') {
     return true
   }
 

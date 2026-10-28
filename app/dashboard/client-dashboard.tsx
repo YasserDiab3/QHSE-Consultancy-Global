@@ -36,6 +36,7 @@ import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 import ClientKnowledgeBank from '@/components/ClientKnowledgeBank'
 import ClientProfilePanel from '@/components/ClientProfilePanel'
+import ExecutiveSafetyReportModal from '@/components/ExecutiveSafetyReportModal'
 
 type Report = {
   id: string
@@ -153,6 +154,7 @@ export default function ClientDashboard() {
     dateTo: '',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [showExecutiveReport, setShowExecutiveReport] = useState(false)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance' | 'documents'>('dashboard')
   const [documents, setDocuments] = useState<ClientDocument[]>([])
   const [folders, setFolders] = useState<KnowledgeFolder[]>([])
@@ -247,6 +249,14 @@ export default function ClientDashboard() {
               <p className="text-gray-600 mt-1">{t('reports.subtitle')}</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setShowExecutiveReport(true)}
+                className="btn-secondary px-4 py-2 border-primary-200 text-primary-700 hover:bg-primary-50 transition"
+                title={language === 'ar' ? 'عرض وطباعة التقرير التنفيذي الشامل للسلامة' : 'View and print Executive Safety Report'}
+              >
+                <FileText className="w-4 h-4 text-primary-600" />
+                {language === 'ar' ? 'التقرير التنفيذي' : 'Executive Report'}
+              </button>
               <button
                 onClick={() => {
                   if (reports.length === 0) {
@@ -488,6 +498,11 @@ export default function ClientDashboard() {
           )}
           </div>
         </div>
+
+        <ExecutiveSafetyReportModal
+          isOpen={showExecutiveReport}
+          onClose={() => setShowExecutiveReport(false)}
+        />
       </main>
     </div>
   )

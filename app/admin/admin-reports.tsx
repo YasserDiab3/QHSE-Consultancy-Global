@@ -13,6 +13,7 @@ import {
   Loader2,
   Image as ImageIcon,
   Download,
+  FileText,
   CheckCircle2,
   Clock,
   RotateCcw,
@@ -21,6 +22,7 @@ import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/color
 import toast from 'react-hot-toast'
 import { downloadClientReportPdf } from '@/lib/report-pdf'
 import { exportAllReportsObservationsToCsv, exportSingleReportObservationsToCsv } from '@/lib/export-excel'
+import ExecutiveSafetyReportModal from '@/components/ExecutiveSafetyReportModal'
 
 type Report = {
   id: string
@@ -141,6 +143,7 @@ export default function AdminReports({
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingReport, setEditingReport] = useState<Report | null>(null)
+  const [showExecutiveReport, setShowExecutiveReport] = useState(false)
   const [viewingReport, setViewingReport] = useState<Report | null>(null)
   const [formData, setFormData] = useState(createInitialFormData)
   const [initialPoints, setInitialPoints] = useState('')
@@ -274,6 +277,14 @@ export default function AdminReports({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">{t('admin.manageReports')}</h2>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowExecutiveReport(true)}
+            className="btn-secondary"
+            title={language === 'ar' ? 'عرض التقرير التنفيذي الشامل للسلامة' : 'View Executive Safety Report'}
+          >
+            <FileText className="w-4 h-4 text-primary-600" />
+            {language === 'ar' ? 'التقرير التنفيذي' : 'Executive Report'}
+          </button>
           <button
             onClick={() => {
               if (reports.length === 0) {
@@ -551,6 +562,11 @@ export default function AdminReports({
           }}
         />
       )}
+
+      <ExecutiveSafetyReportModal
+        isOpen={showExecutiveReport}
+        onClose={() => setShowExecutiveReport(false)}
+      />
     </div>
   )
 }
