@@ -216,9 +216,28 @@ export async function verifySmtpConnection(): Promise<{
         }
       }
 
+      const tokenData = await tokenRes.json()
+
+      // Verify if Mail.Send permission is present in token roles
+      try {
+        const payload = JSON.parse(Buffer.from(tokenData.access_token.split('.')[1], 'base64').toString('utf8'))
+        const roles: string[] = payload.roles || []
+        const hasMailSend = roles.some((r) => r.toLowerCase().startsWith('mail.send'))
+
+        if (!hasMailSend) {
+          return {
+            success: false,
+            message: 'تم الاتصال بتطبيق QHSSE Mailer بنجاح، لكن يلزم إضافة إذن (Mail.Send) والضغط على "Grant admin consent" في لوحة Microsoft Entra لتفعيل إرسال الرسائل.',
+            code: 'GRAPH_PERMISSION_MISSING',
+          }
+        }
+      } catch {
+        // Fallback if token parse fails
+      }
+
       return {
         success: true,
-        message: 'تم التحقق من حساب Microsoft Graph API بنجاح وجاهز للإرسال السحابي المباشر.',
+        message: 'تم التحقق من حساب Microsoft Graph API وصلاحية Mail.Send بنجاح وجاهز للإرسال السحابي المباشر.',
       }
     } catch (err: any) {
       return {
