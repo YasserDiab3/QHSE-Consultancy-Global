@@ -12,15 +12,38 @@ function sanitizeHeader(value: string) {
   return value.replace(/[\r\n]+/g, ' ').trim()
 }
 
-function getSmtpConfig() {
-  const host = process.env.SMTP_HOST
-  const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : undefined
-  const user = process.env.SMTP_USER
-  const pass = process.env.SMTP_PASS
+export function isSmtpConfigured(): boolean {
+  const host = process.env.SMTP_HOST?.trim().toLowerCase()
+  const port = process.env.SMTP_PORT?.trim()
+  const user = process.env.SMTP_USER?.trim()
+  const pass = process.env.SMTP_PASS?.trim()
 
   if (!host || !port || !user || !pass) {
+    return false
+  }
+
+  // Reject placeholder values
+  if (
+    host.includes('example.com') ||
+    host === 'smtp.yourdomain.com' ||
+    pass === 'your-smtp-password' ||
+    pass === 'password'
+  ) {
+    return false
+  }
+
+  return true
+}
+
+function getSmtpConfig() {
+  if (!isSmtpConfigured()) {
     return null
   }
+
+  const host = process.env.SMTP_HOST!.trim()
+  const port = Number(process.env.SMTP_PORT)
+  const user = process.env.SMTP_USER!.trim()
+  const pass = process.env.SMTP_PASS!.trim()
 
   return {
     host,
@@ -35,15 +58,6 @@ function getSmtpConfig() {
       pass,
     },
   }
-}
-
-export function isSmtpConfigured(): boolean {
-  return Boolean(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_PORT &&
-    process.env.SMTP_USER &&
-    process.env.SMTP_PASS
-  )
 }
 
 export async function sendNotificationEmail(input: SendEmailInput) {
