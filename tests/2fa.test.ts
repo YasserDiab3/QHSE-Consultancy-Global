@@ -6,6 +6,8 @@ import {
   verify2FaOtp,
   clear2FaStore,
   normalizeOtpDigits,
+  is2FaEnabledForUser,
+  set2FaEnabledForUser,
 } from '../lib/auth-2fa'
 
 test('generateOtpCode produces a valid 6-digit numeric string', () => {
@@ -21,6 +23,23 @@ test('normalizeOtpDigits converts Eastern Arabic and Persian numerals to ASCII d
   assert.equal(normalizeOtpDigits('۱۲۳۴۵۶'), '123456')
   assert.equal(normalizeOtpDigits(' 987 654 '), '987654')
   assert.equal(normalizeOtpDigits('abc123xyz'), '123')
+})
+
+test('is2FaEnabledForUser is false by default and toggles cleanly', async () => {
+  const testUser = 'user-toggle-test@safetyglobal.com'
+  // Ensure starting clean
+  await set2FaEnabledForUser(testUser, false)
+
+  const initialStatus = await is2FaEnabledForUser(testUser)
+  assert.equal(initialStatus, false)
+
+  await set2FaEnabledForUser(testUser, true)
+  const enabledStatus = await is2FaEnabledForUser(testUser)
+  assert.equal(enabledStatus, true)
+
+  await set2FaEnabledForUser(testUser, false)
+  const disabledStatus = await is2FaEnabledForUser(testUser)
+  assert.equal(disabledStatus, false)
 })
 
 test('issueAdmin2FaOtp and verify2FaOtp allow successful authentication with single-use code', async () => {

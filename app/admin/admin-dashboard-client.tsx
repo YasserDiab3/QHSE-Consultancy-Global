@@ -25,6 +25,7 @@ import AdminContactRequests from './admin-contact-requests'
 import AdminJobs from './admin-jobs'
 import AdminTraining from './admin-training'
 import AdminKnowledgeBank from './admin-knowledge-bank'
+import AdminTwoFactorSettings from '@/components/AdminTwoFactorSettings'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 
@@ -343,6 +344,7 @@ function OverviewTab({
 
   return (
     <div className="space-y-8">
+      <AdminTwoFactorSettings />
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {summaryCards.map((card, i) => (
           <button

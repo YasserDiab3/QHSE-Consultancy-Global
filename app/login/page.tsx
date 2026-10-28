@@ -141,13 +141,17 @@ function LoginForm() {
     setFormError(null)
 
     try {
-      const result = await signIn('credentials', {
+      const signinPayload: Record<string, any> = {
         email,
         password,
-        otp: requires2Fa ? otp : undefined,
         redirect: false,
         callbackUrl,
-      })
+      }
+      if (requires2Fa && otp?.trim()) {
+        signinPayload.otp = otp.trim()
+      }
+
+      const result = await signIn('credentials', signinPayload)
 
       if (result?.error?.startsWith('2FA_REQUIRED')) {
         setRequires2Fa(true)

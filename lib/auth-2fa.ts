@@ -215,3 +215,63 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
 
   return false
 }
+
+/**
+ * Checks if 2FA is active for the given user email.
+ * Defaults to false (allowing immediate direct login) unless explicitly enabled
+ * by the admin or forced via FORCE_ADMIN_2FA='true'.
+ */
+export async function is2FaEnabledForUser(email: string): Promise<boolean> {
+  const normalized = email.toLowerCase().trim()
+  if (!normalized) return false
+
+  if (process.env.FORCE_ADMIN_2FA === 'true') {
+    return true
+  }
+
+  try {
+    const entry = await prisma.rateLimitEntry.findUnique({
+      where: { key: `2fa_enabled:${normalized}` },
+    })
+    return entry?.count === 1
+  } catch (error) {
+    console.warn('[2FA] Error reading 2FA status:', error)
+    return false
+  }
+}
+
+/**
+ * Sets the 2FA active status for the given user email.
+ */
+export async function set2FaEnabledForUser(email: string, enabled: boolean): Promise<boolean> {
+  const normalized = email.toLowerCase().trim()
+  if (!normalized) return false
+
+  const key = `2fa_enabled:${normalized}`
+  const resetAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+
+  try {
+    if (enabled) {
+      await prisma.rateLimitEntry.upsert({
+        where: { key },
+        create: {
+          key,
+          count: 1,
+          resetAt,
+        },
+        update: {
+          count: 1,
+          resetAt,
+        },
+      })
+    } else {
+      await prisma.rateLimitEntry.deleteMany({
+        where: { key },
+      })
+    }
+    return true
+  } catch (error) {
+    console.error('[2FA] Failed to toggle 2FA status:', error)
+    return false
+  }
+}

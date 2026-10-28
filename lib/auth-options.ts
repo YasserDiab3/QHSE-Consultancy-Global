@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs'
 import { randomUUID } from 'crypto'
 import { enforceRateLimit } from '@/lib/rate-limit'
 import { checkAccountLockout, recordFailedAttempt, resetFailedAttempts } from '@/lib/auth-lockout'
-import { issueAdmin2FaOtp, verify2FaOtp } from '@/lib/auth-2fa'
+import { is2FaEnabledForUser, issueAdmin2FaOtp, verify2FaOtp } from '@/lib/auth-2fa'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -87,10 +87,15 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          // Enforce 2FA for ADMIN accounts
-          if (user.role === 'ADMIN') {
+          // Check if 2FA is required for this user
+          const is2FaRequired = user.role === 'ADMIN' && (await is2FaEnabledForUser(user.email))
+          if (is2FaRequired) {
             const rawOtp = (credentials as any)?.otp?.trim()
-            if (!rawOtp) {
+            const hasSubmittedOtp = Boolean(
+              rawOtp && rawOtp !== 'undefined' && rawOtp !== 'null' && rawOtp !== ''
+            )
+
+            if (!hasSubmittedOtp) {
               const otpResult = await issueAdmin2FaOtp(user.email, user.language)
               if (!otpResult.smtpConfigured && otpResult.code) {
                 throw new Error(`2FA_REQUIRED_DEV:${otpResult.code}`)
