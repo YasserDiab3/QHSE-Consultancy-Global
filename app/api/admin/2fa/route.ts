@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { is2FaEnabledForUser, set2FaEnabledForUser } from '@/lib/auth-2fa'
-import { isSmtpConfigured } from '@/lib/email'
+import { isEmailConfigured } from '@/lib/email'
 import { createActivityLogRecord } from '@/lib/activity-log-records'
 
 export const dynamic = 'force-dynamic'
@@ -15,7 +15,7 @@ export async function GET() {
     }
 
     const enabled = await is2FaEnabledForUser(session.user.email)
-    const smtpConfigured = isSmtpConfigured()
+    const smtpConfigured = isEmailConfigured()
 
     return NextResponse.json({
       enabled,
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       enabled: enable,
-      smtpConfigured: isSmtpConfigured(),
+      smtpConfigured: isEmailConfigured(),
     })
   } catch (error: any) {
     return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 })

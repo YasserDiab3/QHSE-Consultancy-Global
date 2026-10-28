@@ -241,11 +241,13 @@
 @media print {
   @page {
     size: A4;
-    margin: 12mm;
+    margin: 10mm;
   }
 
   body {
     background: #fff;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .no-print,
@@ -260,31 +262,44 @@
   #client-profile-print,
   #client-profile-print *,
   #training-certificate,
-  #training-certificate * {
-    visibility: visible;
+  #training-certificate *,
+  #executive-safety-report-print,
+  #executive-safety-report-print * {
+    visibility: visible !important;
   }
 
   #client-profile-print,
-  #training-certificate {
+  #training-certificate,
+  #executive-safety-report-print {
     position: absolute;
-    inset: 0;
+    left: 0;
+    top: 0;
     width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
+    background: #fff !important;
   }
 
   #client-profile-print section,
-  #training-certificate section {
+  #training-certificate section,
+  #executive-safety-report-print section,
+  #executive-safety-report-print .break-inside-avoid {
     break-inside: avoid;
+    page-break-inside: avoid;
   }
 
-  #client-profile-print table {
+  #client-profile-print table,
+  #executive-safety-report-print table {
     width: 100%;
     border-collapse: collapse;
   }
 
   #client-profile-print th,
-  #client-profile-print td {
+  #client-profile-print td,
+  #executive-safety-report-print th,
+  #executive-safety-report-print td {
     padding: 8px;
   }
 }

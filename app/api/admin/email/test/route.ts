@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { isSmtpConfigured, sendNotificationEmail, verifySmtpConnection } from '@/lib/email'
+import { isEmailConfigured, isGraphApiConfigured, sendNotificationEmail, verifySmtpConnection } from '@/lib/email'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -27,12 +27,12 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const configured = isSmtpConfigured()
+    const configured = isEmailConfigured()
     if (!configured) {
       return NextResponse.json({
         configured: false,
         status: 'unconfigured',
-        message: 'إعدادات SMTP غير مكتملة في متغيرات البيئة.',
+        message: 'إعدادات البريد السحابي أو SMTP غير مكتملة في متغيرات البيئة.',
       })
     }
 
@@ -43,10 +43,10 @@ export async function GET() {
       configured: true,
       status: check.success ? 'connected' : 'error',
       message: check.message,
+      driver: isGraphApiConfigured() ? 'Microsoft Graph API' : 'SMTP',
       guidance,
       details: {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
+        driver: isGraphApiConfigured() ? 'Microsoft Graph API' : 'SMTP',
         user: process.env.SMTP_USER,
         from: process.env.SMTP_FROM,
       },

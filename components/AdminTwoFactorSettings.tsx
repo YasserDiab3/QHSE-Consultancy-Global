@@ -104,23 +104,23 @@ export default function AdminTwoFactorSettings() {
     try {
       const res = await fetch('/api/admin/email/test')
       const data = await res.json()
-      if (data.status === 'connected') {
+      if (res.ok && data.status === 'connected') {
         setSmtpStatus({
           configured: true,
           status: 'connected',
           message: data.message,
           details: data.details,
         })
-        toast.success(isAr ? 'تم الاتصال بخادم البريد بنجاح!' : 'SMTP connected successfully!')
+        toast.success(data.message || (isAr ? 'تم الاتصال بخادم البريد بنجاح!' : 'Connected successfully!'))
       } else {
         setSmtpStatus({
           configured: data.configured ?? false,
           status: 'error',
-          message: data.message,
+          message: data.message || data.error || (isAr ? 'فشل التحقق من خادم البريد' : 'Verification failed'),
           guidance: data.guidance,
           details: data.details,
         })
-        toast.error(isAr ? 'فشل التحقق من خادم البريد' : 'SMTP check failed')
+        toast.error(data.message || data.error || (isAr ? 'فشل التحقق من خادم البريد' : 'Verification failed'))
       }
     } catch {
       setSmtpStatus({
@@ -348,6 +348,13 @@ export default function AdminTwoFactorSettings() {
                 </ul>
               </div>
             </div>
+          </div>
+        ) : null}
+
+        {smtpStatus.status === 'error' && smtpStatus.message && !smtpStatus.guidance?.isM365AuthIssue ? (
+          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+            <span>{smtpStatus.message}</span>
           </div>
         ) : null}
 

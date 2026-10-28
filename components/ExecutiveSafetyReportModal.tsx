@@ -149,8 +149,8 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
   const clientDisplayName = data ? (isAr ? data.client.nameAr : data.client.name) : ''
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm print:p-0 print:bg-white">
-      <div className="relative my-8 w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl print:my-0 print:max-w-none print:rounded-none print:shadow-none">
+    <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-900/60 p-4 backdrop-blur-sm print:static print:overflow-visible print:bg-white print:p-0">
+      <div className="relative my-8 w-full max-w-4xl overflow-hidden rounded-2xl bg-white shadow-2xl print:my-0 print:max-w-none print:rounded-none print:shadow-none print:static print:overflow-visible">
         {/* Modal Top Control Bar (Screen Only) */}
         <div className="flex flex-wrap items-center justify-between border-b border-slate-200 bg-slate-50/80 px-6 py-4 print:hidden">
           <div className="flex items-center gap-2">
@@ -222,7 +222,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
         </div>
 
         {/* Report Printable Content Container */}
-        <div ref={printRef} className="p-6 sm:p-10 print:p-8">
+        <div ref={printRef} id="executive-safety-report-print" className="p-6 sm:p-10 print:p-0 print:m-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-24 text-slate-400">
               <Loader2 className="h-10 w-10 animate-spin text-primary-500" />
