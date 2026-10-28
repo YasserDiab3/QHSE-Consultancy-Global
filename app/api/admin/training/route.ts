@@ -1,6 +1,6 @@
-﻿import { headers } from 'next/headers'
+import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireStaff } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 import {
   createTrainingCourse,
@@ -13,7 +13,7 @@ export const revalidate = 0
 
 export async function GET() {
   try {
-    await requireAdmin()
+    await requireStaff()
 
     const [courses, enrollments] = await Promise.all([
       listAdminTrainingCourses(),
@@ -52,7 +52,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin()
+    const session = await requireStaff()
     const body = await request.json().catch(() => ({}))
 
     const result = await createTrainingCourse({

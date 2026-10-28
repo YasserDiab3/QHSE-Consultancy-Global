@@ -22,6 +22,7 @@ import {
 import toast from 'react-hot-toast'
 import BrandLogo from '@/components/BrandLogo'
 import { parsePortalSettings, isProfileLocked } from '@/lib/client-profile'
+import { printElement } from '@/lib/print-document'
 
 type Client = {
   id: string
@@ -579,120 +580,12 @@ function ClientProfile({
       window.print()
       return
     }
-
-    const contentHtml = printRef.current.innerHTML
-    const styleElements = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-      .map((el) => el.outerHTML)
-      .join('\n')
-
-    const printDoc = `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-  <head>
-    <meta charset="utf-8" />
-    <title>ملف العميل — ${client.companyName}</title>
-    ${styleElements}
-    <style>
-      @page {
-        size: A4 portrait;
-        margin: 12mm 10mm;
-      }
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        box-sizing: border-box;
-      }
-      html, body {
-        margin: 0 !important;
-        padding: 0 !important;
-        background: #ffffff !important;
-        color: #0f172a !important;
-        font-family: system-ui, -apple-system, sans-serif;
-      }
-      .print\\:hidden, .no-print {
-        display: none !important;
-      }
-      .print\\:flex {
-        display: flex !important;
-      }
-      .print\\:block {
-        display: block !important;
-      }
-      .print\\:grid-cols-4 {
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-      }
-      .print\\:grid-cols-2 {
-        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-      }
-      .print\\:grid-cols-3 {
-        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-      }
-      section, .break-inside-avoid, tr {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      thead {
-        display: table-header-group;
-      }
-      th {
-        background-color: #f8fafc !important;
-      }
-      th, td {
-        padding: 8px 10px;
-        border: 1px solid #e2e8f0;
-      }
-    </style>
-  </head>
-  <body>
-    <div style="padding: 10px; max-width: 900px; margin: 0 auto;">
-      ${contentHtml}
-    </div>
-  </body>
-</html>`
-
-    const blob = new Blob([printDoc], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '0'
-    iframe.style.height = '0'
-    iframe.style.border = '0'
-    iframe.style.opacity = '0'
-    iframe.src = url
-
-    const cleanup = () => {
-      setTimeout(() => {
-        iframe.remove()
-        URL.revokeObjectURL(url)
-      }, 2000)
-    }
-
-    iframe.onload = () => {
-      const frameWindow = iframe.contentWindow
-      if (!frameWindow) {
-        cleanup()
-        window.print()
-        return
-      }
-      setTimeout(() => {
-        try {
-          frameWindow.focus()
-          frameWindow.print()
-          cleanup()
-        } catch {
-          cleanup()
-          window.print()
-        }
-      }, 250)
-    }
-
-    document.body.appendChild(iframe)
+    void printElement({
+      element: printRef.current,
+      title: `ملف العميل — ${client.companyNameAr || client.companyName}`,
+      lang: 'ar',
+      dir: 'rtl',
+    })
   }
 
   const load = useCallback(async () => {
@@ -935,7 +828,7 @@ function ClientProfile({
 
 function ProfileMetric({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4">
+    <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4 break-inside-avoid">
       <p className="text-sm text-primary-700">{label}</p>
       <p className="mt-2 text-2xl font-bold text-slate-900">{value}</p>
     </div>

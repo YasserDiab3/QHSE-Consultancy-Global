@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, requireStaff } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
@@ -13,7 +13,7 @@ export async function PUT(
 ) {
   const { id } = await params
   try {
-    const session = await requireAdmin()
+    const session = await requireStaff()
     const body = await request.json()
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'

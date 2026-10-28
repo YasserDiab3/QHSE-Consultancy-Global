@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireAdmin } from '@/lib/auth'
+import { requireStaff } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getClientAccountById } from '@/lib/client-records'
 import { listReportRecords } from '@/lib/report-records'
@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    await requireAdmin()
+    await requireStaff()
     const client = await getClientAccountById(id)
     if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     const reports = await listReportRecords({ clientId: id })
@@ -28,12 +28,15 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   try {
-    await requireAdmin()
+    const session = await requireStaff()
     const body = await request.json()
     const client = await getClientAccountById(id)
     if (!client) return NextResponse.json({ error: 'Client not found' }, { status: 404 })
 
     if (body.type === 'financial') {
+      if (session.user.role !== 'ADMIN') {
+        return NextResponse.json({ error: 'Financial operations are restricted to Administrators' }, { status: 403 })
+      }
       const parsed = financialRecordSchema.safeParse(body)
       if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
       const item = await prisma.financialRecord.create({ data: { clientId: id, ...parsed.data, currency: parsed.data.currency || 'EGP', status: parsed.data.status || 'PENDING', dueDate: parsed.data.dueDate ? new Date(parsed.data.dueDate) : null } })

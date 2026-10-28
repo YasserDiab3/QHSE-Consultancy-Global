@@ -18,7 +18,7 @@ export async function PUT(
   const { id } = await params
   try {
     const session = await getSession()
-    if (!session || !['ADMIN', 'CLIENT'].includes(session.user.role)) {
+    if (!session || !['ADMIN', 'DATA_ENTRY', 'CLIENT'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

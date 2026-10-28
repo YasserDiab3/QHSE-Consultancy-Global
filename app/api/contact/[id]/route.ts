@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireStaff } from '@/lib/auth'
 
 function isMissingContactRequestTable(error: unknown) {
   const message = error instanceof Error ? error.message : String(error)
@@ -13,7 +13,7 @@ export async function PATCH(
 ) {
   const { id } = await params
   try {
-    await requireAdmin()
+    await requireStaff()
     const body = await request.json()
     const { status } = body
 

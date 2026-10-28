@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireAdmin } from '@/lib/auth'
+import { requireAdmin, requireStaff } from '@/lib/auth'
 import { getClientAccountById } from '@/lib/client-records'
 import { prisma } from '@/lib/prisma'
 import { clientDocumentSchema, formatValidationError } from '@/lib/validation'
@@ -34,7 +34,7 @@ const documentUpdateSchema = z.object({
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin()
+    await requireStaff()
     const clientId = new URL(request.url).searchParams.get('clientId')
     if (!clientId) return NextResponse.json({ error: 'Client is required' }, { status: 400 })
 
@@ -106,7 +106,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin()
+    await requireStaff()
     const body = await request.json()
 
     if (body.type === 'folder') {
@@ -166,7 +166,7 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const session = await requireAdmin()
+    const session = await requireStaff()
     const parsed = documentUpdateSchema.safeParse(await request.json())
     if (!parsed.success) return NextResponse.json({ error: formatValidationError(parsed.error) }, { status: 400 })
 

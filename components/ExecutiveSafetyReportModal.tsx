@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
 import { useLanguage } from '@/context'
+import { printElement } from '@/lib/print-document'
 
 type ExecutiveSummaryData = {
   client: {
@@ -131,92 +132,12 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
       window.print()
       return
     }
-
-    const contentHtml = printRef.current.innerHTML
-    const styleElements = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-      .map((el) => el.outerHTML)
-      .join('\n')
-
-    const printDoc = `<!DOCTYPE html>
-<html lang="${isAr ? 'ar' : 'en'}" dir="${isAr ? 'rtl' : 'ltr'}">
-  <head>
-    <meta charset="utf-8" />
-    <title>${isAr ? 'التقرير التنفيذي الشامل للسلامة' : 'Executive Safety Summary Report'}</title>
-    ${styleElements}
-    <style>
-      @page {
-        size: A4 portrait;
-        margin: 12mm 10mm;
-      }
-      * {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        box-sizing: border-box;
-      }
-      body {
-        margin: 0;
-        padding: 0;
-        background: #ffffff !important;
-        color: #0f172a !important;
-        font-family: system-ui, -apple-system, sans-serif;
-      }
-      .break-inside-avoid {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-    </style>
-  </head>
-  <body>
-    <div style="padding: 10px; max-width: 900px; margin: 0 auto;">
-      ${contentHtml}
-    </div>
-  </body>
-</html>`
-
-    const blob = new Blob([printDoc], { type: 'text/html;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-
-    const iframe = document.createElement('iframe')
-    iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '0'
-    iframe.style.height = '0'
-    iframe.style.border = '0'
-    iframe.style.opacity = '0'
-    iframe.src = url
-
-    const cleanup = () => {
-      setTimeout(() => {
-        iframe.remove()
-        URL.revokeObjectURL(url)
-      }, 2000)
-    }
-
-    iframe.onload = () => {
-      const frameWindow = iframe.contentWindow
-      if (!frameWindow) {
-        cleanup()
-        window.print()
-        return
-      }
-      setTimeout(() => {
-        try {
-          frameWindow.focus()
-          frameWindow.print()
-          cleanup()
-        } catch {
-          cleanup()
-          window.print()
-        }
-      }, 250)
-    }
-
-    document.body.appendChild(iframe)
+    void printElement({
+      element: printRef.current,
+      title: isAr ? 'التقرير التنفيذي لسلامة وصحة العمل' : 'Executive QHSSE Performance Report',
+      lang: isAr ? 'ar' : 'en',
+      dir: isAr ? 'rtl' : 'ltr',
+    })
   }
 
   const months = [
@@ -336,7 +257,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
           ) : (
             <div className="space-y-8">
               {/* Report Header */}
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-slate-900/80 pb-6 gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-slate-900/80 pb-6 gap-4 print:flex-row print:items-center print:justify-between">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="rounded bg-brand-gold/15 px-2.5 py-0.5 text-xs font-extrabold uppercase text-brand-gold">
@@ -367,7 +288,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
               </div>
 
               {/* Top Score Banner */}
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4 print:grid-cols-4">
                 <div className="rounded-2xl border border-primary-200 bg-primary-50/70 p-4 text-center">
                   <p className="text-xs font-bold uppercase tracking-wider text-primary-800">
                     {isAr ? 'مؤشر السلامة العام' : 'Overall Safety Score'}
@@ -428,7 +349,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
                   <span>{isAr ? 'مصفوفة توزيع مستويات الخطورة الميدانية' : 'Field Risk Severity Distribution'}</span>
                 </h3>
 
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:grid-cols-4">
                   <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-start">
                     <span className="text-[11px] font-bold text-rose-800 uppercase">
                       {isAr ? 'حرجة (CRITICAL)' : 'Critical'}
@@ -481,7 +402,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
 
               {/* Sites Breakdown Table */}
               {data.siteBreakdown.length > 0 && (
-                <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white">
+                <div className="rounded-2xl border border-slate-200 overflow-hidden bg-white break-inside-avoid">
                   <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex items-center justify-between">
                     <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
                       <Building className="h-4 w-4 text-slate-500" />
@@ -501,7 +422,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {data.siteBreakdown.map((site, idx) => (
-                        <tr key={idx} className="hover:bg-slate-50/50">
+                        <tr key={idx} className="hover:bg-slate-50/50 break-inside-avoid">
                           <td className="py-2.5 px-4 font-semibold text-slate-900">{site.siteName}</td>
                           <td className="py-2.5 px-4 text-center font-mono">{site.total}</td>
                           <td className="py-2.5 px-4 text-center font-mono text-emerald-700">{site.closed}</td>
@@ -519,7 +440,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
               )}
 
               {/* Consultant Executive Guidance Box */}
-              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+              <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 break-inside-avoid">
                 <h3 className="text-sm font-bold text-slate-900 mb-2 flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
                   <span>{isAr ? 'التقييم الاستشاري والتوجيهات التنفيذية' : 'Consultant Executive Evaluation'}</span>
@@ -530,7 +451,7 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
               </div>
 
               {/* Sign-Off & Official Stamp Block (Print / Formal) */}
-              <div className="pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs">
+              <div className="pt-6 border-t border-slate-200 grid grid-cols-2 gap-8 text-center text-xs print:grid-cols-2 break-inside-avoid">
                 <div>
                   <p className="font-bold text-slate-900">{isAr ? 'اعتماد استشاري السلامة والصحة المهنية' : 'QHSSE Lead Consultant'}</p>
                   <p className="text-[11px] text-slate-500 mt-1">QHSSE Consultant Global Accreditation</p>

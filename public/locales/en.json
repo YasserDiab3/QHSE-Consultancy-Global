@@ -190,6 +190,7 @@
     "reports": "Reports",
     "observations": "Observations",
     "activityLog": "Activity Log",
+    "userSessions": "User Sessions & Login Status",
     "addClient": "Add Client",
     "addReport": "Add Report",
     "editClient": "Edit Client",

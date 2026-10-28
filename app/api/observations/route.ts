@@ -11,7 +11,7 @@ export const revalidate = 0
 export async function POST(request: Request) {
   try {
     const session = await getSession()
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'DATA_ENTRY'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

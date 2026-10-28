@@ -342,3 +342,153 @@ export function exportAuditLogsToCsv(
   const csv = buildAuditLogCsv(logs, language)
   downloadCsvFile(filename, csv)
 }
+
+export type ExportSessionItem = {
+  id: string
+  userId: string
+  ipAddress: string | null
+  countryCode: string | null
+  countryName: string | null
+  region: string | null
+  city: string | null
+  latitude: number | null
+  longitude: number | null
+  device: string | null
+  browser: string | null
+  os: string | null
+  status: string
+  loginAt: string
+  lastActiveAt: string
+  googleMapsUrl: string | null
+  user: {
+    name: string
+    email: string
+    role: string
+    phone?: string | null
+    client?: {
+      companyName: string
+      companyNameAr?: string | null
+    } | null
+  }
+}
+
+/**
+ * Builds an Excel-compatible CSV string for User Sessions with UTF-8 BOM.
+ */
+export function buildUserSessionsCsv(
+  items: ExportSessionItem[],
+  language: string = 'ar'
+): string {
+  const isAr = language === 'ar'
+
+  const headers = isAr
+    ? [
+        'م',
+        'اسم المستخدم',
+        'البريد الإلكتروني',
+        'الدور',
+        'اسم الشركة / العميل',
+        'الهاتف',
+        'حالة الاتصال',
+        'عنوان IP',
+        'الدولة',
+        'المدينة والمنطقة',
+        'خط العرض (Latitude)',
+        'خط الطول (Longitude)',
+        'نوع الجهاز',
+        'المتصفح',
+        'نظام التشغيل',
+        'وقت وتاريخ الدخول',
+        'آخر نشاط',
+        'رابط خرائط جوجل',
+      ]
+    : [
+        '#',
+        'User Name',
+        'Email',
+        'Role',
+        'Company Name',
+        'Phone',
+        'Status',
+        'IP Address',
+        'Country',
+        'City & Region',
+        'Latitude',
+        'Longitude',
+        'Device',
+        'Browser',
+        'OS',
+        'Login Timestamp',
+        'Last Active',
+        'Google Maps URL',
+      ]
+
+  const headerRow = headers.map(escapeCsvCell).join(',')
+
+  const statusMap: Record<string, { ar: string; en: string }> = {
+    ACTIVE: { ar: 'متصل الآن (Online)', en: 'Online' },
+    IDLE: { ar: 'خامل (Idle)', en: 'Idle' },
+    OFFLINE: { ar: 'غير متصل (Offline)', en: 'Offline' },
+    LOGGED_OUT: { ar: 'تم تسجيل الخروج (Logged Out)', en: 'Logged Out' },
+  }
+
+  const dataRows = items.map((item, index) => {
+    const rawLoginDate = item.loginAt ? new Date(item.loginAt).toLocaleString() : ''
+    const rawActiveDate = item.lastActiveAt ? new Date(item.lastActiveAt).toLocaleString() : ''
+    const statusLabel = statusMap[item.status]
+      ? isAr
+        ? statusMap[item.status].ar
+        : statusMap[item.status].en
+      : item.status
+
+    const companyName = item.user.client
+      ? isAr
+        ? item.user.client.companyNameAr || item.user.client.companyName
+        : item.user.client.companyName
+      : '-'
+
+    const locationCity = [item.city, item.region].filter(Boolean).join(' - ') || '-'
+
+    const row = [
+      index + 1,
+      item.user.name,
+      item.user.email,
+      item.user.role,
+      companyName,
+      item.user.phone || '-',
+      statusLabel,
+      item.ipAddress || '-',
+      item.countryName || item.countryCode || '-',
+      locationCity,
+      item.latitude != null ? item.latitude : '-',
+      item.longitude != null ? item.longitude : '-',
+      item.device || '-',
+      item.browser || '-',
+      item.os || '-',
+      rawLoginDate,
+      rawActiveDate,
+      item.googleMapsUrl || '-',
+    ]
+
+    return row.map(escapeCsvCell).join(',')
+  })
+
+  return `\uFEFF${[headerRow, ...dataRows].join('\r\n')}`
+}
+
+/**
+ * Exports user sessions directly to an Excel-compatible CSV file.
+ */
+export function exportUserSessionsToCsv(
+  sessions: ExportSessionItem[],
+  language: string = 'ar'
+): void {
+  const isAr = language === 'ar'
+  const dateStr = new Date().toISOString().split('T')[0]
+  const filename = isAr
+    ? `سجل_جلسات_المستخدمين_${dateStr}.csv`
+    : `User_Sessions_Log_${dateStr}.csv`
+
+  const csv = buildUserSessionsCsv(sessions, language)
+  downloadCsvFile(filename, csv)
+}

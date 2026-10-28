@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireStaff } from '@/lib/auth'
 import { sendNotificationEmail } from '@/lib/email'
 import { enforceRateLimit, rateLimitResponse } from '@/lib/rate-limit'
 import { contactRequestSchema, escapeHtml, formatValidationError } from '@/lib/validation'
@@ -15,7 +15,7 @@ function isMissingContactRequestTable(error: unknown) {
 
 export async function GET() {
   try {
-    await requireAdmin()
+    await requireStaff()
 
     const requests = await prisma.contactRequest.findMany({
       orderBy: {

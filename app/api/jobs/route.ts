@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { getSession, requireAdmin } from '@/lib/auth'
+import { getSession, requireStaff } from '@/lib/auth'
 import { logActivity } from '@/lib/activity-log'
 
 export const dynamic = 'force-dynamic'
@@ -46,7 +46,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin()
+    const session = await requireStaff()
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
     const body = await request.json()

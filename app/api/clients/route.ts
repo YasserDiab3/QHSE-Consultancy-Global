@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { requireAdmin } from '@/lib/auth'
+import { requireStaff } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
@@ -12,7 +12,7 @@ export const revalidate = 0
 
 export async function GET() {
   try {
-    await requireAdmin()
+    await requireStaff()
     const clients = await listClientAccounts()
     return NextResponse.json(clients)
   } catch (error: any) {
@@ -22,7 +22,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const session = await requireAdmin()
+    const session = await requireStaff()
     const body = await request.json()
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'

@@ -4,6 +4,7 @@ import './globals.css'
 import Providers from '@/components/Providers'
 import FloatingContactButtons from '@/components/FloatingContactButtons'
 import VisitorTracker from '@/components/VisitorTracker'
+import UserPresenceTracker from '@/components/UserPresenceTracker'
 import ConsentBanner from '@/components/ConsentBanner'
 import { getServerI18n } from '@/lib/i18n-server'
 
@@ -111,6 +112,7 @@ export default async function RootLayout({
             {language === 'ar' ? 'تخطَّ إلى المحتوى الرئيسي' : 'Skip to main content'}
           </a>
           <VisitorTracker />
+          <UserPresenceTracker />
           <div id="main-content" tabIndex={-1}>
             {children}
           </div>

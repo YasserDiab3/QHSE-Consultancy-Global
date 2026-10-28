@@ -16,11 +16,15 @@ import {
   TrendingUp,
   Users,
   FolderOpen,
+  Radio,
+  ShieldCheck,
 } from 'lucide-react'
 import Header from '@/components/Header'
 import AdminReports from './admin-reports'
 import AdminClients from './admin-clients'
 import AdminActivityLog from './admin-activity-log'
+import AdminUserSessions from './admin-user-sessions'
+import AdminTeam from './admin-team'
 import AdminContactRequests from './admin-contact-requests'
 import AdminJobs from './admin-jobs'
 import AdminTraining from './admin-training'
@@ -28,6 +32,7 @@ import AdminKnowledgeBank from './admin-knowledge-bank'
 import AdminTwoFactorSettings from '@/components/AdminTwoFactorSettings'
 import toast from 'react-hot-toast'
 import DashboardSignOutButton from '@/components/DashboardSignOutButton'
+import { isSuperAdmin } from '@/lib/permissions'
 
 type DashboardStats = {
   totalReports: number
@@ -57,7 +62,7 @@ type ReportFilterPreset = {
 } | null
 
 type RequestStatusPreset = 'ALL' | 'NEW' | 'CONTACTED' | 'CLOSED'
-type AdminTab = 'overview' | 'reports' | 'clients' | 'knowledge' | 'training' | 'jobs' | 'requests' | 'activity'
+type AdminTab = 'overview' | 'reports' | 'clients' | 'knowledge' | 'training' | 'jobs' | 'requests' | 'team' | 'activity' | 'userSessions'
 
 export default function AdminDashboardClient() {
   const { t, language, dir } = useLanguage()
@@ -137,6 +142,8 @@ export default function AdminDashboardClient() {
     })
   }, [])
 
+  const isSuper = isSuperAdmin(session?.user?.role)
+
   const tabs = useMemo(
     () => [
       { id: 'overview' as const, label: t('dashboard.title'), icon: BarChart3 },
@@ -146,9 +153,23 @@ export default function AdminDashboardClient() {
       { id: 'training' as const, label: language === 'ar' ? 'التدريب' : 'Training', icon: GraduationCap },
       { id: 'jobs' as const, label: language === 'ar' ? 'الوظائف' : 'Jobs', icon: BriefcaseBusiness },
       { id: 'requests' as const, label: language === 'ar' ? 'طلبات التواصل' : 'Contact Requests', icon: MessageSquare },
-      { id: 'activity' as const, label: t('admin.activityLog'), icon: Activity },
+      ...(isSuper
+        ? [
+            {
+              id: 'team' as const,
+              label: language === 'ar' ? 'فريق العمل والصلاحيات' : 'Team & Roles',
+              icon: ShieldCheck,
+            },
+            { id: 'activity' as const, label: t('admin.activityLog'), icon: Activity },
+            {
+              id: 'userSessions' as const,
+              label: language === 'ar' ? 'حالة الدخول والتواجد' : 'User Sessions & Login Status',
+              icon: Radio,
+            },
+          ]
+        : []),
     ],
-    [language, t]
+    [isSuper, language, t]
   )
 
   const openReports = useCallback((preset?: ReportFilterPreset) => {
@@ -174,7 +195,22 @@ export default function AdminDashboardClient() {
           <div ref={contentAnchorRef} />
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t('admin.title')}</h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t('admin.title')}</h1>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                    isSuper ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  }`}
+                >
+                  {isSuper
+                    ? language === 'ar'
+                      ? 'مدير عام النظام'
+                      : 'Super Admin'
+                    : language === 'ar'
+                    ? 'مدخل بيانات (Data Entry)'
+                    : 'Data Entry Clerk'}
+                </span>
+              </div>
               <p className="mt-1 text-gray-600">
                 {t('dashboard.welcome')}, {session?.user?.name}
               </p>
@@ -204,6 +240,7 @@ export default function AdminDashboardClient() {
               t={t}
               dir={dir}
               language={language}
+              isSuper={isSuper}
               onOpenReports={openReports}
               onOpenClients={openClients}
               onOpenRequests={openRequests}
@@ -242,9 +279,19 @@ export default function AdminDashboardClient() {
               />
             </div>
           )}
+          {visitedTabs.team && isSuper && (
+            <div className={activeTab === 'team' ? 'block' : 'hidden'}>
+              <AdminTeam onDataChanged={() => fetchStats(true)} />
+            </div>
+          )}
           {visitedTabs.activity && (
             <div className={activeTab === 'activity' ? 'block' : 'hidden'}>
               <AdminActivityLog />
+            </div>
+          )}
+          {visitedTabs.userSessions && (
+            <div className={activeTab === 'userSessions' ? 'block' : 'hidden'}>
+              <AdminUserSessions />
             </div>
           )}
         </div>
@@ -259,6 +306,7 @@ function OverviewTab({
   t,
   dir,
   language,
+  isSuper,
   onOpenReports,
   onOpenClients,
   onOpenRequests,
@@ -268,6 +316,7 @@ function OverviewTab({
   t: (key: string) => string
   dir: 'ltr' | 'rtl'
   language: string
+  isSuper?: boolean
   onOpenReports: (preset?: ReportFilterPreset) => void
   onOpenClients: () => void
   onOpenRequests: (status?: RequestStatusPreset) => void
@@ -344,7 +393,7 @@ function OverviewTab({
 
   return (
     <div className="space-y-8">
-      <AdminTwoFactorSettings />
+      {isSuper && <AdminTwoFactorSettings />}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
         {summaryCards.map((card, i) => (
           <button

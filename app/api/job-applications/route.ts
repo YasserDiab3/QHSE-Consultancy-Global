@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getSession, requireAdmin } from '@/lib/auth'
+import { getSession, requireStaff } from '@/lib/auth'
 import { headers } from 'next/headers'
 import { logActivity } from '@/lib/activity-log'
 import { sendNotificationEmail } from '@/lib/email'
@@ -26,7 +26,7 @@ const MAX_RESUME_SIZE_BYTES = 5 * 1024 * 1024
 
 export async function GET(request: Request) {
   try {
-    await requireAdmin()
+    await requireStaff()
     const pagination = parsePagination(new URL(request.url).searchParams)
 
     const [total, applications] = await prisma.$transaction([
