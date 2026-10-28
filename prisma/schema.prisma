@@ -23,6 +23,7 @@ model User {
   reports       Report[]  @relation("ConsultantReports")
   trainingEnrollments TrainingEnrollment[]
   trainingAttempts TrainingAttempt[]
+  sessionLogs   UserSessionLog[]
 
   @@index([email])
   @@map("User")
@@ -360,4 +361,32 @@ model TrainingAttempt {
   @@index([userId, courseId])
   @@index([createdAt(sort: Desc)])
   @@map("TrainingAttempt")
+}
+
+model UserSessionLog {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ipAddress    String?   @map("ipaddress")
+  countryCode  String?   @map("countrycode")
+  countryName  String?   @map("countryname")
+  region       String?
+  city         String?
+  latitude     Float?
+  longitude    Float?
+  accuracy     Float?
+  device       String?
+  browser      String?
+  os           String?
+  userAgent    String?   @map("useragent")
+  status       String    @default("ACTIVE")
+  loginAt      DateTime  @default(now()) @map("loginat")
+  lastActiveAt DateTime  @default(now()) @map("lastactiveat")
+  logoutAt     DateTime? @map("logoutat")
+
+  @@index([userId])
+  @@index([status])
+  @@index([loginAt(sort: Desc)])
+  @@index([lastActiveAt(sort: Desc)])
+  @@map("UserSessionLog")
 }

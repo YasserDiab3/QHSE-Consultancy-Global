@@ -1,7 +1,7 @@
 'use client'
 
 import { useLanguage } from '@/context'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import {
   Plus,
   Edit,
@@ -572,6 +572,128 @@ function ClientProfile({
   const [financial, setFinancial] = useState({ title: '', amount: '', status: 'PENDING' })
   const [togglingLock, setTogglingLock] = useState(false)
   const [lockedState, setLockedState] = useState(() => isProfileLocked(parsePortalSettings(client.contactInfo)))
+  const printRef = useRef<HTMLDivElement>(null)
+
+  const handlePrint = () => {
+    if (!printRef.current) {
+      window.print()
+      return
+    }
+
+    const contentHtml = printRef.current.innerHTML
+    const styleElements = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((el) => el.outerHTML)
+      .join('\n')
+
+    const printDoc = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <title>ملف العميل — ${client.companyName}</title>
+    ${styleElements}
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .print\\:hidden, .no-print {
+        display: none !important;
+      }
+      .print\\:flex {
+        display: flex !important;
+      }
+      .print\\:block {
+        display: block !important;
+      }
+      .print\\:grid-cols-4 {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+      }
+      .print\\:grid-cols-2 {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      }
+      .print\\:grid-cols-3 {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      }
+      section, .break-inside-avoid, tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead {
+        display: table-header-group;
+      }
+      th {
+        background-color: #f8fafc !important;
+      }
+      th, td {
+        padding: 8px 10px;
+        border: 1px solid #e2e8f0;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="padding: 10px; max-width: 900px; margin: 0 auto;">
+      ${contentHtml}
+    </div>
+  </body>
+</html>`
+
+    const blob = new Blob([printDoc], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.opacity = '0'
+    iframe.src = url
+
+    const cleanup = () => {
+      setTimeout(() => {
+        iframe.remove()
+        URL.revokeObjectURL(url)
+      }, 2000)
+    }
+
+    iframe.onload = () => {
+      const frameWindow = iframe.contentWindow
+      if (!frameWindow) {
+        cleanup()
+        window.print()
+        return
+      }
+      setTimeout(() => {
+        try {
+          frameWindow.focus()
+          frameWindow.print()
+          cleanup()
+        } catch {
+          cleanup()
+          window.print()
+        }
+      }, 250)
+    }
+
+    document.body.appendChild(iframe)
+  }
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -649,7 +771,7 @@ function ClientProfile({
             <p className="mt-1 text-sm text-slate-500">ملف موحد للتقارير والزيارات والملاحظات والبيانات المالية.</p>
           </div>
           <div className="flex gap-2">
-            <button onClick={() => setTimeout(() => window.print(), 50)} className="btn-secondary px-4 py-2">
+            <button onClick={handlePrint} className="btn-secondary px-4 py-2">
               <Printer className="h-4 w-4" />طباعة الملف
             </button>
             <button onClick={onClose} className="rounded-lg p-2 hover:bg-slate-100">
@@ -671,7 +793,7 @@ function ClientProfile({
             </button>
           </div>
         ) : (
-          <div className="space-y-6 p-6">
+          <div ref={printRef} className="space-y-6 p-6">
             {data?.client && (
               <>
                 <div className="hidden items-center justify-between border-b-4 border-primary-700 pb-4 print:flex">
@@ -683,14 +805,14 @@ function ClientProfile({
                   </div>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-4 print:grid-cols-4">
                   <ProfileMetric label="الزيارات والتقارير" value={data.summary.reports} />
                   <ProfileMetric label="الملاحظات" value={data.summary.observations} />
                   <ProfileMetric label="الملفات" value={data.client.documents.length} />
                   <ProfileMetric label="إجمالي مالي" value={`${data.summary.financialTotal} EGP`} />
                 </div>
 
-                <section className="rounded-2xl border border-slate-200 p-5">
+                <section className="rounded-2xl border border-slate-200 p-5 break-inside-avoid">
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <h3 className="flex items-center gap-2 font-bold text-slate-900">
                       <Building2 className="h-5 w-5 text-primary-600" />
@@ -712,19 +834,19 @@ function ClientProfile({
                         type="button"
                         onClick={() => void toggleLockInsideModal()}
                         disabled={togglingLock}
-                        className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        className="print:hidden rounded-xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                       >
                         {lockedState ? 'إلغاء القفل للعميل' : 'قفل التعديل على العميل'}
                       </button>
                     </div>
                   </div>
 
-                  <div className="grid gap-3 text-sm md:grid-cols-2">
+                  <div className="grid gap-3 text-sm md:grid-cols-2 print:grid-cols-2">
                     <p><b>الشركة:</b> {data.client.companyNameAr || data.client.companyName}</p>
                     <p><b>مسؤول التواصل:</b> {data.client.user.name}</p>
                     <p><b>البريد:</b> {data.client.user.email}</p>
                     <p><b>الهاتف:</b> {data.client.phone || data.client.user.phone || '-'}</p>
-                    <p className="md:col-span-2"><b>العنوان:</b> {data.client.address || '-'}</p>
+                    <p className="md:col-span-2 print:col-span-2"><b>العنوان:</b> {data.client.address || '-'}</p>
                   </div>
                 </section>
 
@@ -732,7 +854,7 @@ function ClientProfile({
                   <h3 className="mb-3 font-bold">سجل الزيارات والتقارير</h3>
                   <div className="overflow-x-auto">
                     <table className="w-full text-right text-sm">
-                      <thead className="bg-slate-50">
+                      <thead className="bg-slate-50 print:table-header-group">
                         <tr>
                           <th className="p-3">الموقع</th>
                           <th>التاريخ</th>
@@ -743,7 +865,7 @@ function ClientProfile({
                       </thead>
                       <tbody>
                         {data.client.reports.map((r: any) => (
-                          <tr key={r.id} className="border-t">
+                          <tr key={r.id} className="border-t break-inside-avoid">
                             <td className="p-3">{r.siteNameAr || r.siteName}</td>
                             <td>{new Date(r.date).toLocaleDateString('ar-EG')}</td>
                             <td>{r.category}</td>
@@ -784,10 +906,10 @@ function ClientProfile({
                       إضافة
                     </button>
                   </div>
-                  <div className="grid gap-3 md:grid-cols-3">
+                  <div className="grid gap-3 md:grid-cols-3 print:grid-cols-3">
                     {data.client.financialRecords.length ? (
                       data.client.financialRecords.map((item: any) => (
-                        <div key={item.id} className="rounded-xl bg-slate-50 p-3">
+                        <div key={item.id} className="rounded-xl bg-slate-50 p-3 break-inside-avoid">
                           <b>{item.title}</b>
                           <p className="mt-1">{Number(item.amount)} {item.currency}</p>
                           <span className="text-xs text-slate-500">{item.status}</span>

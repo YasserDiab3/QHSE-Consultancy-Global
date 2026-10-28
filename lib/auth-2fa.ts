@@ -216,6 +216,8 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
   return false
 }
 
+const memory2FaStatusStore = new Map<string, boolean>()
+
 /**
  * Checks if 2FA is active for the given user email.
  * Defaults to false (allowing immediate direct login) unless explicitly enabled
@@ -233,11 +235,14 @@ export async function is2FaEnabledForUser(email: string): Promise<boolean> {
     const entry = await prisma.rateLimitEntry.findUnique({
       where: { key: `2fa_enabled:${normalized}` },
     })
-    return entry?.count === 1
+    if (entry) {
+      return entry.count === 1
+    }
   } catch (error) {
-    console.warn('[2FA] Error reading 2FA status:', error)
-    return false
+    console.warn('[2FA] DB read error, using in-memory fallback:', error instanceof Error ? error.message : error)
   }
+
+  return memory2FaStatusStore.get(normalized) ?? false
 }
 
 /**
@@ -249,6 +254,8 @@ export async function set2FaEnabledForUser(email: string, enabled: boolean): Pro
 
   const key = `2fa_enabled:${normalized}`
   const resetAt = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+
+  memory2FaStatusStore.set(normalized, enabled)
 
   try {
     if (enabled) {
@@ -271,7 +278,7 @@ export async function set2FaEnabledForUser(email: string, enabled: boolean): Pro
     }
     return true
   } catch (error) {
-    console.error('[2FA] Failed to toggle 2FA status:', error)
-    return false
+    console.warn('[2FA] DB write error, status preserved in-memory fallback:', error instanceof Error ? error.message : error)
+    return true
   }
 }

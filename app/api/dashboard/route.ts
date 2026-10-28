@@ -29,7 +29,7 @@ export async function GET() {
         ? await getClientIdByUserId(session.user.id)
         : null
 
-    if (!['ADMIN', 'CLIENT'].includes(session.user.role)) {
+    if (!['ADMIN', 'DATA_ENTRY', 'CLIENT'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

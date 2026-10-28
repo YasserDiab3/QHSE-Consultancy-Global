@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       if (!clientId) {
         return NextResponse.json([])
       }
-    } else if (session.user.role === 'ADMIN') {
+    } else if (['ADMIN', 'DATA_ENTRY'].includes(session.user.role)) {
       void backfillMissingReportConsultantIds(session.user.id).catch((err) =>
         console.error('Failed to backfill missing consultant IDs:', err)
       )
@@ -94,7 +94,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const session = await getSession()
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || !['ADMIN', 'DATA_ENTRY'].includes(session.user.role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
