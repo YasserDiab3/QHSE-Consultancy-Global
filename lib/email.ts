@@ -13,10 +13,10 @@ function sanitizeHeader(value: string) {
 }
 
 export function isSmtpConfigured(): boolean {
-  const host = process.env.SMTP_HOST?.trim().toLowerCase()
-  const port = process.env.SMTP_PORT?.trim()
-  const user = process.env.SMTP_USER?.trim()
-  const pass = process.env.SMTP_PASS?.trim()
+  const host = process.env.SMTP_HOST?.trim().replace(/^["']|["']$/g, '').toLowerCase()
+  const port = process.env.SMTP_PORT?.trim().replace(/^["']|["']$/g, '')
+  const user = process.env.SMTP_USER?.trim().replace(/^["']|["']$/g, '')
+  const pass = process.env.SMTP_PASS?.trim().replace(/^["']|["']$/g, '')
 
   if (!host || !port || !user || !pass) {
     return false
@@ -40,10 +40,10 @@ function getSmtpConfig() {
     return null
   }
 
-  const host = process.env.SMTP_HOST!.trim()
-  const port = Number(process.env.SMTP_PORT)
-  const user = process.env.SMTP_USER!.trim()
-  const pass = process.env.SMTP_PASS!.trim()
+  const host = process.env.SMTP_HOST!.trim().replace(/^["']|["']$/g, '')
+  const port = Number(process.env.SMTP_PORT?.trim().replace(/^["']|["']$/g, ''))
+  const user = process.env.SMTP_USER!.trim().replace(/^["']|["']$/g, '')
+  const pass = process.env.SMTP_PASS!.trim().replace(/^["']|["']$/g, '')
 
   return {
     host,
@@ -69,7 +69,7 @@ export async function sendNotificationEmail(input: SendEmailInput) {
   }
 
   const transporter = nodemailer.createTransport(smtpConfig)
-  const from = sanitizeHeader(process.env.SMTP_FROM || process.env.SMTP_USER || '')
+  const from = sanitizeHeader(process.env.SMTP_FROM || process.env.SMTP_USER || '').replace(/^["']|["']$/g, '')
   const to = sanitizeHeader(input.to)
   const subject = sanitizeHeader(input.subject)
 
@@ -77,17 +77,58 @@ export async function sendNotificationEmail(input: SendEmailInput) {
     throw new Error('Invalid email notification headers')
   }
 
-  await transporter.sendMail({
-    from,
-    to,
-    subject,
-    text: input.text,
-    html: input.html,
-    disableFileAccess: true,
-    disableUrlAccess: true,
-  })
+  try {
+    await transporter.sendMail({
+      from,
+      to,
+      subject,
+      text: input.text,
+      html: input.html,
+      disableFileAccess: true,
+      disableUrlAccess: true,
+    })
 
-  return { sent: true as const }
+    return { sent: true as const }
+  } catch (error: any) {
+    console.error('Failed to send notification email via SMTP:', error?.message || error)
+    return { sent: false as const, reason: 'SMTP_SEND_FAILED' as const, error: error?.message }
+  }
+}
+
+/**
+ * Diagnostic utility to verify SMTP credentials and server connectivity.
+ */
+export async function verifySmtpConnection(): Promise<{
+  success: boolean
+  message: string
+  code?: string
+  response?: string
+}> {
+  const smtpConfig = getSmtpConfig()
+  if (!smtpConfig) {
+    return {
+      success: false,
+      message: 'إعدادات SMTP غير مكتملة في ملف .env',
+      code: 'SMTP_NOT_CONFIGURED',
+    }
+  }
+
+  const transporter = nodemailer.createTransport(smtpConfig)
+
+  try {
+    await transporter.verify()
+    return {
+      success: true,
+      message: 'تم الاتصال والتحقق من خادم SMTP بنجاح.',
+    }
+  } catch (error: any) {
+    return {
+      success: false,
+      message: error?.message || 'فشل الاتصال بخادم البريد الإلكتروني',
+      code: error?.code,
+      response: error?.response,
+    }
+  }
 }
 
 export type CriticalRiskAlertInput = {

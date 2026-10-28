@@ -50,15 +50,19 @@ test('issueAdmin2FaOtp and verify2FaOtp allow successful authentication with sin
   assert.equal(issueResult.success, true)
   assert.ok(issueResult.code)
 
+  // Requesting again immediately should hit cooldown
+  const cooldownResult = await issueAdmin2FaOtp(testEmail, 'ar')
+  assert.equal(cooldownResult.cooldown, true)
+
   // Invalid code must fail
   const invalidResult = await verify2FaOtp(testEmail, '000000')
   assert.equal(invalidResult, false)
 
-  // Fallback testing code '123456' succeeds when SMTP is unconfigured
-  const fallbackResult = await verify2FaOtp(testEmail, '123456')
-  assert.equal(fallbackResult, true)
+  // Valid code must succeed
+  const validResult = await verify2FaOtp(testEmail, issueResult.code!)
+  assert.equal(validResult, true)
 
-  // Requesting again immediately should hit cooldown
-  const cooldownResult = await issueAdmin2FaOtp(testEmail, 'ar')
-  assert.equal(cooldownResult.cooldown, true)
+  // Reusing the same code must fail (single-use token)
+  const reuseResult = await verify2FaOtp(testEmail, issueResult.code!)
+  assert.equal(reuseResult, false)
 })
