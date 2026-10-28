@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/pagination.test.ts tests/security.test.ts tests/i18n.test.ts tests/cleanup.test.ts tests/critical-alert.test.ts tests/lockout.test.ts tests/export.test.ts tests/2fa.test.ts tests/sla.test.ts tests/executive-summary.test.ts",
+    "test": "tsx --test tests/pagination.test.ts tests/security.test.ts tests/i18n.test.ts tests/cleanup.test.ts tests/critical-alert.test.ts tests/lockout.test.ts tests/export.test.ts tests/2fa.test.ts tests/sla.test.ts tests/executive-summary.test.ts tests/client-profile-lock.test.ts",
     "check": "npm run lint && npm run typecheck && npm test && npm run build",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",

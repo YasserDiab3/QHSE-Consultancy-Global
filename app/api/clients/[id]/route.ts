@@ -4,7 +4,8 @@ import { requireAdmin } from '@/lib/auth'
 import bcrypt from 'bcryptjs'
 import { logActivity } from '@/lib/activity-log'
 import { headers } from 'next/headers'
-import { deleteClientAccount, getClientAccountById, updateClientAccount } from '@/lib/client-records'
+import { deleteClientAccount, getClientAccountById, updateClientAccount, updateClientContactInfo } from '@/lib/client-records'
+import { parsePortalSettings, serializePortalSettings } from '@/lib/client-profile'
 
 export async function PUT(
   request: Request,
@@ -17,7 +18,7 @@ export async function PUT(
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
-    const { name, email, password, companyName, companyNameAr, phone, address } = body
+    const { name, email, password, companyName, companyNameAr, phone, address, profileLocked } = body
 
     const existingClient = await getClientAccountById(id)
 
@@ -25,46 +26,64 @@ export async function PUT(
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
-    const duplicateUser = await prisma.user.findFirst({
-      where: {
-        email,
-        id: {
-          not: existingClient.userId,
+    if (email && email !== existingClient.user.email) {
+      const duplicateUser = await prisma.user.findFirst({
+        where: {
+          email,
+          id: {
+            not: existingClient.userId,
+          },
         },
-      },
-    })
+      })
 
-    if (duplicateUser) {
-      return NextResponse.json({ error: 'Email already exists' }, { status: 400 })
+      if (duplicateUser) {
+        return NextResponse.json({ error: 'Email already exists' }, { status: 400 })
+      }
     }
 
-    const userUpdateData: any = {
-      name,
-      email,
-    }
-
+    const userUpdateData: Record<string, unknown> = {}
+    if (name) userUpdateData.name = name
+    if (email) userUpdateData.email = email
     if (password) {
       userUpdateData.password = await bcrypt.hash(password, 12)
     }
 
-    await prisma.user.update({
-      where: { id: existingClient.userId },
-      data: userUpdateData,
-    })
+    if (Object.keys(userUpdateData).length > 0) {
+      await prisma.user.update({
+        where: { id: existingClient.userId },
+        data: userUpdateData,
+      })
+    }
 
-    await updateClientAccount(id, {
-      companyName,
-      companyNameAr,
-      phone,
-      address,
-    })
+    if (companyName) {
+      await updateClientAccount(id, {
+        companyName,
+        companyNameAr: companyNameAr !== undefined ? companyNameAr : existingClient.companyNameAr,
+        phone: phone !== undefined ? phone : existingClient.phone,
+        address: address !== undefined ? address : existingClient.address,
+      })
+    }
+
+    if (profileLocked !== undefined) {
+      const existingSettings = parsePortalSettings(existingClient.contactInfo)
+      const isLocking = Boolean(profileLocked)
+      existingSettings.profileLocked = isLocking
+      if (isLocking) {
+        existingSettings.lockedAt = existingSettings.lockedAt || new Date().toISOString()
+        existingSettings.lockedBy = `ADMIN:${session.user.id}`
+      } else {
+        delete existingSettings.lockedAt
+        delete existingSettings.lockedBy
+      }
+      await updateClientContactInfo(id, serializePortalSettings(existingSettings))
+    }
 
     await logActivity(
       session.user.id,
       'CLIENT_UPDATED',
       'client',
       id,
-      `Updated client account for ${companyName}`,
+      `Updated client account for ${companyName || existingClient.companyName}${profileLocked !== undefined ? ` (lock: ${profileLocked})` : ''}`,
       ip
     )
 
@@ -101,9 +120,6 @@ export async function DELETE(
     )
 
     await deleteClientAccount(id)
-    await prisma.user.delete({
-      where: { id: client.userId },
-    }).catch(() => undefined)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

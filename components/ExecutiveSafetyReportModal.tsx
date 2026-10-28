@@ -127,7 +127,96 @@ export default function ExecutiveSafetyReportModal({ isOpen, onClose, clientId }
   if (!isOpen) return null
 
   const handlePrint = () => {
-    window.print()
+    if (!printRef.current) {
+      window.print()
+      return
+    }
+
+    const contentHtml = printRef.current.innerHTML
+    const styleElements = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((el) => el.outerHTML)
+      .join('\n')
+
+    const printDoc = `<!DOCTYPE html>
+<html lang="${isAr ? 'ar' : 'en'}" dir="${isAr ? 'rtl' : 'ltr'}">
+  <head>
+    <meta charset="utf-8" />
+    <title>${isAr ? 'التقرير التنفيذي الشامل للسلامة' : 'Executive Safety Summary Report'}</title>
+    ${styleElements}
+    <style>
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
+      }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff !important;
+        color: #0f172a !important;
+        font-family: system-ui, -apple-system, sans-serif;
+      }
+      .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+    </style>
+  </head>
+  <body>
+    <div style="padding: 10px; max-width: 900px; margin: 0 auto;">
+      ${contentHtml}
+    </div>
+  </body>
+</html>`
+
+    const blob = new Blob([printDoc], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'
+    iframe.style.bottom = '0'
+    iframe.style.width = '0'
+    iframe.style.height = '0'
+    iframe.style.border = '0'
+    iframe.style.opacity = '0'
+    iframe.src = url
+
+    const cleanup = () => {
+      setTimeout(() => {
+        iframe.remove()
+        URL.revokeObjectURL(url)
+      }, 2000)
+    }
+
+    iframe.onload = () => {
+      const frameWindow = iframe.contentWindow
+      if (!frameWindow) {
+        cleanup()
+        window.print()
+        return
+      }
+      setTimeout(() => {
+        try {
+          frameWindow.focus()
+          frameWindow.print()
+          cleanup()
+        } catch {
+          cleanup()
+          window.print()
+        }
+      }, 250)
+    }
+
+    document.body.appendChild(iframe)
   }
 
   const months = [

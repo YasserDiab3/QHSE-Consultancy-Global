@@ -1,6 +1,6 @@
 import { randomInt } from 'crypto'
 import { prisma } from '@/lib/prisma'
-import { isSmtpConfigured, sendNotificationEmail } from '@/lib/email'
+import { isEmailConfigured, sendNotificationEmail } from '@/lib/email'
 
 export const OTP_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
 export const OTP_COOLDOWN_MS = 30 * 1000 // 30 seconds between resends
@@ -48,14 +48,14 @@ export function normalizeOtpDigits(str: string): string {
 
 /**
  * Issues a 6-digit 2FA OTP code to the given admin email and dispatches an email notification.
- * If SMTP is not configured, logs code prominently in console and returns it for development/fallback.
+ * If email is not configured, logs code prominently in console and returns it for development/fallback.
  */
 export async function issueAdmin2FaOtp(
   email: string,
   language: string = 'ar'
 ): Promise<{ success: boolean; cooldown?: boolean; code?: string; smtpConfigured: boolean }> {
   const normalized = email.toLowerCase().trim()
-  const smtpConfigured = isSmtpConfigured()
+  const smtpConfigured = isEmailConfigured()
   if (!normalized) return { success: false, smtpConfigured }
 
   const now = new Date()
@@ -165,8 +165,8 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
     return true
   }
 
-  // If SMTP is NOT configured, allow fallback testing code '123456'
-  const smtpConfigured = isSmtpConfigured()
+  // If email service is NOT configured, allow fallback testing code '123456'
+  const smtpConfigured = isEmailConfigured()
   if (!smtpConfigured && cleanCode === '123456') {
     return true
   }
