@@ -1069,31 +1069,44 @@ export default function ClientProfileModal({
           >
             <div className="border-b-[3.5px] border-[#1d4289] pb-4 mb-6">
               {/* Row 1: Right = Arabic & English Company Name, Left = Brand Logo */}
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center justify-between gap-4">
                 <div className="text-right">
-                  <h1 className="text-xl sm:text-2xl font-black text-[#0a5439] tracking-tight leading-snug">
+                  <h1 className="text-2xl sm:text-3xl font-black text-[#0a5439] tracking-tight leading-tight">
                     {DEFAULT_COMPANY_CONFIG.nameAr}
                   </h1>
                   <p className="text-xs sm:text-sm font-bold text-[#0a5439] mt-1 tracking-wide">
                     {DEFAULT_COMPANY_CONFIG.nameEn}
                   </p>
+                  <p className="text-[11px] font-semibold text-slate-500 mt-1">
+                    مكتب استشاري معتمد لدى الدفاع المدني والجهات الرسمية • رخصة استشارات هندسية وبيئية
+                  </p>
                 </div>
-                <div className="h-20 w-20 flex-shrink-0">
-                  <BrandLogo variant="header" className="h-full w-full" />
+                <div className="h-24 w-28 sm:h-28 sm:w-36 flex-shrink-0 flex items-center justify-end">
+                  <BrandLogo variant="header" className="h-full w-full" priority />
                 </div>
               </div>
 
-              {/* Row 2: Center = Sub-service description, Left = Report Date Box */}
-              <div className="mt-3 sm:mt-4 relative flex flex-col sm:flex-row items-center justify-center min-h-[52px] gap-2">
-                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm whitespace-nowrap">
-                  إدارة الشؤون الإدارية والميدانية ▪ ملف العميل الموحد والتقرير الشامل
+              {/* Row 2: Perfect Symmetrical Sub-Header Bar */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="flex items-center gap-2 order-2 sm:order-1">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-3 py-1.5 shadow-xs">
+                    <span className="block text-[10px] font-bold text-slate-500">ملف العميل الموحد:</span>
+                    <span className="font-bold text-slate-900 text-xs sm:text-sm truncate block max-w-[200px]">{clientName}</span>
+                  </div>
                 </div>
-                <div className="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 print:absolute print:left-0 print:top-1/2 print:-translate-y-1/2">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-1.5 text-center min-w-[140px] shadow-xs">
-                    <span className="block text-[11px] font-semibold text-slate-500 mb-0.5">
+
+                <div className="order-1 sm:order-2 text-center">
+                  <span className="inline-block text-xs sm:text-sm font-bold text-slate-700 bg-slate-100/90 px-4 py-1.5 rounded-full border border-slate-200/90 whitespace-nowrap shadow-xs">
+                    إدارة الشؤون الإدارية والميدانية ▪ ملف العميل الموحد والتقرير الشامل
+                  </span>
+                </div>
+
+                <div className="order-3">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-1.5 text-center min-w-[135px] shadow-xs">
+                    <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
                       تاريخ إصدار التقرير
                     </span>
-                    <span className="text-sm font-bold text-slate-900 tracking-wide">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide">
                       {new Date().toLocaleDateString('ar-EG', {
                         year: 'numeric',
                         month: 'long',
