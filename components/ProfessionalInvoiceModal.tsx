@@ -162,23 +162,20 @@ export default function ProfessionalInvoiceModal({
               </div>
 
               {/* Row 2: Center = Sub-service description, Left = Invoice Card with number & date */}
-              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                {/* Spacer on right for centering balance on desktop */}
-                <div className="hidden sm:block sm:w-56"></div>
-
+              <div className="mt-3 sm:mt-4 relative flex flex-col sm:flex-row items-center justify-center min-h-[52px] gap-2">
                 {/* Centered Service Description */}
-                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm flex-1">
+                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm whitespace-nowrap">
                   إدارة الشؤون المالية والحسابات ▪ فاتورة ضريبية رسمية معتمدة
                 </div>
 
                 {/* Left: Invoice Info Box */}
-                <div className="w-full sm:w-56 flex justify-start sm:justify-end">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2 text-center min-w-[150px] shadow-xs">
+                <div className="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 print:absolute print:left-0 print:top-1/2 print:-translate-y-1/2">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-1.5 text-center min-w-[140px] shadow-xs">
                     <div className="flex items-center justify-center gap-1.5 mb-0.5">
                       <span className="text-xs font-bold text-slate-600">فاتورة رقم:</span>
                       <span className="text-xs font-mono font-black text-slate-900">{details.invoiceNumber}</span>
                     </div>
-                    <span className="block text-xs font-bold text-slate-800">
+                    <span className="block text-[11px] font-bold text-slate-800">
                       {formattedInvoiceDate}
                     </span>
                     <div className="mt-1 flex items-center justify-center">

@@ -1084,17 +1084,16 @@ export default function ClientProfileModal({
               </div>
 
               {/* Row 2: Center = Sub-service description, Left = Report Date Box */}
-              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="hidden sm:block sm:w-52"></div>
-                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm flex-1">
+              <div className="mt-3 sm:mt-4 relative flex flex-col sm:flex-row items-center justify-center min-h-[52px] gap-2">
+                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm whitespace-nowrap">
                   إدارة الشؤون الإدارية والميدانية ▪ ملف العميل الموحد والتقرير الشامل
                 </div>
-                <div className="w-full sm:w-52 flex justify-start sm:justify-end">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-2 text-center min-w-[140px] shadow-xs">
-                    <span className="block text-xs font-semibold text-slate-500 mb-0.5">
+                <div className="sm:absolute sm:left-0 sm:top-1/2 sm:-translate-y-1/2 print:absolute print:left-0 print:top-1/2 print:-translate-y-1/2">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-1.5 text-center min-w-[140px] shadow-xs">
+                    <span className="block text-[11px] font-semibold text-slate-500 mb-0.5">
                       تاريخ إصدار التقرير
                     </span>
-                    <span className="text-sm sm:text-base font-bold text-slate-900 tracking-wide">
+                    <span className="text-sm font-bold text-slate-900 tracking-wide">
                       {new Date().toLocaleDateString('ar-EG', {
                         year: 'numeric',
                         month: 'long',
