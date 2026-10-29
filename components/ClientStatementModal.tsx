@@ -48,6 +48,7 @@ export default function ClientStatementModal({
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    numberingSystem: 'arab',
   })
 
   // Aggregate totals
@@ -120,29 +121,42 @@ export default function ClientStatementModal({
             dir="rtl"
           >
             {/* Header */}
-            <div className="border-b-2 border-primary-600 pb-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 flex-shrink-0">
-                    <BrandLogo variant="header" className="h-20 w-20" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-black text-primary-950 tracking-tight">
-                      {DEFAULT_COMPANY_CONFIG.nameAr}
-                    </h1>
-                    <p className="text-xs font-bold text-primary-800 mt-1">
-                      {DEFAULT_COMPANY_CONFIG.nameEn}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      إدارة الشؤون المالية والحسابات • بيان كشف حساب موحد للعميل
-                    </p>
-                  </div>
+            <div className="border-b-[3.5px] border-[#1d4289] pb-4 mb-6">
+              {/* Row 1: Right = Arabic & English Company Name, Left = Brand Logo */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="text-right">
+                  <h1 className="text-xl sm:text-2xl font-black text-[#0a5439] tracking-tight leading-snug">
+                    {DEFAULT_COMPANY_CONFIG.nameAr}
+                  </h1>
+                  <p className="text-xs sm:text-sm font-bold text-[#0a5439] mt-1 tracking-wide">
+                    {DEFAULT_COMPANY_CONFIG.nameEn}
+                  </p>
                 </div>
 
-                <div className="text-left sm:text-end w-full sm:w-auto">
-                  <div className="inline-block rounded-xl bg-slate-50 px-4 py-2 border border-slate-200 text-right">
-                    <span className="block text-xs font-bold text-slate-500">تاريخ إصدار الكشف</span>
-                    <span className="text-sm font-bold text-slate-900 font-mono">{today}</span>
+                <div className="h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0">
+                  <BrandLogo variant="header" className="h-full w-full" />
+                </div>
+              </div>
+
+              {/* Row 2: Center = Sub-service description, Left = Issue Date Card */}
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                {/* Spacer on right for centering balance on desktop */}
+                <div className="hidden sm:block sm:w-52"></div>
+
+                {/* Centered Service Description */}
+                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm flex-1">
+                  إدارة الشؤون المالية والحسابات ▪ بيان كشف حساب موحد للعميل
+                </div>
+
+                {/* Left: Date Box */}
+                <div className="w-full sm:w-52 flex justify-start sm:justify-end">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-2 text-center min-w-[140px] shadow-xs">
+                    <span className="block text-xs font-semibold text-slate-500 mb-0.5">
+                      تاريخ إصدار الكشف
+                    </span>
+                    <span className="text-sm sm:text-base font-bold text-slate-900 tracking-wide">
+                      {today}
+                    </span>
                   </div>
                 </div>
               </div>

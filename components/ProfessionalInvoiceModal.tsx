@@ -82,6 +82,21 @@ export default function ProfessionalInvoiceModal({
   const invoiceDate = details.invoiceDate || invoice.createdAt.slice(0, 10)
   const dueDate = invoice.dueDate ? invoice.dueDate.slice(0, 10) : 'عند الاستلام'
   const bank = details.bankDetails || DEFAULT_COMPANY_CONFIG.bank
+  const formattedInvoiceDate = (() => {
+    try {
+      const d = new Date(invoiceDate)
+      return isNaN(d.getTime())
+        ? invoiceDate
+        : d.toLocaleDateString('ar-EG', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            numberingSystem: 'arab',
+          })
+    } catch {
+      return invoiceDate
+    }
+  })()
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 sm:p-6 backdrop-blur-sm">
@@ -128,42 +143,52 @@ export default function ProfessionalInvoiceModal({
             className="printable-document mx-auto w-full max-w-3xl rounded-2xl bg-white p-8 sm:p-10 shadow-lg border border-slate-200 text-slate-900"
             dir="rtl"
           >
-            {/* 1. Header & Agency Branding */}
-            <div className="border-b-2 border-primary-600 pb-6 mb-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 flex-shrink-0">
-                    <BrandLogo variant="header" className="h-20 w-20" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-black text-primary-950 tracking-tight">
-                      {DEFAULT_COMPANY_CONFIG.nameAr}
-                    </h1>
-                    <p className="text-xs font-bold text-primary-800 mt-1">
-                      {DEFAULT_COMPANY_CONFIG.nameEn}
-                    </p>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      {DEFAULT_COMPANY_CONFIG.subtitleAr}
-                    </p>
-                  </div>
+            {/* 1. Corporate Header matching official identity */}
+            <div className="border-b-[3.5px] border-[#1d4289] pb-4 mb-6">
+              {/* Row 1: Right = Arabic & English Company Name, Left = Brand Logo */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="text-right">
+                  <h1 className="text-xl sm:text-2xl font-black text-[#0a5439] tracking-tight leading-snug">
+                    {DEFAULT_COMPANY_CONFIG.nameAr}
+                  </h1>
+                  <p className="text-xs sm:text-sm font-bold text-[#0a5439] mt-1 tracking-wide">
+                    {DEFAULT_COMPANY_CONFIG.nameEn}
+                  </p>
                 </div>
 
-                <div className="text-left sm:text-end w-full sm:w-auto">
-                  <div className="inline-block rounded-xl bg-primary-50 px-4 py-2 border border-primary-200 text-right">
-                    <span className="block text-xs font-bold uppercase tracking-wider text-primary-700">
-                      فاتورة ضريبية معتمدة
+                <div className="h-20 w-20 sm:h-24 sm:w-24 flex-shrink-0">
+                  <BrandLogo variant="header" className="h-full w-full" />
+                </div>
+              </div>
+
+              {/* Row 2: Center = Sub-service description, Left = Invoice Card with number & date */}
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                {/* Spacer on right for centering balance on desktop */}
+                <div className="hidden sm:block sm:w-56"></div>
+
+                {/* Centered Service Description */}
+                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm flex-1">
+                  إدارة الشؤون المالية والحسابات ▪ فاتورة ضريبية رسمية معتمدة
+                </div>
+
+                {/* Left: Invoice Info Box */}
+                <div className="w-full sm:w-56 flex justify-start sm:justify-end">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-2 text-center min-w-[150px] shadow-xs">
+                    <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                      <span className="text-xs font-bold text-slate-600">فاتورة رقم:</span>
+                      <span className="text-xs font-mono font-black text-slate-900">{details.invoiceNumber}</span>
+                    </div>
+                    <span className="block text-xs font-bold text-slate-800">
+                      {formattedInvoiceDate}
                     </span>
-                    <span className="text-sm font-mono font-black text-primary-950">
-                      {details.invoiceNumber}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex items-center justify-start sm:justify-end gap-1.5">
-                    <span
-                      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusCfg.bg} ${statusCfg.text} border ${statusCfg.border}`}
-                    >
-                      <span className={`h-2 w-2 rounded-full ${statusCfg.dot}`} />
-                      {statusCfg.labelAr}
-                    </span>
+                    <div className="mt-1 flex items-center justify-center">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${statusCfg.bg} ${statusCfg.text} border ${statusCfg.border}`}
+                      >
+                        <span className={`h-1.5 w-1.5 rounded-full ${statusCfg.dot}`} />
+                        {statusCfg.labelAr}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>

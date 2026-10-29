@@ -1067,18 +1067,43 @@ export default function ClientProfileModal({
             className="printable-document p-8 bg-white text-slate-900"
             dir="rtl"
           >
-            <div className="flex items-center justify-between border-b-2 border-primary-700 pb-4 mb-6">
-              <div className="flex items-center gap-3">
-                <BrandLogo variant="header" className="h-16 w-16" />
-                <div>
-                  <h1 className="text-xl font-bold text-primary-950">{DEFAULT_COMPANY_CONFIG.nameAr}</h1>
-                  <p className="text-xs text-primary-800 font-semibold">{DEFAULT_COMPANY_CONFIG.nameEn}</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">ملف العميل الموحد • تقرير مالي وميداني شامل</p>
+            <div className="border-b-[3.5px] border-[#1d4289] pb-4 mb-6">
+              {/* Row 1: Right = Arabic & English Company Name, Left = Brand Logo */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="text-right">
+                  <h1 className="text-xl sm:text-2xl font-black text-[#0a5439] tracking-tight leading-snug">
+                    {DEFAULT_COMPANY_CONFIG.nameAr}
+                  </h1>
+                  <p className="text-xs sm:text-sm font-bold text-[#0a5439] mt-1 tracking-wide">
+                    {DEFAULT_COMPANY_CONFIG.nameEn}
+                  </p>
+                </div>
+                <div className="h-20 w-20 flex-shrink-0">
+                  <BrandLogo variant="header" className="h-full w-full" />
                 </div>
               </div>
-              <div className="text-left text-xs">
-                <p className="font-bold text-slate-900">{clientName}</p>
-                <p className="text-slate-500">تاريخ الطباعة: {new Date().toLocaleDateString('ar-EG')}</p>
+
+              {/* Row 2: Center = Sub-service description, Left = Report Date Box */}
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="hidden sm:block sm:w-52"></div>
+                <div className="text-center font-medium text-slate-600 text-xs sm:text-sm flex-1">
+                  إدارة الشؤون الإدارية والميدانية ▪ ملف العميل الموحد والتقرير الشامل
+                </div>
+                <div className="w-full sm:w-52 flex justify-start sm:justify-end">
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 px-5 py-2 text-center min-w-[140px] shadow-xs">
+                    <span className="block text-xs font-semibold text-slate-500 mb-0.5">
+                      تاريخ إصدار التقرير
+                    </span>
+                    <span className="text-sm sm:text-base font-bold text-slate-900 tracking-wide">
+                      {new Date().toLocaleDateString('ar-EG', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        numberingSystem: 'arab',
+                      })}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
