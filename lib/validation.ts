@@ -69,12 +69,16 @@ export const clientDocumentSchema = z.object({
 })
 
 export const financialRecordSchema = z.object({
-  title: z.string().trim().min(1).max(180),
+  title: z.string().trim().min(1).max(250),
   amount: z.coerce.number().finite().min(0).max(1_000_000_000),
   currency: z.string().trim().toUpperCase().regex(/^[A-Z]{3}$/).optional(),
-  status: z.enum(['PENDING', 'PAID']).optional(),
-  dueDate: z.string().datetime().optional().nullable(),
-  notes: optionalText(4000),
+  status: z.enum(['PENDING', 'PAID', 'PARTIAL', 'CANCELLED']).optional(),
+  dueDate: z
+    .preprocess((val) => (val === '' ? null : val), z.string().optional().nullable())
+    .refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Invalid due date' })
+    .optional()
+    .nullable(),
+  notes: optionalText(10000),
 })
 
 export function escapeHtml(value: string) {

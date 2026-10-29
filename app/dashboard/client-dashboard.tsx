@@ -27,6 +27,7 @@ import {
   LayoutDashboard,
   BarChart3,
   FolderOpen,
+  Receipt,
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import Header from '@/components/Header'
@@ -37,6 +38,7 @@ import DashboardSignOutButton from '@/components/DashboardSignOutButton'
 import ClientKnowledgeBank from '@/components/ClientKnowledgeBank'
 import ClientProfilePanel from '@/components/ClientProfilePanel'
 import ExecutiveSafetyReportModal from '@/components/ExecutiveSafetyReportModal'
+import ClientFinancesTab from '@/components/ClientFinancesTab'
 
 type Report = {
   id: string
@@ -155,7 +157,7 @@ export default function ClientDashboard() {
   })
   const [showFilters, setShowFilters] = useState(false)
   const [showExecutiveReport, setShowExecutiveReport] = useState(false)
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance' | 'documents'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance' | 'documents' | 'finances'>('dashboard')
   const [documents, setDocuments] = useState<ClientDocument[]>([])
   const [folders, setFolders] = useState<KnowledgeFolder[]>([])
   const [documentsLoading, setDocumentsLoading] = useState(true)
@@ -293,11 +295,16 @@ export default function ClientDashboard() {
               ['reports', language === 'ar' ? 'تقارير الزيارات' : 'Visit reports', FileText],
               ['performance', language === 'ar' ? 'مؤشرات الأداء' : 'Performance', BarChart3],
               ['documents', language === 'ar' ? 'بنك المعلومات' : 'Knowledge bank', FolderOpen],
-            ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance' | 'documents'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
+              ['finances', language === 'ar' ? 'الفواتير والمستحقات' : 'Invoices & Billing', Receipt],
+            ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance' | 'documents' | 'finances'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
           </div>
 
           <div className={activeTab === 'dashboard' ? 'block' : 'hidden'}>
             <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} />
+          </div>
+
+          <div className={activeTab === 'finances' ? 'block' : 'hidden'}>
+            <ClientFinancesTab language={language} />
           </div>
 
           <div className={activeTab === 'performance' ? 'block' : 'hidden'}>
