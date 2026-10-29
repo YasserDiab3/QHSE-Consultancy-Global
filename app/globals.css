@@ -261,6 +261,14 @@
 
   #client-profile-print,
   #client-profile-print *,
+  #client-statement-print,
+  #client-statement-print *,
+  #invoice-print,
+  #invoice-print *,
+  .printable-document,
+  .printable-document *,
+  [data-printable],
+  [data-printable] *,
   #training-certificate,
   #training-certificate *,
   #executive-safety-report-print,
@@ -269,6 +277,9 @@
   }
 
   #client-profile-print,
+  #client-statement-print,
+  #invoice-print,
+  .printable-document,
   #executive-safety-report-print {
     position: absolute !important;
     left: 0 !important;
@@ -294,6 +305,9 @@
   }
 
   #client-profile-print section,
+  #client-statement-print section,
+  #invoice-print section,
+  .printable-document section,
   #training-certificate section,
   #executive-safety-report-print section,
   #executive-safety-report-print .break-inside-avoid {
@@ -302,17 +316,26 @@
   }
 
   #client-profile-print table,
+  #client-statement-print table,
+  #invoice-print table,
+  .printable-document table,
   #executive-safety-report-print table {
     width: 100%;
     border-collapse: collapse;
   }
 
   #client-profile-print thead,
+  #client-statement-print thead,
+  #invoice-print thead,
+  .printable-document thead,
   #executive-safety-report-print thead {
     display: table-header-group;
   }
 
   #client-profile-print tr,
+  #client-statement-print tr,
+  #invoice-print tr,
+  .printable-document tr,
   #executive-safety-report-print tr {
     break-inside: avoid;
     page-break-inside: avoid;
@@ -320,6 +343,12 @@
 
   #client-profile-print th,
   #client-profile-print td,
+  #client-statement-print th,
+  #client-statement-print td,
+  #invoice-print th,
+  #invoice-print td,
+  .printable-document th,
+  .printable-document td,
   #executive-safety-report-print th,
   #executive-safety-report-print td {
     padding: 8px;

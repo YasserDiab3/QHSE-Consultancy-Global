@@ -105,6 +105,10 @@ export async function printElement({
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         box-sizing: border-box !important;
+        visibility: visible !important;
+      }
+      body * {
+        visibility: visible !important;
       }
       html, body {
         margin: 0 !important;
@@ -118,6 +122,7 @@ export async function printElement({
       }
       .no-print, .print\\:hidden {
         display: none !important;
+        visibility: hidden !important;
       }
       .print\\:block {
         display: block !important;
@@ -359,20 +364,20 @@ export async function printElement({
     </style>
   </head>
   <body>
-    <div style="width: 100%; max-width: 900px; margin: 0 auto; padding: 4px;">
-      ${clone.innerHTML}
+    <div id="printable-root" class="printable-document" style="width: 100%; max-width: 900px; margin: 0 auto; padding: 4px;">
+      ${clone.outerHTML}
     </div>
   </body>
 </html>`
 
   return new Promise<void>((resolve) => {
-    // 6. Create hidden iframe attached to current document tree
+    // 6. Create hidden iframe attached to current document tree with realistic desktop viewport
     const iframe = document.createElement('iframe')
     iframe.style.position = 'fixed'
-    iframe.style.right = '0'
-    iframe.style.bottom = '0'
-    iframe.style.width = '0'
-    iframe.style.height = '0'
+    iframe.style.top = '-99999px'
+    iframe.style.left = '-99999px'
+    iframe.style.width = '1024px'
+    iframe.style.height = '1440px'
     iframe.style.border = '0'
     iframe.style.opacity = '0'
     iframe.style.pointerEvents = 'none'
@@ -391,16 +396,29 @@ export async function printElement({
       return
     }
 
+    let cleanedUp = false
     const cleanup = () => {
-      setTimeout(() => {
-        try {
-          iframe.remove()
-        } catch {
-          // ignore
-        }
-        resolve()
-      }, 1500)
+      if (cleanedUp) return
+      cleanedUp = true
+      try {
+        iframe.remove()
+      } catch {
+        // ignore
+      }
+      resolve()
     }
+
+    // Attach to afterprint event
+    try {
+      frameWindow.onafterprint = () => {
+        setTimeout(cleanup, 500)
+      }
+    } catch {
+      // ignore
+    }
+
+    // Safe fallback timeout (45 seconds) in case browser does not fire afterprint
+    setTimeout(cleanup, 45000)
 
     try {
       frameDoc.open()
@@ -412,7 +430,7 @@ export async function printElement({
       return
     }
 
-    // 7. Ensure images and fonts are loaded before triggering print dialog
+    // 7. Ensure images and fonts are loaded before triggering print dialog (with 400ms max race)
     const checkReadyAndPrint = () => {
       const iframeImages = Array.from(frameDoc.images)
       const imagePromises = iframeImages.map((img) => {
@@ -427,31 +445,19 @@ export async function printElement({
         ? (frameDoc as any).fonts.ready
         : Promise.resolve()
 
-      Promise.all([...imagePromises, fontsPromise])
-        .then(() => {
-          setTimeout(() => {
-            try {
-              frameWindow.focus()
-              frameWindow.print()
-            } catch {
-              window.print()
-            } finally {
-              cleanup()
-            }
-          }, 150)
-        })
-        .catch(() => {
-          setTimeout(() => {
-            try {
-              frameWindow.focus()
-              frameWindow.print()
-            } catch {
-              window.print()
-            } finally {
-              cleanup()
-            }
-          }, 150)
-        })
+      const readyPromise = Promise.all([...imagePromises, fontsPromise])
+      const timeoutPromise = new Promise<void>((res) => setTimeout(res, 400))
+
+      Promise.race([readyPromise, timeoutPromise]).finally(() => {
+        setTimeout(() => {
+          try {
+            frameWindow.focus()
+            frameWindow.print()
+          } catch {
+            window.print()
+          }
+        }, 120)
+      })
     }
 
     if (frameDoc.readyState === 'complete') {

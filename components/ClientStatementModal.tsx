@@ -113,7 +113,9 @@ export default function ClientStatementModal({
         <div className="overflow-y-auto p-6 sm:p-10 bg-slate-100/60">
           <div
             ref={printRef}
-            className="mx-auto w-full max-w-4xl rounded-2xl bg-white p-8 sm:p-10 shadow-lg border border-slate-200 text-slate-900"
+            id="client-statement-print"
+            data-printable="true"
+            className="printable-document mx-auto w-full max-w-4xl rounded-2xl bg-white p-8 sm:p-10 shadow-lg border border-slate-200 text-slate-900"
             dir="rtl"
           >
             {/* Header */}

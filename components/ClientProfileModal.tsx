@@ -868,7 +868,13 @@ export default function ClientProfileModal({
 
         {/* Hidden Printable Container for Full Profile */}
         <div className="hidden">
-          <div ref={fullProfilePrintRef} className="p-8 bg-white text-slate-900" dir="rtl">
+          <div
+            ref={fullProfilePrintRef}
+            id="client-profile-print"
+            data-printable="true"
+            className="printable-document p-8 bg-white text-slate-900"
+            dir="rtl"
+          >
             <div className="flex items-center justify-between border-b-2 border-primary-700 pb-4 mb-6">
               <div className="flex items-center gap-3">
                 <BrandLogo variant="header" className="h-16 w-16" />
