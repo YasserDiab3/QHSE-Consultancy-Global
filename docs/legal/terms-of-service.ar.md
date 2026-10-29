@@ -260,7 +260,7 @@
 
 لأي سؤال أو إشعار يتعلق بهذه الشروط:
 
-- البريد الإلكتروني: support@qhsseconsultant.onmicrosoft.com
+- البريد الإلكتروني: info@hsehub360.com
 - الهاتف: +20 111 775 5096
 - العنوان: Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt
 

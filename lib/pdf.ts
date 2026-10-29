@@ -420,7 +420,7 @@ function buildPrintMarkup(report: Report, t: (key: string) => string, language: 
         </section>
 
         <footer class="report-footer">
-          <div>Email: Support@qhsseconsultant.onmicrosoft.com</div>
+          <div>Email: info@hsehub360.com</div>
           <div class="center">${escapeHtml(reportTitle)} | ${escapeHtml(siteName)}</div>
           <div class="right">Mobile: +20 1117755096</div>
         </footer>

@@ -29,7 +29,7 @@ export const privacyPolicy: BilingualLegalDocument = {
     intro:
       'توضح هذه السياسة كيف تجمع QHSSE Consultant البيانات الشخصية وتستخدمها وتحميها عند استخدامك للموقع وبوابة العملاء ومنصة التدريب ونماذج التواصل والتوظيف. نلتزم بتقليل البيانات إلى الحد اللازم، وبعدم استخدامها إلا للأغراض الموضحة أدناه.',
     contact:
-      'لأي استفسار أو طلب يتعلق ببياناتك الشخصية، راسلنا على support@qhsseconsultant.onmicrosoft.com. سنرد خلال 30 يومًا من التحقق من هويتك.',
+      'لأي استفسار أو طلب يتعلق ببياناتك الشخصية، راسلنا على info@hsehub360.com. سنرد خلال 30 يومًا من التحقق من هويتك.',
     sections: [
       {
         id: 'who-we-are',
@@ -142,7 +142,7 @@ export const privacyPolicy: BilingualLegalDocument = {
         title: '12. التغييرات والتواصل',
         paragraphs: [
           'قد نحدّث هذه السياسة عند تغيّر خدماتنا أو المتطلبات القانونية، وسننشر النسخة المحدثة على هذه الصفحة مع تاريخ التحديث. التغييرات الجوهرية تُبلَّغ عبر الموقع أو البريد الإلكتروني عند الاقتضاء.',
-          'للتواصل: QHSSE Consultant، Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — support@qhsseconsultant.onmicrosoft.com — +20 111 775 5096.',
+          'للتواصل: QHSSE Consultant، Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — info@hsehub360.com — +20 111 775 5096.',
         ],
       },
     ],
@@ -154,7 +154,7 @@ export const privacyPolicy: BilingualLegalDocument = {
     intro:
       'This policy explains how QHSSE Consultant collects, uses and protects personal data when you use our website, client portal, training platform, contact forms and recruitment pages. We minimise the data we collect and use it only for the purposes described below.',
     contact:
-      'For any privacy question or request, email support@qhsseconsultant.onmicrosoft.com. We will respond within 30 days of verifying your identity.',
+      'For any privacy question or request, email info@hsehub360.com. We will respond within 30 days of verifying your identity.',
     sections: [
       {
         id: 'who-we-are',
@@ -267,7 +267,7 @@ export const privacyPolicy: BilingualLegalDocument = {
         title: '12. Changes and contact',
         paragraphs: [
           'We may update this policy when our services or legal requirements change. The updated version will be published on this page with its revision date. Material changes will be communicated on the site or by email where appropriate.',
-          'Contact: QHSSE Consultant, Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — support@qhsseconsultant.onmicrosoft.com — +20 111 775 5096.',
+          'Contact: QHSSE Consultant, Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — info@hsehub360.com — +20 111 775 5096.',
         ],
       },
     ],
@@ -282,7 +282,7 @@ export const termsOfService: BilingualLegalDocument = {
     intro:
       'تنظم هذه الشروط استخدامك لموقع QHSSE Consultant وبوابة العملاء ومنصة التدريب. باستخدامك للخدمة فإنك توافق على هذه الشروط. إذا كنت تستخدم الموقع نيابةً عن مؤسسة، فأنت تقر بأنك مخوّل بقبولها عنها.',
     contact:
-      'لأي استفسار عن هذه الشروط، راسلنا على support@qhsseconsultant.onmicrosoft.com أو اتصل على +20 111 775 5096.',
+      'لأي استفسار عن هذه الشروط، راسلنا على info@hsehub360.com أو اتصل على +20 111 775 5096.',
     sections: [
       {
         id: 'acceptance',
@@ -386,7 +386,7 @@ export const termsOfService: BilingualLegalDocument = {
         title: '13. التغييرات والتواصل',
         paragraphs: [
           'قد نحدّث هذه الشروط من وقت لآخر وننشر النسخة الجديدة على هذه الصفحة. يُعد استمرارك في استخدام الخدمة بعد النشر موافقةً على التغييرات.',
-          'للتواصل: QHSSE Consultant، Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — support@qhsseconsultant.onmicrosoft.com — +20 111 775 5096.',
+          'للتواصل: QHSSE Consultant، Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — info@hsehub360.com — +20 111 775 5096.',
         ],
       },
     ],
@@ -398,7 +398,7 @@ export const termsOfService: BilingualLegalDocument = {
     intro:
       'These terms govern your use of the QHSSE Consultant website, client portal and training platform. By using the service, you agree to these terms. If you use the site on behalf of an organisation, you confirm that you are authorised to accept them for that organisation.',
     contact:
-      'For questions about these terms, email support@qhsseconsultant.onmicrosoft.com or call +20 111 775 5096.',
+      'For questions about these terms, email info@hsehub360.com or call +20 111 775 5096.',
     sections: [
       {
         id: 'acceptance',
@@ -502,7 +502,7 @@ export const termsOfService: BilingualLegalDocument = {
         title: '13. Changes and contact',
         paragraphs: [
           'We may update these terms from time to time and will publish the new version on this page. Continued use of the service after publication constitutes acceptance of the changes.',
-          'Contact: QHSSE Consultant, Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — support@qhsseconsultant.onmicrosoft.com — +20 111 775 5096.',
+          'Contact: QHSSE Consultant, Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt — info@hsehub360.com — +20 111 775 5096.',
         ],
       },
     ],

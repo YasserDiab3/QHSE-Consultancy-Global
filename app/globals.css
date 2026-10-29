@@ -281,16 +281,17 @@
   #invoice-print,
   .printable-document,
   #executive-safety-report-print {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
     width: 100% !important;
-    margin: 0 !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
     padding: 0 !important;
     border: 0 !important;
     box-shadow: none !important;
     background: #fff !important;
-    z-index: 999999 !important;
   }
 
   #training-certificate {

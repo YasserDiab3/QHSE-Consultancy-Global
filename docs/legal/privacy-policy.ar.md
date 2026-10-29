@@ -24,7 +24,7 @@
 | رقم السجل التجاري | [يُستكمل] |
 | العنوان المسجل | Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt |
 | البريد الإلكتروني للخصوصية | [privacy@qhsseconsultant.com — يُفعّل قبل النشر] |
-| البريد الإلكتروني للدعم | support@qhsseconsultant.onmicrosoft.com |
+| البريد الإلكتروني للدعم | info@hsehub360.com |
 | الهاتف | +20 111 775 5096 |
 | مسؤول الخصوصية / حماية البيانات | [الاسم والمسمى الوظيفي — يُعيَّن قبل النشر] |
 | مناطق العمل | مصر والإمارات بشكل أساسي، وقد نخدم عملاء في دول أخرى |
@@ -232,7 +232,7 @@
 
 لطلب الوصول أو التصحيح أو الحذف أو أي حق آخر:
 
-- البريد الإلكتروني: **support@qhsseconsultant.onmicrosoft.com** أو **privacy@qhsseconsultant.com** [يُفعّل قبل النشر]؛
+- البريد الإلكتروني: **info@hsehub360.com** أو **privacy@qhsseconsultant.com** [يُفعّل قبل النشر]؛
 - نموذج طلب الخصوصية: `[رابط النموذج — يُضاف قبل النشر]`؛
 - البريد البري: العنوان المسجل أعلاه.
 
@@ -294,7 +294,7 @@
 
 لأي سؤال أو طلب يتعلق بالخصوصية:
 
-- البريد الإلكتروني: support@qhsseconsultant.onmicrosoft.com
+- البريد الإلكتروني: info@hsehub360.com
 - بريد الخصوصية: privacy@qhsseconsultant.com [يُفعّل قبل النشر]
 - الهاتف: +20 111 775 5096
 - العنوان: Cairo Business Park, El Nasr, New Cairo 1, Cairo Governorate 11865, Egypt

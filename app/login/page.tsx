@@ -450,7 +450,7 @@ function LoginForm() {
                 </div>
                 <div className="mt-2 text-end">
                   <a
-                    href="mailto:support@qhsseconsultant.onmicrosoft.com?subject=Password%20reset%20request"
+                    href="mailto:info@hsehub360.com?subject=Password%20reset%20request"
                     className="text-sm font-medium text-brand-gold underline-offset-2 hover:text-brand-gold-600 hover:underline"
                   >
                     {language === 'ar' ? 'نسيت كلمة المرور؟' : 'Forgot password?'}

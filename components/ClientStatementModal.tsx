@@ -117,7 +117,7 @@ export default function ClientStatementModal({
             ref={printRef}
             id="client-statement-print"
             data-printable="true"
-            className="printable-document mx-auto w-full max-w-4xl rounded-2xl bg-white p-8 sm:p-10 shadow-lg border border-slate-200 text-slate-900"
+            className="printable-document mx-auto w-full max-w-4xl print:max-w-full print:w-full rounded-2xl bg-white p-8 sm:p-10 shadow-lg border border-slate-200 text-slate-900"
             dir="rtl"
           >
             {/* Header */}
@@ -144,25 +144,25 @@ export default function ClientStatementModal({
               {/* Row 2: Perfect Symmetrical Sub-Header Bar */}
               <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
                 {/* Right: Client identity pill */}
-                <div className="flex items-center gap-2 order-2 sm:order-1">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-3 py-1.5 shadow-xs">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-3.5 py-1.5 shadow-xs whitespace-nowrap">
                     <span className="block text-[10px] font-bold text-slate-500">كشف حساب موحد:</span>
-                    <span className="font-bold text-slate-900 text-xs sm:text-sm truncate block max-w-[200px]">{clientName}</span>
+                    <span className="font-bold text-slate-900 text-xs sm:text-sm truncate block max-w-[220px]">{clientName}</span>
                   </div>
                 </div>
 
                 {/* Center: Official Title Badge */}
-                <div className="order-1 sm:order-2 text-center">
+                <div className="text-center px-2 flex-1">
                   <span className="inline-block text-xs sm:text-sm font-bold text-slate-700 bg-slate-100/90 px-4 py-1.5 rounded-full border border-slate-200/90 whitespace-nowrap shadow-xs">
                     إدارة الشؤون المالية والحسابات ▪ بيان كشف حساب موحد للعميل
                   </span>
                 </div>
 
                 {/* Left: Issue Date Box */}
-                <div className="order-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-1.5 text-center min-w-[135px] shadow-xs">
+                <div className="flex-shrink-0">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-1.5 text-center min-w-[140px] shadow-xs whitespace-nowrap">
                     <span className="block text-[10px] font-bold text-slate-500 mb-0.5">تاريخ إصدار الكشف</span>
-                    <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide">{today}</span>
+                    <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide block">{today}</span>
                   </div>
                 </div>
               </div>
@@ -307,37 +307,37 @@ export default function ClientStatementModal({
             </div>
 
             {/* Official Structured Credentials Footer */}
-            <div className="mt-8 pt-4 border-t-2 border-primary-900/80">
+            <div className="mt-8 pt-4 border-t-2 border-[#1d4289]">
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-[10px] text-slate-700 font-medium">
-                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="block text-slate-400 font-bold mb-0.5">السجل التجاري (س.ت)</span>
-                  <span className="font-mono font-black text-slate-900 block">{DEFAULT_COMPANY_CONFIG.commercialReg}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+                  <span className="block text-slate-500 font-bold mb-0.5">السجل التجاري (س.ت)</span>
+                  <span className="font-mono font-black text-slate-900 text-xs block">{DEFAULT_COMPANY_CONFIG.commercialReg}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="block text-slate-400 font-bold mb-0.5">البطاقة الضريبية (ب.ض)</span>
-                  <span className="font-mono font-black text-slate-900 block">{DEFAULT_COMPANY_CONFIG.taxId}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+                  <span className="block text-slate-500 font-bold mb-0.5">البطاقة الضريبية (ب.ض)</span>
+                  <span className="font-mono font-black text-slate-900 text-xs block">{DEFAULT_COMPANY_CONFIG.taxId}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="block text-slate-400 font-bold mb-0.5">اعتماد الدفاع المدني</span>
-                  <span className="font-bold text-slate-900 block">رقم {DEFAULT_COMPANY_CONFIG.civilDefenseReg}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+                  <span className="block text-slate-500 font-bold mb-0.5">اعتماد الدفاع المدني</span>
+                  <span className="font-bold text-slate-900 text-xs block">ترخيص رقم {DEFAULT_COMPANY_CONFIG.civilDefenseReg}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="block text-slate-400 font-bold mb-0.5">البريد الإلكتروني</span>
-                  <span className="font-mono font-bold text-slate-900 block truncate">{DEFAULT_COMPANY_CONFIG.email}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+                  <span className="block text-slate-500 font-bold mb-0.5">البريد الإلكتروني</span>
+                  <span className="font-mono font-bold text-slate-900 text-[11px] block truncate">{DEFAULT_COMPANY_CONFIG.email}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="block text-slate-400 font-bold mb-0.5">رقم الهاتف</span>
-                  <span className="font-mono font-bold text-slate-900 block">{DEFAULT_COMPANY_CONFIG.phone}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+                  <span className="block text-slate-500 font-bold mb-0.5">الهاتف المعتمد</span>
+                  <span className="font-mono font-bold text-slate-900 text-xs block" dir="ltr">{DEFAULT_COMPANY_CONFIG.phone}</span>
                 </div>
-                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="block text-slate-400 font-bold mb-0.5">العنوان والمقر</span>
-                  <span className="font-bold text-slate-900 block truncate">{DEFAULT_COMPANY_CONFIG.addressAr}</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 shadow-2xs">
+                  <span className="block text-slate-500 font-bold mb-0.5">المقر الرئيسي</span>
+                  <span className="font-bold text-slate-900 text-[10px] block truncate">{DEFAULT_COMPANY_CONFIG.addressAr}</span>
                 </div>
               </div>
 
               <div className="mt-3 flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
-                <span>{DEFAULT_COMPANY_CONFIG.nameAr} • {DEFAULT_COMPANY_CONFIG.website}</span>
-                <span>كشف حساب مالي إلكتروني رسمي وموثق</span>
+                <span className="font-semibold text-slate-600">{DEFAULT_COMPANY_CONFIG.nameAr} • {DEFAULT_COMPANY_CONFIG.website}</span>
+                <span className="font-medium text-slate-500">كشف حساب مالي إلكتروني رسمي وموثق نظاماً</span>
               </div>
             </div>
           </div>

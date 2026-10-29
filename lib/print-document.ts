@@ -364,7 +364,7 @@ export async function printElement({
     </style>
   </head>
   <body>
-    <div id="printable-root" class="printable-document" style="width: 100%; max-width: 900px; margin: 0 auto; padding: 4px;">
+    <div id="printable-root" class="printable-document" style="width: 100%; margin: 0 auto; padding: 0;">
       ${clone.outerHTML}
     </div>
   </body>

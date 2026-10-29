@@ -1064,7 +1064,7 @@ export default function ClientProfileModal({
             ref={fullProfilePrintRef}
             id="client-profile-print"
             data-printable="true"
-            className="printable-document p-8 bg-white text-slate-900"
+            className="printable-document p-8 bg-white text-slate-900 w-full max-w-4xl print:max-w-full print:w-full mx-auto"
             dir="rtl"
           >
             <div className="border-b-[3.5px] border-[#1d4289] pb-4 mb-6">
@@ -1088,25 +1088,25 @@ export default function ClientProfileModal({
 
               {/* Row 2: Perfect Symmetrical Sub-Header Bar */}
               <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="flex items-center gap-2 order-2 sm:order-1">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-3 py-1.5 shadow-xs">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-3.5 py-1.5 shadow-xs whitespace-nowrap">
                     <span className="block text-[10px] font-bold text-slate-500">ملف العميل الموحد:</span>
-                    <span className="font-bold text-slate-900 text-xs sm:text-sm truncate block max-w-[200px]">{clientName}</span>
+                    <span className="font-bold text-slate-900 text-xs sm:text-sm truncate block max-w-[220px]">{clientName}</span>
                   </div>
                 </div>
 
-                <div className="order-1 sm:order-2 text-center">
+                <div className="text-center px-2 flex-1">
                   <span className="inline-block text-xs sm:text-sm font-bold text-slate-700 bg-slate-100/90 px-4 py-1.5 rounded-full border border-slate-200/90 whitespace-nowrap shadow-xs">
                     إدارة الشؤون الإدارية والميدانية ▪ ملف العميل الموحد والتقرير الشامل
                   </span>
                 </div>
 
-                <div className="order-3">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-1.5 text-center min-w-[135px] shadow-xs">
+                <div className="flex-shrink-0">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/90 px-4 py-1.5 text-center min-w-[140px] shadow-xs whitespace-nowrap">
                     <span className="block text-[10px] font-bold text-slate-500 mb-0.5">
                       تاريخ إصدار التقرير
                     </span>
-                    <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide">
+                    <span className="text-xs sm:text-sm font-black text-slate-900 tracking-wide block">
                       {new Date().toLocaleDateString('ar-EG', {
                         year: 'numeric',
                         month: 'long',

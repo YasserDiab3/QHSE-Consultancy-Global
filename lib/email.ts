@@ -458,7 +458,7 @@ export async function notifyConsultantClientAction(input: {
   observationTitle: string
   siteName?: string
 }) {
-  const targetEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER || 'support@qhsseconsultant.onmicrosoft.com'
+  const targetEmail = process.env.ADMIN_NOTIFICATION_EMAIL || process.env.SMTP_USER || 'info@hsehub360.com'
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://qhsseconsultant.com').replace(/\/$/, '')
   const adminUrl = `${appUrl}/admin`
 
