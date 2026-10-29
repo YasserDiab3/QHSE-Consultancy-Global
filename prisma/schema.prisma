@@ -33,9 +33,9 @@ model Client {
   id            String    @id @default(uuid())
   userId        String    @unique
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName   String
-  companyNameAr String?
-  contactInfo   String?
+  companyName   String    @map("companyname")
+  companyNameAr String?   @map("companynamear")
+  contactInfo   String?   @map("contactinfo")
   phone         String?
   address       String?
   createdAt     DateTime  @default(now()) @map("createdat")
