@@ -550,6 +550,10 @@ export default function AdminClients({
             await fetchData()
             await onDataChanged?.()
           }}
+          onClientUpdated={async () => {
+            await fetchData()
+            await onDataChanged?.()
+          }}
         />
       )}
     </div>

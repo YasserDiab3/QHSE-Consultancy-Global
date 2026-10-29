@@ -18,9 +18,11 @@ import {
   AlertTriangle,
   Search,
   Calendar,
-  FolderOpen,
   Receipt,
   Download,
+  MapPin,
+  Mail,
+  Phone,
 } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
 import { parsePortalSettings, isProfileLocked } from '@/lib/client-profile'
@@ -34,6 +36,10 @@ import {
 import ProfessionalInvoiceModal from '@/components/ProfessionalInvoiceModal'
 import ClientStatementModal from '@/components/ClientStatementModal'
 import FinancialRecordFormModal from '@/components/FinancialRecordFormModal'
+import RegisterVisitModal from '@/components/RegisterVisitModal'
+import EditClientInfoModal from '@/components/EditClientInfoModal'
+import { downloadClientReportPdf } from '@/lib/report-pdf'
+import { getCategoryColor, getStatusColor } from '@/lib/colors'
 import { printElement } from '@/lib/print-document'
 import toast from 'react-hot-toast'
 
@@ -55,12 +61,30 @@ interface ClientProfileModalProps {
   }
   onClose: () => void
   onLockChanged?: () => void | Promise<void>
+  onClientUpdated?: () => void | Promise<void>
+}
+
+const CATEGORY_LABELS_AR: Record<string, string> = {
+  SAFETY: 'سلامة وصحة مهنية',
+  FOOD_SAFETY: 'سلامة الغذاء',
+  QHSE: 'الجودة والبيئة والسلامة',
+  RISK_ASSESSMENT: 'تقييم مخاطر',
+  AUDIT: 'تدقيق وامتثال',
+  TRAINING: 'تدريب ميداني',
+}
+
+const STATUS_LABELS_AR: Record<string, string> = {
+  OPEN: 'مفتوحة / جارية',
+  SCHEDULED: 'مجدولة',
+  IN_PROGRESS: 'قيد المتابعة',
+  CLOSED: 'مكتملة ومغلقة',
 }
 
 export default function ClientProfileModal({
   client,
   onClose,
   onLockChanged,
+  onClientUpdated,
 }: ClientProfileModalProps) {
   const [data, setData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -72,6 +96,12 @@ export default function ClientProfileModal({
   const [showStatementModal, setShowStatementModal] = useState(false)
   const [showInvoiceForm, setShowInvoiceForm] = useState(false)
   const [editingRecord, setEditingRecord] = useState<FinancialRecordView | null>(null)
+
+  // Visit & Edit Facility Modals state
+  const [showRegisterVisitModal, setShowRegisterVisitModal] = useState(false)
+  const [editingVisit, setEditingVisit] = useState<any>(null)
+  const [showEditInfoModal, setShowEditInfoModal] = useState(false)
+  const [downloadingPdfId, setDownloadingPdfId] = useState<string | null>(null)
 
   // Status Filter & Search
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'PAID' | 'PARTIAL'>('ALL')
@@ -171,6 +201,44 @@ export default function ClientProfileModal({
     }
   }
 
+  // Delete visit / report
+  const handleDeleteVisit = async (reportId: string, siteName: string) => {
+    if (!confirm(`هل أنت متأكد من حذف تقرير الزيارة (${siteName})؟`)) return
+    try {
+      const res = await fetch(`/api/reports/${reportId}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const d = await res.json().catch(() => null)
+        throw new Error(d?.error || 'تعذر حذف تقرير الزيارة')
+      }
+      toast.success('تم حذف تقرير الزيارة بنجاح')
+      await load()
+    } catch (error: any) {
+      toast.error(error.message || 'تعذر حذف تقرير الزيارة')
+    }
+  }
+
+  // Download visit report PDF
+  const handleDownloadReportPdf = async (report: any) => {
+    setDownloadingPdfId(report.id)
+    try {
+      await downloadClientReportPdf(
+        {
+          ...report,
+          client: report.client || {
+            companyName: data?.client?.companyName || client.companyName,
+            companyNameAr: data?.client?.companyNameAr || client.companyNameAr,
+          },
+        },
+        'ar'
+      )
+      toast.success('تم تصدير تقرير الزيارة الميدانية بنجاح')
+    } catch (err: any) {
+      toast.error(err.message || 'حدث خطأ أثناء تحميل التقرير')
+    } finally {
+      setDownloadingPdfId(null)
+    }
+  }
+
   // Print full client file
   const handlePrintFullProfile = async () => {
     if (!fullProfilePrintRef.current) return
@@ -246,6 +314,18 @@ export default function ClientProfileModal({
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => {
+                setEditingVisit(null)
+                setShowRegisterVisitModal(true)
+              }}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 shadow-sm hover:bg-emerald-100 transition"
+              title="تسجيل زيارة تفتيشية ميدانية جديدة للمنشأة"
+            >
+              <Calendar className="h-4 w-4 text-emerald-600" />
+              تسجيل زيارة ميدانية
+            </button>
+
             <button
               onClick={() => setShowStatementModal(true)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm hover:bg-slate-50 transition"
@@ -323,8 +403,8 @@ export default function ClientProfileModal({
 
               {/* Total Paid */}
               <div className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
-                <div className="flex items-center justify-between text-emerald-700">
-                  <span className="text-xs font-bold">المبالغ المسددة (التحصيل)</span>
+                <div className="flex items-center justify-between text-emerald-800">
+                  <span className="text-xs font-bold">إجمالي المبالغ المسددة</span>
                   <div className="h-8 w-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
                     <CheckCircle2 className="h-4 w-4" />
                   </div>
@@ -333,7 +413,7 @@ export default function ClientProfileModal({
                   {formatFinancialAmount(totalPaid, mainCurrency)}
                 </p>
                 <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-                  <span>نسبة السداد:</span>
+                  <span>نسبة التحصيل:</span>
                   <span className="font-bold text-emerald-700 font-mono">{collectionRate}%</span>
                 </div>
               </div>
@@ -376,7 +456,7 @@ export default function ClientProfileModal({
                   </div>
                 </div>
                 <p className="mt-3 text-2xl font-black text-slate-900 font-mono">
-                  {data?.summary?.reports || 0} تقرير
+                  {data?.summary?.reports || data?.client?.reports?.length || 0} زيارة
                 </p>
                 <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
                   <span>الملاحظات: {data?.summary?.observations || 0}</span>
@@ -426,8 +506,8 @@ export default function ClientProfileModal({
                     : 'text-slate-600 hover:bg-slate-200/60'
                 }`}
               >
-                <FileText className="h-4 w-4" />
-                سجل الزيارات والتقارير الميدانية ({data?.summary?.reports || 0})
+                <Calendar className="h-4 w-4" />
+                سجل الزيارات والتقارير الميدانية ({data?.summary?.reports || data?.client?.reports?.length || 0})
               </button>
 
               <button
@@ -438,65 +518,41 @@ export default function ClientProfileModal({
                     : 'text-slate-600 hover:bg-slate-200/60'
                 }`}
               >
-                <FolderOpen className="h-4 w-4" />
-                الوثائق والملفات المرفقة ({data?.client?.documents?.length || 0})
+                <FileSpreadsheet className="h-4 w-4" />
+                الملفات والوثائق ({data?.client?.documents?.length || 0})
               </button>
             </div>
 
-            {/* TAB 1: Financial Ledger & Invoices */}
+            {/* TAB 1: Financial Records & Invoices */}
             {activeTab === 'financial' && (
               <div className="space-y-4">
-                {/* Filter and Search Bar */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <button
-                      onClick={() => setStatusFilter('ALL')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        statusFilter === 'ALL'
-                          ? 'bg-slate-900 text-white'
-                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      الكل ({financialRecords.length})
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('PENDING')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        statusFilter === 'PENDING'
-                          ? 'bg-amber-600 text-white'
-                          : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                      }`}
-                    >
-                      مستحقة (
-                      {financialRecords.filter((r) => r.status === 'PENDING').length}
-                      )
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('PAID')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        statusFilter === 'PAID'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
-                      }`}
-                    >
-                      مسددة بالكامل (
-                      {financialRecords.filter((r) => r.status === 'PAID').length}
-                      )
-                    </button>
-                    <button
-                      onClick={() => setStatusFilter('PARTIAL')}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-                        statusFilter === 'PARTIAL'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-blue-50 text-blue-800 hover:bg-blue-100'
-                      }`}
-                    >
-                      مسددة جزئياً (
-                      {financialRecords.filter((r) => r.status === 'PARTIAL').length}
-                      )
-                    </button>
+                {/* Search & Filter Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
+                  {/* Status Pills */}
+                  <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+                    {(
+                      [
+                        { id: 'ALL', label: 'الكل' },
+                        { id: 'PENDING', label: 'مستحقة' },
+                        { id: 'PARTIAL', label: 'مسددة جزئياً' },
+                        { id: 'PAID', label: 'مدفوعة' },
+                      ] as const
+                    ).map((pill) => (
+                      <button
+                        key={pill.id}
+                        onClick={() => setStatusFilter(pill.id)}
+                        className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
+                          statusFilter === pill.id
+                            ? 'bg-primary-600 text-white shadow-sm'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70'
+                        }`}
+                      >
+                        {pill.label}
+                      </button>
+                    ))}
                   </div>
 
+                  {/* Search Input */}
                   <div className="relative w-full sm:w-64">
                     <Search className="h-4 w-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -681,18 +737,41 @@ export default function ClientProfileModal({
                     <div>
                       <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
                         <Building2 className="h-5 w-5 text-primary-600" />
-                        بيانات الشركة والاتصال الرئيسي
+                        بيانات المنشأة والاتصال
                       </h3>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        البيانات الأساسية المسجلة للعميل في بوابة الاستشارات
+                        البيانات الأساسية المسجلة للمنشأة ومسؤول التواصل المعتمد في بوابة الاستشارات
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowEditInfoModal(true)}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-primary-50 px-3.5 py-2 text-xs font-bold text-primary-700 border border-primary-200 hover:bg-primary-100 transition shadow-sm"
+                        title="تعديل بيانات المنشأة ومسؤول التواصل"
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                        تعديل بيانات المنشأة والاتصال
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingVisit(null)
+                          setShowRegisterVisitModal(true)
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3.5 py-2 text-xs font-bold text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition shadow-sm"
+                        title="تسجيل زيارة تفتيشية جديدة لهذه المنشأة"
+                      >
+                        <Calendar className="h-3.5 w-3.5 text-emerald-700" />
+                        تسجيل زيارة لهذه المنشأة
+                      </button>
+
                       {lockedState ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
                           <Lock className="h-3.5 w-3.5" />
-                          الملف مقفل (مراجعة الإدارة فقط)
+                          الملف مقفل (الإدارة فقط)
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
@@ -705,7 +784,7 @@ export default function ClientProfileModal({
                         type="button"
                         onClick={() => void toggleLockInsideModal()}
                         disabled={togglingLock}
-                        className="rounded-xl border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
+                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition"
                       >
                         {lockedState ? 'إلغاء قفل التعديل' : 'قفل التعديل على العميل'}
                       </button>
@@ -713,45 +792,62 @@ export default function ClientProfileModal({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
-                      <span className="block text-xs font-bold text-slate-400">اسم الشركة (عربي / رسمي)</span>
-                      <span className="font-bold text-slate-900 mt-1 block">
+                    <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                      <span className="block text-xs font-bold text-slate-400">اسم المنشأة الرسمي بالعربية</span>
+                      <span className="font-bold text-slate-900 mt-1 block text-base">
                         {data?.client?.companyNameAr || data?.client?.companyName}
                       </span>
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+                    <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
                       <span className="block text-xs font-bold text-slate-400">الاسم التجاري بالإنجليزية</span>
                       <span className="font-semibold text-slate-800 mt-1 block">
                         {data?.client?.companyName || '-'}
                       </span>
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+                    <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
                       <span className="block text-xs font-bold text-slate-400">مسؤول التواصل والاتصال</span>
                       <span className="font-bold text-slate-900 mt-1 block">
                         {data?.client?.user?.name || '-'}
                       </span>
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
+                    <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
                       <span className="block text-xs font-bold text-slate-400">البريد الإلكتروني المعتمد</span>
-                      <span className="font-semibold text-slate-800 mt-1 block font-mono">
-                        {data?.client?.user?.email || '-'}
-                      </span>
+                      {data?.client?.user?.email ? (
+                        <a
+                          href={`mailto:${data.client.user.email}`}
+                          className="font-semibold text-primary-600 hover:underline mt-1 inline-flex items-center gap-1.5 font-mono"
+                        >
+                          <Mail className="h-3.5 w-3.5 text-primary-500" />
+                          {data.client.user.email}
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
-                      <span className="block text-xs font-bold text-slate-400">رقم الهاتف</span>
-                      <span className="font-semibold text-slate-800 mt-1 block font-mono">
-                        {data?.client?.phone || data?.client?.user?.phone || '-'}
-                      </span>
+                    <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                      <span className="block text-xs font-bold text-slate-400">رقم هاتف المنشأة / الجوال</span>
+                      {data?.client?.phone || data?.client?.user?.phone ? (
+                        <a
+                          href={`tel:${data?.client?.phone || data?.client?.user?.phone}`}
+                          className="font-semibold text-primary-600 hover:underline mt-1 inline-flex items-center gap-1.5 font-mono"
+                        >
+                          <Phone className="h-3.5 w-3.5 text-primary-500" />
+                          {data?.client?.phone || data?.client?.user?.phone}
+                        </a>
+                      ) : (
+                        <span className="text-slate-400">-</span>
+                      )}
                     </div>
 
-                    <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100">
-                      <span className="block text-xs font-bold text-slate-400">العنوان والموقع الجغرافي</span>
-                      <span className="font-semibold text-slate-800 mt-1 block">
-                        {data?.client?.address || '-'}
+                    <div className="rounded-xl bg-slate-50 p-4 border border-slate-100">
+                      <span className="block text-xs font-bold text-slate-400">العنوان والموقع الجغرافي للمنشأة</span>
+                      <span className="font-semibold text-slate-800 mt-1 flex items-center gap-1.5">
+                        <MapPin className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        {data?.client?.address || 'غير محدد'}
                       </span>
                     </div>
                   </div>
@@ -761,56 +857,151 @@ export default function ClientProfileModal({
 
             {/* TAB 3: Site Visits & QHSSE Reports */}
             {activeTab === 'reports' && (
-              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-slate-900 text-base">سجل التقارير والزيارات الميدانية</h3>
-                  <span className="text-xs text-slate-500">
-                    إجمالي الزيارات: {data?.client?.reports?.length || 0}
-                  </span>
+              <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary-600" />
+                      سجل الزيارات والتقارير الميدانية
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      توثيق كافة الزيارات التفقدية وفحوصات السلامة الميدانية للمنشأة
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                      إجمالي الزيارات: {data?.client?.reports?.length || 0}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVisit(null)
+                        setShowRegisterVisitModal(true)
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition"
+                    >
+                      <Plus className="h-4 w-4" />
+                      تسجيل زيارة ميدانية جديدة
+                    </button>
+                  </div>
                 </div>
 
-                <div className="overflow-x-auto rounded-xl border border-slate-200">
-                  <table className="w-full text-right text-xs">
-                    <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-                      <tr>
-                        <th className="py-3 px-4">موقع الزيارة / المنشأة</th>
-                        <th className="py-3 px-4">التاريخ</th>
-                        <th className="py-3 px-4">التصنيف</th>
-                        <th className="py-3 px-4">الحالة</th>
-                        <th className="py-3 px-4 text-center">الملاحظات المرصودة</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {data?.client?.reports?.length ? (
-                        data.client.reports.map((r: any) => (
-                          <tr key={r.id} className="hover:bg-slate-50/50">
-                            <td className="py-3 px-4 font-bold text-slate-900">
-                              {r.siteNameAr || r.siteName}
-                            </td>
-                            <td className="py-3 px-4 font-mono text-slate-600">
-                              {new Date(r.date).toLocaleDateString('ar-EG')}
-                            </td>
-                            <td className="py-3 px-4 text-slate-700">{r.category}</td>
-                            <td className="py-3 px-4">
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-700">
-                                {r.status}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
-                              {r.observations?.length || 0}
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
+                {/* Empty State when visits count is 0 */}
+                {(!data?.client?.reports || data.client.reports.length === 0) ? (
+                  <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-12 text-center">
+                    <div className="h-16 w-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 border border-emerald-100 shadow-sm">
+                      <Calendar className="h-8 w-8" />
+                    </div>
+                    <h3 className="text-base font-bold text-slate-800">
+                      سجل الزيارات والتقارير الميدانية فارغ (0)
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                      لم يتم تسجيل أي زيارات تفقدية أو فنية لموقع هذه المنشأة حتى الآن. يمكنك الآن جدولة وتسجيل أول زيارة ميدانية لتوثيق الفحوصات وملاحظات السلامة وتوليد التقارير المعتمدة.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVisit(null)
+                        setShowRegisterVisitModal(true)
+                      }}
+                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-emerald-700 transition mt-4"
+                    >
+                      <Plus className="h-4 w-4" />
+                      تسجيل أول زيارة ميدانية الآن
+                    </button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-xl border border-slate-200">
+                    <table className="w-full text-right text-xs">
+                      <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                         <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-400">
-                            لا توجد تقارير أو زيارات مسجلة لهذا العميل حتى الآن.
-                          </td>
+                          <th className="py-3 px-4">موقع الزيارة / المنشأة</th>
+                          <th className="py-3 px-4">تاريخ الزيارة</th>
+                          <th className="py-3 px-4">التصنيف</th>
+                          <th className="py-3 px-4">الحالة</th>
+                          <th className="py-3 px-4 text-center">الملاحظات</th>
+                          <th className="py-3 px-4 text-left">الإجراءات</th>
                         </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {data.client.reports.map((r: any) => {
+                          const catColor = getCategoryColor(r.category)
+                          const stColor = getStatusColor(r.status)
+                          const catLabel = CATEGORY_LABELS_AR[r.category] || r.category
+                          const stLabel = STATUS_LABELS_AR[r.status] || r.status
+                          const isDownloading = downloadingPdfId === r.id
+
+                          return (
+                            <tr key={r.id} className="hover:bg-slate-50/50 transition">
+                              <td className="py-3 px-4 font-bold text-slate-900">
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-3.5 w-3.5 text-slate-400" />
+                                  <span>{r.siteNameAr || r.siteName}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-4 font-mono text-slate-600">
+                                {new Date(r.date).toLocaleDateString('ar-EG')}
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`inline-flex rounded-lg px-2.5 py-0.5 text-[11px] font-bold ${catColor.bg} ${catColor.text}`}>
+                                  {catLabel}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4">
+                                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${stColor.bg} ${stColor.text} border ${stColor.border}`}>
+                                  {stLabel}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center font-mono font-bold text-slate-800">
+                                <span className="rounded-full bg-slate-100 px-2 py-0.5">
+                                  {r.observations?.length || 0}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-left">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => void handleDownloadReportPdf(r)}
+                                    disabled={isDownloading}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-primary-200 bg-primary-50 px-2.5 py-1 text-[11px] font-bold text-primary-700 hover:bg-primary-100 transition"
+                                    title="تصدير وتحميل تقرير الزيارة PDF"
+                                  >
+                                    {isDownloading ? (
+                                      <Loader2 className="h-3 w-3 animate-spin" />
+                                    ) : (
+                                      <Download className="h-3 w-3" />
+                                    )}
+                                    تقرير PDF
+                                  </button>
+
+                                  <button
+                                    onClick={() => {
+                                      setEditingVisit(r)
+                                      setShowRegisterVisitModal(true)
+                                    }}
+                                    className="rounded-lg p-1 text-slate-500 hover:bg-slate-100 transition"
+                                    title="تعديل بيانات الزيارة"
+                                  >
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => void handleDeleteVisit(r.id, r.siteNameAr || r.siteName)}
+                                    className="rounded-lg p-1 text-red-500 hover:bg-red-50 transition"
+                                    title="حذف الزيارة"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </section>
             )}
 
@@ -983,6 +1174,45 @@ export default function ClientProfileModal({
             }}
             onSuccess={async () => {
               await load()
+            }}
+          />
+        )}
+
+        {showRegisterVisitModal && (
+          <RegisterVisitModal
+            client={{
+              id: client.id,
+              companyName: data?.client?.companyName || client.companyName,
+              companyNameAr: data?.client?.companyNameAr || client.companyNameAr,
+              phone: data?.client?.phone || client.phone,
+              address: data?.client?.address || client.address,
+              user: data?.client?.user || client.user,
+            }}
+            existingVisit={editingVisit}
+            onClose={() => {
+              setShowRegisterVisitModal(false)
+              setEditingVisit(null)
+            }}
+            onSuccess={async () => {
+              await load()
+            }}
+          />
+        )}
+
+        {showEditInfoModal && (
+          <EditClientInfoModal
+            client={{
+              id: client.id,
+              companyName: data?.client?.companyName || client.companyName,
+              companyNameAr: data?.client?.companyNameAr || client.companyNameAr,
+              phone: data?.client?.phone || client.phone,
+              address: data?.client?.address || client.address,
+              user: data?.client?.user || client.user,
+            }}
+            onClose={() => setShowEditInfoModal(false)}
+            onSuccess={async () => {
+              await load()
+              await onClientUpdated?.()
             }}
           />
         )}
