@@ -19,6 +19,7 @@ import {
   tafqitArabic,
   SERVICE_TYPES,
 } from '@/lib/financial-records'
+import { DEFAULT_COMPANY_CONFIG } from '@/lib/company-config'
 import { printElement } from '@/lib/print-document'
 import toast from 'react-hot-toast'
 
@@ -80,6 +81,7 @@ export default function ProfessionalInvoiceModal({
   const clientName = client.companyNameAr || client.companyName
   const invoiceDate = details.invoiceDate || invoice.createdAt.slice(0, 10)
   const dueDate = invoice.dueDate ? invoice.dueDate.slice(0, 10) : 'عند الاستلام'
+  const bank = details.bankDetails || DEFAULT_COMPANY_CONFIG.bank
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/70 p-4 sm:p-6 backdrop-blur-sm">
@@ -134,17 +136,14 @@ export default function ProfessionalInvoiceModal({
                     <BrandLogo variant="header" className="h-20 w-20" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-extrabold text-primary-900">
-                      مكتب استشارات السلامة والصحة المهنية والبيئة
+                    <h1 className="text-xl sm:text-2xl font-black text-primary-950 tracking-tight">
+                      {DEFAULT_COMPANY_CONFIG.nameAr}
                     </h1>
-                    <p className="text-xs font-semibold text-primary-700">
-                      QHSSE Consulting & Engineering Services
+                    <p className="text-xs font-bold text-primary-800 mt-1">
+                      {DEFAULT_COMPANY_CONFIG.nameEn}
                     </p>
-                    <p className="text-[11px] text-slate-500 mt-1">
-                      س.ت: 104820 • ب.ض: 549-812-701 • اعتماد الدفاع المدني رقم 412
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      القاهرة - جمهورية مصر العربية • هاتف: 01000000000 • بريد: finance@qhsse.com
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      {DEFAULT_COMPANY_CONFIG.subtitleAr}
                     </p>
                   </div>
                 </div>
@@ -345,26 +344,31 @@ export default function ProfessionalInvoiceModal({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-slate-700">
                 <div className="rounded-lg bg-white p-2.5 border border-slate-200">
                   <span className="block text-[11px] text-slate-400">اسم البنك:</span>
-                  <span className="font-bold text-slate-900">البنك التجاري الدولي (CIB)</span>
+                  <span className="font-bold text-slate-900">{bank.bankName}</span>
                 </div>
                 <div className="rounded-lg bg-white p-2.5 border border-slate-200">
                   <span className="block text-[11px] text-slate-400">اسم الحساب:</span>
-                  <span className="font-bold text-slate-900">مكتب QHSSE للاستشارات</span>
+                  <span className="font-bold text-slate-900">{bank.accountName}</span>
+                  {bank.accountNumber && (
+                    <span className="block font-mono text-[10px] text-slate-500 mt-0.5">
+                      رقم الحساب: {bank.accountNumber}
+                    </span>
+                  )}
                 </div>
                 <div className="rounded-lg bg-white p-2.5 border border-slate-200 relative">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] text-slate-400">رقم الآيبان (IBAN):</span>
                     <button
                       type="button"
-                      onClick={() => copyBankIban('EG380004000100045892147001')}
+                      onClick={() => copyBankIban(bank.iban)}
                       className="text-primary-600 hover:text-primary-800"
                       title="نسخ الآيبان"
                     >
                       {copiedIban ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
                     </button>
                   </div>
-                  <span className="font-mono font-bold text-slate-900 text-[11px] block mt-0.5">
-                    EG380004000100045892147001
+                  <span className="font-mono font-bold text-slate-900 text-[11px] block mt-0.5 truncate">
+                    {bank.iban}
                   </span>
                 </div>
               </div>
@@ -381,7 +385,7 @@ export default function ProfessionalInvoiceModal({
                 </div>
                 <div className="flex flex-col items-center justify-center">
                   <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-primary-500 text-primary-700 font-bold text-[10px] p-2 leading-tight">
-                    الختم المعتمد<br />QHSSE<br />OFFICIAL
+                    الختم المعتمد<br />GLOBAL<br />OFFICIAL
                   </div>
                   <p className="mt-2 text-[10px] text-slate-400">ختم الاعتماد الرسمي</p>
                 </div>
@@ -394,9 +398,39 @@ export default function ProfessionalInvoiceModal({
               </div>
             </div>
 
-            {/* Footer Notice */}
-            <div className="mt-6 border-t border-slate-100 pt-3 text-center text-[11px] text-slate-400">
-              وثيقة محاسبية إلكترونية صادرة عن نظام إدارة استشارات السلامة والصحة المهنية والبيئة • QHSSE Consultant Portal
+            {/* 7. Official Structured Credentials Footer */}
+            <div className="mt-8 pt-4 border-t-2 border-primary-900/80">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-[10px] text-slate-700 font-medium">
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">السجل التجاري (س.ت)</span>
+                  <span className="font-mono font-black text-slate-900 block">{DEFAULT_COMPANY_CONFIG.commercialReg}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">البطاقة الضريبية (ب.ض)</span>
+                  <span className="font-mono font-black text-slate-900 block">{DEFAULT_COMPANY_CONFIG.taxId}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">اعتماد الدفاع المدني</span>
+                  <span className="font-bold text-slate-900 block">رقم {DEFAULT_COMPANY_CONFIG.civilDefenseReg}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">البريد الإلكتروني</span>
+                  <span className="font-mono font-bold text-slate-900 block truncate">{DEFAULT_COMPANY_CONFIG.email}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">رقم الهاتف</span>
+                  <span className="font-mono font-bold text-slate-900 block">{DEFAULT_COMPANY_CONFIG.phone}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">العنوان والمقر</span>
+                  <span className="font-bold text-slate-900 block truncate">{DEFAULT_COMPANY_CONFIG.addressAr}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+                <span>{DEFAULT_COMPANY_CONFIG.nameAr} • {DEFAULT_COMPANY_CONFIG.website}</span>
+                <span>وثيقة محاسبية إلكترونية رسمية معتمدة ومسجلة</span>
+              </div>
             </div>
           </div>
         </div>

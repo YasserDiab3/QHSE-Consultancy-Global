@@ -14,6 +14,14 @@ export interface FinancialItem {
 
 export type PaymentMethod = 'BANK_TRANSFER' | 'CASH' | 'CHEQUE' | 'ONLINE' | 'OTHER'
 
+export interface BankDetails {
+  bankName: string
+  accountName: string
+  iban: string
+  accountNumber?: string
+  swiftCode?: string
+}
+
 export interface FinancialDetails {
   invoiceNumber: string
   invoiceDate: string
@@ -33,6 +41,7 @@ export interface FinancialDetails {
   clientTaxNumber?: string
   clientCrNumber?: string
   notesText?: string
+  bankDetails?: BankDetails
 }
 
 export interface FinancialRecordView {
@@ -235,6 +244,13 @@ export function parseFinancialRecord(record: {
           clientTaxNumber: parsed.clientTaxNumber ? String(parsed.clientTaxNumber).trim() : undefined,
           clientCrNumber: parsed.clientCrNumber ? String(parsed.clientCrNumber).trim() : undefined,
           notesText: parsed.notesText ? String(parsed.notesText).trim() : undefined,
+          bankDetails: parsed.bankDetails && typeof parsed.bankDetails === 'object' ? {
+            bankName: String(parsed.bankDetails.bankName || '').trim(),
+            accountName: String(parsed.bankDetails.accountName || '').trim(),
+            iban: String(parsed.bankDetails.iban || '').trim(),
+            accountNumber: parsed.bankDetails.accountNumber ? String(parsed.bankDetails.accountNumber).trim() : undefined,
+            swiftCode: parsed.bankDetails.swiftCode ? String(parsed.bankDetails.swiftCode).trim() : undefined,
+          } : undefined,
         }
       } catch {
         // Fall back to plain text note

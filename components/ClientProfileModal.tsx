@@ -33,6 +33,7 @@ import {
   STATUS_CONFIG,
   SERVICE_TYPES,
 } from '@/lib/financial-records'
+import { DEFAULT_COMPANY_CONFIG } from '@/lib/company-config'
 import ProfessionalInvoiceModal from '@/components/ProfessionalInvoiceModal'
 import ClientStatementModal from '@/components/ClientStatementModal'
 import FinancialRecordFormModal from '@/components/FinancialRecordFormModal'
@@ -1070,8 +1071,9 @@ export default function ClientProfileModal({
               <div className="flex items-center gap-3">
                 <BrandLogo variant="header" className="h-16 w-16" />
                 <div>
-                  <h1 className="text-xl font-bold text-primary-950">ملف العميل الموحد</h1>
-                  <p className="text-xs text-slate-600">QHSSE Consultant • تقرير شامل</p>
+                  <h1 className="text-xl font-bold text-primary-950">{DEFAULT_COMPANY_CONFIG.nameAr}</h1>
+                  <p className="text-xs text-primary-800 font-semibold">{DEFAULT_COMPANY_CONFIG.nameEn}</p>
+                  <p className="text-[11px] text-slate-500 mt-0.5">ملف العميل الموحد • تقرير مالي وميداني شامل</p>
                 </div>
               </div>
               <div className="text-left text-xs">
@@ -1130,6 +1132,40 @@ export default function ClientProfileModal({
                 ))}
               </tbody>
             </table>
+            {/* Official Structured Credentials Footer */}
+            <div className="mt-8 pt-4 border-t-2 border-primary-900/80">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-[10px] text-slate-700 font-medium">
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">السجل التجاري (س.ت)</span>
+                  <span className="font-mono font-black text-slate-900 block">{DEFAULT_COMPANY_CONFIG.commercialReg}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">البطاقة الضريبية (ب.ض)</span>
+                  <span className="font-mono font-black text-slate-900 block">{DEFAULT_COMPANY_CONFIG.taxId}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">اعتماد الدفاع المدني</span>
+                  <span className="font-bold text-slate-900 block">رقم {DEFAULT_COMPANY_CONFIG.civilDefenseReg}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">البريد الإلكتروني</span>
+                  <span className="font-mono font-bold text-slate-900 block truncate">{DEFAULT_COMPANY_CONFIG.email}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">رقم الهاتف</span>
+                  <span className="font-mono font-bold text-slate-900 block">{DEFAULT_COMPANY_CONFIG.phone}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="block text-slate-400 font-bold mb-0.5">العنوان والمقر</span>
+                  <span className="font-bold text-slate-900 block truncate">{DEFAULT_COMPANY_CONFIG.addressAr}</span>
+                </div>
+              </div>
+
+              <div className="mt-3 flex flex-wrap items-center justify-between text-[11px] text-slate-400 pt-2 border-t border-slate-100">
+                <span>{DEFAULT_COMPANY_CONFIG.nameAr} • {DEFAULT_COMPANY_CONFIG.website}</span>
+                <span>ملف إلكتروني رسمي معتمد وموثق</span>
+              </div>
+            </div>
           </div>
         </div>
 

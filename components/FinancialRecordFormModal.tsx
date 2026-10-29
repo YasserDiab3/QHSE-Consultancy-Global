@@ -18,6 +18,7 @@ import {
   PAYMENT_METHODS,
   serializeFinancialDetails,
 } from '@/lib/financial-records'
+import { DEFAULT_COMPANY_CONFIG } from '@/lib/company-config'
 import toast from 'react-hot-toast'
 
 interface FinancialRecordFormModalProps {
@@ -85,6 +86,20 @@ export default function FinancialRecordFormModal({
     existingRecord?.details.clientTaxNumber || ''
   )
   const [notesText, setNotesText] = useState(existingRecord?.details.notesText || '')
+
+  // Bank Account Details for this Invoice
+  const [bankName, setBankName] = useState(
+    existingRecord?.details.bankDetails?.bankName || DEFAULT_COMPANY_CONFIG.bank.bankName
+  )
+  const [accountName, setAccountName] = useState(
+    existingRecord?.details.bankDetails?.accountName || DEFAULT_COMPANY_CONFIG.bank.accountName
+  )
+  const [iban, setIban] = useState(
+    existingRecord?.details.bankDetails?.iban || DEFAULT_COMPANY_CONFIG.bank.iban
+  )
+  const [accountNumber, setAccountNumber] = useState(
+    existingRecord?.details.bankDetails?.accountNumber || DEFAULT_COMPANY_CONFIG.bank.accountNumber
+  )
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -171,6 +186,12 @@ export default function FinancialRecordFormModal({
         terms: terms.trim() || undefined,
         clientTaxNumber: clientTaxNumber.trim() || undefined,
         notesText: notesText.trim() || undefined,
+        bankDetails: {
+          bankName: bankName.trim() || DEFAULT_COMPANY_CONFIG.bank.bankName,
+          accountName: accountName.trim() || DEFAULT_COMPANY_CONFIG.bank.accountName,
+          iban: iban.trim() || DEFAULT_COMPANY_CONFIG.bank.iban,
+          accountNumber: accountNumber.trim() || DEFAULT_COMPANY_CONFIG.bank.accountNumber,
+        },
       }
 
       const notesPayload = serializeFinancialDetails(richDetails)
@@ -561,6 +582,61 @@ export default function FinancialRecordFormModal({
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Bank Account Details For Invoice */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4 text-primary-600" />
+                بيانات الحساب البنكي والتحويل المعتمد لهذه الفاتورة
+              </h4>
+              <span className="text-[11px] text-slate-400">
+                (تظهر للعميل في أسفل الفاتورة للتحويل المالي المباشر)
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+              <div>
+                <label className="text-slate-600 block mb-1">اسم البنك</label>
+                <input
+                  type="text"
+                  className="input-field py-1 text-xs"
+                  placeholder="مثال: البنك التجاري الدولي (CIB)"
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-slate-600 block mb-1">اسم صاحب الحساب</label>
+                <input
+                  type="text"
+                  className="input-field py-1 text-xs"
+                  placeholder="مثال: جلوبال للاستشارات"
+                  value={accountName}
+                  onChange={(e) => setAccountName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-slate-600 block mb-1">رقم الآيبان (IBAN)</label>
+                <input
+                  type="text"
+                  className="input-field py-1 text-xs font-mono"
+                  placeholder="EG380004000100045892147001"
+                  value={iban}
+                  onChange={(e) => setIban(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="text-slate-600 block mb-1">رقم الحساب البنكي (اختياري)</label>
+                <input
+                  type="text"
+                  className="input-field py-1 text-xs font-mono"
+                  placeholder="100045892147"
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Terms, Tax Number & Notes */}

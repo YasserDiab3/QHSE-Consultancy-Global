@@ -298,7 +298,7 @@ export async function createReportPdfDoc(report: ReportPdfData, language: string
       FOOTER_LINE_Y + 158
     )
     pageContext.fillText(
-      `${report.id}  •  QHSSE Consultant  •  Safety  •  Quality  •  Environment`,
+      `${report.id}  •  GLOBAL QHSSE Consultant  •  Safety  •  Quality  •  Environment`,
       PAGE_WIDTH / 2,
       FOOTER_LINE_Y + 180
     )
@@ -320,8 +320,7 @@ export async function createReportPdfDoc(report: ReportPdfData, language: string
   context!.fillStyle = '#a3a3a3'
   context!.fillRect(PAGE_WIDTH / 2 - 85, 103, 170, 3)
   text('600 15px Cairo, Arial', '#777777', 'center')
-  context!.direction = 'ltr'
-  write('QHSSE CONSULTANT', PAGE_WIDTH / 2, 135)
+  write(isArabic ? 'جلوبال لاستشارات السلامة والصحة المهنية والبيئة' : 'GLOBAL QHSSE CONSULTANT', PAGE_WIDTH / 2, 135)
   context!.fillStyle = '#777777'
   context!.fillRect(42, 158, 1156, 3)
 
