@@ -165,12 +165,6 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
     return true
   }
 
-  // If email service is NOT configured, allow fallback testing code '123456'
-  const smtpConfigured = isEmailConfigured()
-  if (!smtpConfigured && cleanCode === '123456') {
-    return true
-  }
-
   const now = new Date()
   const key = `2fa:${normalized}`
 

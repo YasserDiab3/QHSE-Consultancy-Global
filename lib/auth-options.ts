@@ -97,8 +97,8 @@ export const authOptions: NextAuthOptions = {
 
             if (!hasSubmittedOtp) {
               const otpResult = await issueAdmin2FaOtp(user.email, user.language)
-              if (!otpResult.smtpConfigured && otpResult.code) {
-                throw new Error(`2FA_REQUIRED_DEV:${otpResult.code}`)
+              if (!otpResult.smtpConfigured) {
+                throw new Error('2FA_SMTP_NOT_CONFIGURED')
               }
               throw new Error('2FA_REQUIRED')
             }

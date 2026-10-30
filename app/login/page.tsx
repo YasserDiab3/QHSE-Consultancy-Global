@@ -45,7 +45,6 @@ function LoginForm() {
   const [formError, setFormError] = useState<string | null>(null)
   const [requires2Fa, setRequires2Fa] = useState(false)
   const [otp, setOtp] = useState('')
-  const [devOtp, setDevOtp] = useState<string | null>(null)
   const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => {
@@ -72,6 +71,7 @@ function LoginForm() {
             twoFactorTitle: 'التحقق الثنائي (2FA)',
             twoFactorSubtitle: 'أدخل رمز الأمان المكون من 6 أرقام المرسل إلى بريدك الإلكتروني لتأكيد هويتك.',
             invalidOtp: 'رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى المحاولة مرة أخرى.',
+            smtpNotConfigured: 'تنبيه أمني: خادم إرسال البريد (SMTP) غير مفعل في إعدادات النظام (.env). يرجى من مدير النظام ضبط إعدادات خادم البريد لاستلام رموز التحقق أو استخدام رمز الطوارئ الاحتياطي.',
             verifyButton: 'تأكيد الدخول',
             resendCode: 'إعادة إرسال الرمز',
             backToLogin: 'الرجوع',
@@ -86,6 +86,7 @@ function LoginForm() {
             twoFactorTitle: 'Two-Factor Authentication',
             twoFactorSubtitle: 'Enter the 6-digit verification code sent to your email to verify your identity.',
             invalidOtp: 'Invalid or expired security code. Please try again.',
+            smtpNotConfigured: 'Security Notice: SMTP email service is not configured in .env. Verification code cannot be emailed. Please configure SMTP or enter emergency backup code.',
             verifyButton: 'Verify & Sign In',
             resendCode: 'Resend Code',
             backToLogin: 'Back to Login',
@@ -153,28 +154,22 @@ function LoginForm() {
 
       const result = await signIn('credentials', signinPayload)
 
+      if (result?.error === '2FA_SMTP_NOT_CONFIGURED') {
+        setRequires2Fa(true)
+        setResendCooldown(30)
+        setFormError(copy.smtpNotConfigured)
+        return
+      }
+
       if (result?.error?.startsWith('2FA_REQUIRED')) {
         setRequires2Fa(true)
         setResendCooldown(30)
         setFormError(null)
-
-        if (result.error.startsWith('2FA_REQUIRED_DEV:')) {
-          const code = result.error.replace('2FA_REQUIRED_DEV:', '').trim()
-          setDevOtp(code)
-          setOtp(code)
-          toast.success(
-            language === 'ar'
-              ? `تم توليد رمز الأمان: ${code}`
-              : `Security code generated: ${code}`
-          )
-        } else {
-          setDevOtp(null)
-          toast.success(
-            language === 'ar'
-              ? 'تم إرسال رمز التحقق (2FA) إلى بريدك الإلكتروني'
-              : 'Security code (2FA) sent to your email'
-          )
-        }
+        toast.success(
+          language === 'ar'
+            ? 'تم إرسال رمز التحقق (2FA) إلى بريدك الإلكتروني'
+            : 'Security code (2FA) sent to your email'
+        )
         return
       }
 
@@ -269,36 +264,6 @@ function LoginForm() {
                   <p className="font-semibold text-primary-700">{email}</p>
                 </div>
 
-                {devOtp ? (
-                  <div className="rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-start">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-2.5 w-2.5 rounded-full bg-amber-500 animate-pulse" />
-                      <p className="text-xs font-bold text-amber-950">
-                        {language === 'ar'
-                          ? 'تنبيه: إعدادات خادم البريد (SMTP) غير مفعلة في .env'
-                          : 'Notice: SMTP email service is not configured in .env'}
-                      </p>
-                    </div>
-                    <div className="mt-2.5 flex items-center justify-between rounded-lg border border-amber-200 bg-white/90 px-3.5 py-2.5">
-                      <div>
-                        <p className="text-[11px] font-medium text-slate-500">
-                          {language === 'ar' ? 'رمز الأمان المخصص للدخول:' : 'Active security code:'}
-                        </p>
-                        <span className="font-mono text-xl font-extrabold tracking-widest text-primary-700">
-                          {devOtp}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setOtp(devOtp)}
-                        className="rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-semibold text-primary-700 transition hover:bg-primary-100 border border-primary-200"
-                      >
-                        {language === 'ar' ? 'ملء الرمز تلقائياً' : 'Auto-fill'}
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
                 <div>
                   <label htmlFor="otp-input" className="label-field text-center text-slate-700">
                     {language === 'ar' ? 'رمز الأمان (6 أرقام)' : 'Security Code (6 digits)'}
@@ -339,7 +304,6 @@ function LoginForm() {
                     onClick={() => {
                       setRequires2Fa(false)
                       setOtp('')
-                      setDevOtp(null)
                       setFormError(null)
                     }}
                     className="flex items-center gap-1 font-medium text-slate-500 hover:text-slate-800"
@@ -360,13 +324,13 @@ function LoginForm() {
                           password,
                           redirect: false,
                         })
-                        if (res?.error?.startsWith('2FA_REQUIRED')) {
+                        if (res?.error === '2FA_SMTP_NOT_CONFIGURED') {
                           setResendCooldown(30)
-                          if (res.error.startsWith('2FA_REQUIRED_DEV:')) {
-                            const code = res.error.replace('2FA_REQUIRED_DEV:', '').trim()
-                            setDevOtp(code)
-                            setOtp(code)
-                          }
+                          setFormError(copy.smtpNotConfigured)
+                          toast.error(copy.smtpNotConfigured)
+                        } else if (res?.error?.startsWith('2FA_REQUIRED')) {
+                          setResendCooldown(30)
+                          setFormError(null)
                           toast.success(language === 'ar' ? 'تمت إعادة إرسال الرمز' : 'Code resent')
                         }
                       } catch {
