@@ -4,6 +4,7 @@ import {
   parsePortalSettings,
   serializePortalSettings,
   isProfileLocked,
+  isFinancesVisible,
   PortalSettings,
   PROFILE_PREFIX,
 } from '../lib/client-profile'
@@ -127,4 +128,36 @@ test('admin can toggle lock status and unlock client profile', () => {
   }
   assert.equal(isProfileLocked(settings), true)
   assert.equal(settings.lockedBy, 'ADMIN:admin_id')
+})
+
+test('isFinancesVisible defaults to false and only enables when explicitly set to true', () => {
+  // Brand new client with empty settings
+  assert.equal(isFinancesVisible({}), false)
+
+  // Explicitly false
+  assert.equal(isFinancesVisible({ showFinances: false }), false)
+
+  // Undefined
+  assert.equal(isFinancesVisible({ showFinances: undefined }), false)
+
+  // Explicitly true
+  assert.equal(isFinancesVisible({ showFinances: true }), true)
+})
+
+test('PortalSettings safely serializes and deserializes showFinances and contact details', () => {
+  const initial: PortalSettings = {
+    showFinances: true,
+    contactPerson: 'Eng. Ahmed',
+    contactEmail: 'ahmed@factory.com',
+    profileLocked: false,
+  }
+
+  const raw = serializePortalSettings(initial)
+  const parsed = parsePortalSettings(raw)
+
+  assert.equal(parsed.showFinances, true)
+  assert.equal(isFinancesVisible(parsed), true)
+  assert.equal(parsed.contactPerson, 'Eng. Ahmed')
+  assert.equal(parsed.contactEmail, 'ahmed@factory.com')
+  assert.equal(parsed.profileLocked, false)
 })

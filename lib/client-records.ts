@@ -9,10 +9,10 @@ type RawClientRow = {
   phone: string | null
   address: string | null
   contactInfo: string | null
-  userId: string
-  userName: string
-  userEmail: string
-  userRole: string
+  userId: string | null
+  userName: string | null
+  userEmail: string | null
+  userRole: string | null
   reportsCount?: number | bigint | string | null
 }
 
@@ -199,13 +199,15 @@ function mapClientRow(row: RawClientRow) {
     phone: row.phone ?? undefined,
     address: row.address ?? undefined,
     contactInfo: row.contactInfo ?? undefined,
-    userId: row.userId,
-    user: {
-      id: row.userId,
-      name: row.userName,
-      email: row.userEmail,
-      role: row.userRole,
-    },
+    userId: row.userId ?? null,
+    user: row.userId
+      ? {
+          id: row.userId,
+          name: row.userName ?? '',
+          email: row.userEmail ?? '',
+          role: row.userRole ?? 'CLIENT',
+        }
+      : null,
     _count: {
       reports: Number(row.reportsCount ?? 0),
     },
@@ -236,7 +238,7 @@ export async function listClientAccounts() {
       u.${quoteIdentifier(schema.user.role)} AS "userRole",
       ${reportsCountExpr}
     FROM ${quoteIdentifier(schema.clientTable)} c
-    INNER JOIN ${quoteIdentifier(schema.userTable)} u
+    LEFT JOIN ${quoteIdentifier(schema.userTable)} u
       ON c.${quoteIdentifier(schema.client.userId)} = u.${quoteIdentifier(schema.user.id)}
     ORDER BY c.${quoteIdentifier(orderByColumn)} DESC
   `)
@@ -275,7 +277,7 @@ export async function getClientAccountById(id: string) {
       u.${quoteIdentifier(schema.user.role)} AS "userRole",
       ${reportsCountExpr}
     FROM ${quoteIdentifier(schema.clientTable)} c
-    INNER JOIN ${quoteIdentifier(schema.userTable)} u
+    LEFT JOIN ${quoteIdentifier(schema.userTable)} u
       ON c.${quoteIdentifier(schema.client.userId)} = u.${quoteIdentifier(schema.user.id)}
     WHERE c.${quoteIdentifier(schema.client.id)} = ${sqlValue(id)}
     LIMIT 1
@@ -298,31 +300,42 @@ export async function getClientIdByUserId(userId: string) {
 }
 
 export async function createClientAccount(input: {
-  userId: string
+  userId?: string | null
   companyName: string
   companyNameAr?: string
   phone?: string
   address?: string
+  contactInfo?: string
 }) {
   const schema = await getSchemaInfo()
   const clientId = randomUUID()
 
-  const columns = [schema.client.id, schema.client.userId, schema.client.companyName]
-  const values = [sqlValue(clientId), sqlValue(input.userId), sqlValue(input.companyName)]
+  const columns = [schema.client.id, schema.client.companyName]
+  const values = [sqlValue(clientId), sqlValue(input.companyName)]
 
-  if (schema.client.companyNameAr) {
+  if (schema.client.userId && input.userId) {
+    columns.push(schema.client.userId)
+    values.push(sqlValue(input.userId))
+  }
+
+  if (schema.client.companyNameAr && input.companyNameAr) {
     columns.push(schema.client.companyNameAr)
     values.push(sqlValue(input.companyNameAr))
   }
 
-  if (schema.client.phone) {
+  if (schema.client.phone && input.phone) {
     columns.push(schema.client.phone)
     values.push(sqlValue(input.phone))
   }
 
-  if (schema.client.address) {
+  if (schema.client.address && input.address) {
     columns.push(schema.client.address)
     values.push(sqlValue(input.address))
+  }
+
+  if (schema.client.contactInfo && input.contactInfo) {
+    columns.push(schema.client.contactInfo)
+    values.push(sqlValue(input.contactInfo))
   }
 
   if (schema.client.createdAt) {
@@ -344,6 +357,34 @@ export async function createClientAccount(input: {
   `)
 
   return clientId
+}
+
+export async function linkUserToClient(clientId: string, userId: string) {
+  const schema = await getSchemaInfo()
+  const updates = [`${quoteIdentifier(schema.client.userId)} = ${sqlValue(userId)}`]
+  if (schema.client.updatedAt) {
+    updates.push(`${quoteIdentifier(schema.client.updatedAt)} = CURRENT_TIMESTAMP`)
+  }
+
+  await prisma.$executeRawUnsafe(`
+    UPDATE ${quoteIdentifier(schema.clientTable)}
+    SET ${updates.join(', ')}
+    WHERE ${quoteIdentifier(schema.client.id)} = ${sqlValue(clientId)}
+  `)
+}
+
+export async function unlinkUserFromClient(clientId: string) {
+  const schema = await getSchemaInfo()
+  const updates = [`${quoteIdentifier(schema.client.userId)} = NULL`]
+  if (schema.client.updatedAt) {
+    updates.push(`${quoteIdentifier(schema.client.updatedAt)} = CURRENT_TIMESTAMP`)
+  }
+
+  await prisma.$executeRawUnsafe(`
+    UPDATE ${quoteIdentifier(schema.clientTable)}
+    SET ${updates.join(', ')}
+    WHERE ${quoteIdentifier(schema.client.id)} = ${sqlValue(clientId)}
+  `)
 }
 
 export async function updateClientAccount(

@@ -158,10 +158,22 @@ export default function ClientDashboard() {
   const [showFilters, setShowFilters] = useState(false)
   const [showExecutiveReport, setShowExecutiveReport] = useState(false)
   const [activeTab, setActiveTab] = useState<'dashboard' | 'reports' | 'performance' | 'documents' | 'finances'>('dashboard')
+  const [showFinances, setShowFinances] = useState(false)
   const [documents, setDocuments] = useState<ClientDocument[]>([])
   const [folders, setFolders] = useState<KnowledgeFolder[]>([])
   const [documentsLoading, setDocumentsLoading] = useState(true)
   const [documentsError, setDocumentsError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/client-profile')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.settings?.showFinances) {
+          setShowFinances(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const reportsLoadedRef = useRef(false)
   const documentsLoadedRef = useRef(false)
@@ -295,7 +307,9 @@ export default function ClientDashboard() {
               ['reports', language === 'ar' ? 'تقارير الزيارات' : 'Visit reports', FileText],
               ['performance', language === 'ar' ? 'مؤشرات الأداء' : 'Performance', BarChart3],
               ['documents', language === 'ar' ? 'بنك المعلومات' : 'Knowledge bank', FolderOpen],
-              ['finances', language === 'ar' ? 'الفواتير والمستحقات' : 'Invoices & Billing', Receipt],
+              ...(showFinances
+                ? [['finances', language === 'ar' ? 'الفواتير والمستحقات' : 'Invoices & Billing', Receipt]]
+                : []),
             ].map(([id, label, Icon]) => <button key={id as string} onClick={() => { setActiveTab(id as 'dashboard' | 'reports' | 'performance' | 'documents' | 'finances'); setSelectedReport(null) }} className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium ${activeTab === id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'}`}><Icon className="h-4 w-4" />{label as string}</button>)}
           </div>
 
@@ -303,9 +317,11 @@ export default function ClientDashboard() {
             <ClientOverview reports={reports} language={language} onReports={() => setActiveTab('reports')} />
           </div>
 
-          <div className={activeTab === 'finances' ? 'block' : 'hidden'}>
-            <ClientFinancesTab language={language} />
-          </div>
+          {showFinances && (
+            <div className={activeTab === 'finances' ? 'block' : 'hidden'}>
+              <ClientFinancesTab language={language} />
+            </div>
+          )}
 
           <div className={activeTab === 'performance' ? 'block' : 'hidden'}>
             <ClientPerformance reports={reports} language={language} />

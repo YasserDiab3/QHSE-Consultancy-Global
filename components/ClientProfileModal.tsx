@@ -23,9 +23,11 @@ import {
   MapPin,
   Mail,
   Phone,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import BrandLogo from '@/components/BrandLogo'
-import { parsePortalSettings, isProfileLocked } from '@/lib/client-profile'
+import { parsePortalSettings, isProfileLocked, isFinancesVisible } from '@/lib/client-profile'
 import {
   FinancialRecordView,
   parseFinancialRecord,
@@ -52,13 +54,13 @@ interface ClientProfileModalProps {
     phone?: string
     address?: string
     contactInfo?: string
-    user: {
+    user?: {
       id: string
       name: string
       email: string
       role: string
       phone?: string
-    }
+    } | null
   }
   onClose: () => void
   onLockChanged?: () => void | Promise<void>
@@ -114,6 +116,12 @@ export default function ClientProfileModal({
   )
   const [togglingLock, setTogglingLock] = useState(false)
 
+  // Finances Visibility State
+  const [financesVisible, setFinancesVisible] = useState(() =>
+    isFinancesVisible(parsePortalSettings(client.contactInfo))
+  )
+  const [togglingFinances, setTogglingFinances] = useState(false)
+
   // Printable profile ref
   const fullProfilePrintRef = useRef<HTMLDivElement>(null)
   const [printingFullProfile, setPrintingFullProfile] = useState(false)
@@ -128,7 +136,9 @@ export default function ClientProfileModal({
       if (!response.ok) throw new Error(payload?.error || 'تعذر تحميل ملف العميل')
       setData(payload)
       if (payload?.client?.contactInfo !== undefined) {
-        setLockedState(isProfileLocked(parsePortalSettings(payload.client.contactInfo)))
+        const s = parsePortalSettings(payload.client.contactInfo)
+        setLockedState(isProfileLocked(s))
+        setFinancesVisible(isFinancesVisible(s))
       }
     } catch (error) {
       setProfileError(error instanceof Error ? error.message : 'تعذر تحميل ملف العميل')
@@ -164,6 +174,35 @@ export default function ClientProfileModal({
       toast.error('تعذر تحديث حالة القفل')
     } finally {
       setTogglingLock(false)
+    }
+  }
+
+  // Toggle Finances Visibility
+  const toggleFinancesInsideModal = async () => {
+    setTogglingFinances(true)
+    const target = !financesVisible
+    try {
+      const res = await fetch(`/api/clients/${client.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ showFinances: target }),
+      })
+      if (res.ok) {
+        setFinancesVisible(target)
+        toast.success(
+          target
+            ? 'تم تفعيل ظهور الفواتير والمستحقات في بوابة العميل'
+            : 'تم إخفاء الفواتير والمستحقات عن بوابة العميل'
+        )
+        await onClientUpdated?.()
+      } else {
+        const d = await res.json().catch(() => null)
+        toast.error(d?.error || 'تعذر تحديث إعدادات الفواتير')
+      }
+    } catch {
+      toast.error('تعذر تحديث إعدادات الفواتير')
+    } finally {
+      setTogglingFinances(false)
     }
   }
 
@@ -527,6 +566,69 @@ export default function ClientProfileModal({
             {/* TAB 1: Financial Records & Invoices */}
             {activeTab === 'financial' && (
               <div className="space-y-4">
+                {/* Financial Visibility Banner */}
+                <div
+                  className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                    financesVisible
+                      ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950'
+                      : 'bg-amber-50/80 border-amber-200 text-amber-950'
+                  }`}
+                >
+                  <div className="flex items-start sm:items-center gap-3">
+                    <div
+                      className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        financesVisible ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
+                      }`}
+                    >
+                      {financesVisible ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold">
+                          {financesVisible
+                            ? 'ظهور الفواتير في بوابة العميل: مفعّل 🟢'
+                            : 'ظهور الفواتير في بوابة العميل: معطّل ومخفي 🔒'}
+                        </h4>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                            financesVisible ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'
+                          }`}
+                        >
+                          {financesVisible ? 'مرئي للعميل' : 'خاص بالإدارة فقط'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        {financesVisible
+                          ? 'يستطيع العميل استعراض الفواتير والمستحقات وسجل الدفعات وكشف الحساب مباشرة من بوابته.'
+                          : 'الفواتير والمستحقات المالية محجوبة بالكامل عن بوابة العميل ولا تظهر له إطلاقاً إلا إذا قمت بتفعيلها.'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={togglingFinances}
+                    onClick={toggleFinancesInsideModal}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 shrink-0 ${
+                      financesVisible
+                        ? 'bg-white text-amber-800 hover:bg-amber-100 border border-amber-300'
+                        : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                    }`}
+                  >
+                    {togglingFinances && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                    {financesVisible ? (
+                      <>
+                        <EyeOff className="h-4 w-4" />
+                        إخفاء الفواتير عن العميل
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-4 w-4" />
+                        تفعيل ظهور الفواتير للعميل
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 {/* Search & Filter Bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-sm">
                   {/* Status Pills */}
@@ -1216,7 +1318,12 @@ export default function ClientProfileModal({
               companyNameAr: client.companyNameAr,
               phone: client.phone,
               address: client.address,
-              user: client.user,
+              user: data?.client?.user || client.user || {
+                id: '',
+                name: client.companyName,
+                email: '',
+                role: 'CLIENT',
+              },
             }}
             onClose={() => setSelectedInvoiceForPrint(null)}
           />
@@ -1230,7 +1337,12 @@ export default function ClientProfileModal({
               companyNameAr: client.companyNameAr,
               phone: client.phone,
               address: client.address,
-              user: client.user,
+              user: data?.client?.user || client.user || {
+                id: '',
+                name: client.companyName,
+                email: '',
+                role: 'CLIENT',
+              },
             }}
             invoices={financialRecords}
             onClose={() => setShowStatementModal(false)}
@@ -1259,7 +1371,12 @@ export default function ClientProfileModal({
               companyNameAr: data?.client?.companyNameAr || client.companyNameAr,
               phone: data?.client?.phone || client.phone,
               address: data?.client?.address || client.address,
-              user: data?.client?.user || client.user,
+              user: data?.client?.user || client.user || {
+                id: '',
+                name: client.companyName,
+                email: '',
+                role: 'CLIENT',
+              },
             }}
             existingVisit={editingVisit}
             onClose={() => {
@@ -1280,7 +1397,12 @@ export default function ClientProfileModal({
               companyNameAr: data?.client?.companyNameAr || client.companyNameAr,
               phone: data?.client?.phone || client.phone,
               address: data?.client?.address || client.address,
-              user: data?.client?.user || client.user,
+              user: data?.client?.user || client.user || {
+                id: '',
+                name: client.companyName,
+                email: '',
+                role: 'CLIENT',
+              },
             }}
             onClose={() => setShowEditInfoModal(false)}
             onSuccess={async () => {

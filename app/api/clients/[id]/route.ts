@@ -18,7 +18,7 @@ export async function PUT(
     const headerList = await headers()
     const ip = headerList.get('x-forwarded-for') || 'unknown'
 
-    const { name, email, password, companyName, companyNameAr, phone, address, profileLocked } = body
+    const { name, email, password, companyName, companyNameAr, phone, address, profileLocked, showFinances } = body
 
     const existingClient = await getClientAccountById(id)
 
@@ -26,12 +26,12 @@ export async function PUT(
       return NextResponse.json({ error: 'Client not found' }, { status: 404 })
     }
 
-    if (email && email !== existingClient.user.email) {
+    if (email && existingClient.user && email !== existingClient.user.email) {
       const duplicateUser = await prisma.user.findFirst({
         where: {
           email,
           id: {
-            not: existingClient.userId,
+            not: existingClient.userId ?? undefined,
           },
         },
       })
@@ -41,18 +41,20 @@ export async function PUT(
       }
     }
 
-    const userUpdateData: Record<string, unknown> = {}
-    if (name) userUpdateData.name = name
-    if (email) userUpdateData.email = email
-    if (password) {
-      userUpdateData.password = await bcrypt.hash(password, 12)
-    }
+    if (existingClient.userId) {
+      const userUpdateData: Record<string, unknown> = {}
+      if (name) userUpdateData.name = name
+      if (email) userUpdateData.email = email
+      if (password) {
+        userUpdateData.password = await bcrypt.hash(password, 12)
+      }
 
-    if (Object.keys(userUpdateData).length > 0) {
-      await prisma.user.update({
-        where: { id: existingClient.userId },
-        data: userUpdateData,
-      })
+      if (Object.keys(userUpdateData).length > 0) {
+        await prisma.user.update({
+          where: { id: existingClient.userId },
+          data: userUpdateData,
+        })
+      }
     }
 
     if (companyName) {
@@ -64,17 +66,33 @@ export async function PUT(
       })
     }
 
-    if (profileLocked !== undefined) {
+    if (
+      profileLocked !== undefined ||
+      showFinances !== undefined ||
+      (!existingClient.userId && (name !== undefined || email !== undefined))
+    ) {
       const existingSettings = parsePortalSettings(existingClient.contactInfo)
-      const isLocking = Boolean(profileLocked)
-      existingSettings.profileLocked = isLocking
-      if (isLocking) {
-        existingSettings.lockedAt = existingSettings.lockedAt || new Date().toISOString()
-        existingSettings.lockedBy = `ADMIN:${session.user.id}`
-      } else {
-        delete existingSettings.lockedAt
-        delete existingSettings.lockedBy
+      if (profileLocked !== undefined) {
+        const isLocking = Boolean(profileLocked)
+        existingSettings.profileLocked = isLocking
+        if (isLocking) {
+          existingSettings.lockedAt = existingSettings.lockedAt || new Date().toISOString()
+          existingSettings.lockedBy = `ADMIN:${session.user.id}`
+        } else {
+          delete existingSettings.lockedAt
+          delete existingSettings.lockedBy
+        }
       }
+
+      if (showFinances !== undefined) {
+        existingSettings.showFinances = Boolean(showFinances)
+      }
+
+      if (!existingClient.userId) {
+        if (name !== undefined) existingSettings.contactPerson = name.trim()
+        if (email !== undefined) existingSettings.contactEmail = email.trim()
+      }
+
       await updateClientContactInfo(id, serializePortalSettings(existingSettings))
     }
 

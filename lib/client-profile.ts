@@ -5,6 +5,9 @@ export type PortalSettings = {
   profileLocked?: boolean
   lockedAt?: string
   lockedBy?: string
+  showFinances?: boolean
+  contactEmail?: string
+  contactPerson?: string
 }
 
 export const PROFILE_PREFIX = 'QHSSE_PORTAL_PROFILE:'
@@ -42,4 +45,12 @@ export function isProfileLocked(settings: PortalSettings): boolean {
     return settings.profileLocked
   }
   return Boolean(settings.logoDataUrl)
+}
+
+/**
+ * Checks whether client invoices and dues are visible in the client portal.
+ * Defaults to false (hidden) unless explicitly enabled by an admin.
+ */
+export function isFinancesVisible(settings: PortalSettings): boolean {
+  return Boolean(settings.showFinances)
 }

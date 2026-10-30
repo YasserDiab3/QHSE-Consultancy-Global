@@ -426,7 +426,7 @@ export async function notifyCriticalObservation(input: {
     }
 
     const client = report.client
-    const isArabic = Boolean(client.user.language === 'ar' || report.siteNameAr || input.observationTitleAr)
+    const isArabic = Boolean(client?.user?.language === 'ar' || report.siteNameAr || input.observationTitleAr)
     const clientName = (isArabic ? client.companyNameAr : client.companyName) || client.companyName
     const siteName = (isArabic ? report.siteNameAr : report.siteName) || report.siteName
     const observationTitle = (isArabic ? input.observationTitleAr : input.observationTitle) || input.observationTitle

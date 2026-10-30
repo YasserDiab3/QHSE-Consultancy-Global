@@ -31,8 +31,8 @@ model User {
 
 model Client {
   id            String    @id @default(uuid())
-  userId        String    @unique
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String?   @unique
+  user          User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   companyName   String    @map("companyname")
   companyNameAr String?   @map("companynamear")
   contactInfo   String?   @map("contactinfo")

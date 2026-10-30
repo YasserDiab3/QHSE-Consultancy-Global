@@ -49,6 +49,7 @@ export async function GET() {
         showProfile: settings.showProfile !== false,
         profileLocked: locked,
         lockedAt: settings.lockedAt,
+        showFinances: Boolean(settings.showFinances),
       },
     }, { headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0' } })
   } catch (error) {
@@ -76,7 +77,7 @@ export async function PATCH(request: Request) {
     const profile = body.profile
 
     if (profile !== undefined) {
-      const name = typeof profile.name === 'string' ? profile.name.trim() : client.user.name
+      const name = typeof profile.name === 'string' ? profile.name.trim() : (client.user?.name || client.companyName)
       const companyName = typeof profile.companyName === 'string' ? profile.companyName.trim() : client.companyName
       const companyNameAr = typeof profile.companyNameAr === 'string' ? profile.companyNameAr.trim() : client.companyNameAr
       const phone = typeof profile.phone === 'string' ? profile.phone.trim() : client.phone
@@ -93,7 +94,7 @@ export async function PATCH(request: Request) {
         address: address || undefined,
       })
 
-      if (name !== client.user.name) {
+      if (client.user && name !== client.user.name) {
         await prisma.user.update({ where: { id: client.user.id }, data: { name } })
       }
     }

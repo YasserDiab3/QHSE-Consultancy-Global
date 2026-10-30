@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { getClientIdByUserId } from '@/lib/client-records'
+import { getClientAccountById, getClientIdByUserId } from '@/lib/client-records'
 import { prisma } from '@/lib/prisma'
+import { parsePortalSettings, isFinancesVisible } from '@/lib/client-profile'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -19,6 +20,18 @@ export async function GET(request: Request) {
       clientId = await getClientIdByUserId(session.user.id)
       if (!clientId) {
         return NextResponse.json({ financialRecords: [], summary: { total: 0, paid: 0, pending: 0 } }, { status: 200 })
+      }
+
+      // Verify finances visibility permission
+      const client = await getClientAccountById(clientId)
+      const settings = parsePortalSettings(client?.contactInfo)
+      if (!isFinancesVisible(settings)) {
+        return NextResponse.json({
+          financialRecords: [],
+          summary: { total: 0, paid: 0, pending: 0 },
+          disabled: true,
+          message: 'Financial records are disabled by the administrator',
+        }, { status: 200 })
       }
     } else if (session.user.role === 'ADMIN' || session.user.role === 'DATA_ENTRY') {
       const urlClientId = new URL(request.url).searchParams.get('clientId')

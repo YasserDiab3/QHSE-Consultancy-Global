@@ -42,7 +42,7 @@ export async function GET(request: Request) {
           id: clientRecord.id,
           name: clientRecord.companyName,
           nameAr: clientRecord.companyNameAr || clientRecord.companyName,
-          email: clientRecord.user.email,
+          email: clientRecord.user?.email || null,
           phone: clientRecord.phone,
         }
       }
