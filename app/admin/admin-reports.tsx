@@ -17,12 +17,14 @@ import {
   CheckCircle2,
   Clock,
   RotateCcw,
+  Camera,
 } from 'lucide-react'
 import { getRiskLevelColor, getStatusColor, getCategoryColor } from '@/lib/colors'
 import toast from 'react-hot-toast'
 import { downloadClientReportPdf } from '@/lib/report-pdf'
 import { exportAllReportsObservationsToCsv, exportSingleReportObservationsToCsv } from '@/lib/export-excel'
 import ExecutiveSafetyReportModal from '@/components/ExecutiveSafetyReportModal'
+import OfflineInspectionModal from '@/components/OfflineInspectionModal'
 
 type Report = {
   id: string
@@ -144,6 +146,7 @@ export default function AdminReports({
   const [showForm, setShowForm] = useState(false)
   const [editingReport, setEditingReport] = useState<Report | null>(null)
   const [showExecutiveReport, setShowExecutiveReport] = useState(false)
+  const [showOfflineModal, setShowOfflineModal] = useState(false)
   const [viewingReport, setViewingReport] = useState<Report | null>(null)
   const [formData, setFormData] = useState(createInitialFormData)
   const [initialPoints, setInitialPoints] = useState('')
@@ -277,6 +280,14 @@ export default function AdminReports({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold text-gray-900">{t('admin.manageReports')}</h2>
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowOfflineModal(true)}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow hover:opacity-95 transition"
+            title={language === 'ar' ? 'معاينة ميدانية بدون إنترنت وتصوير بالكاميرا' : 'Offline Field Inspection & Camera'}
+          >
+            <Camera className="w-4 h-4 text-white" />
+            {language === 'ar' ? 'معاينة ميدانية (أوفلاين)' : 'Field Inspection (Offline)'}
+          </button>
           <button
             onClick={() => setShowExecutiveReport(true)}
             className="btn-secondary"
@@ -566,6 +577,12 @@ export default function AdminReports({
       <ExecutiveSafetyReportModal
         isOpen={showExecutiveReport}
         onClose={() => setShowExecutiveReport(false)}
+      />
+
+      <OfflineInspectionModal
+        isOpen={showOfflineModal}
+        onClose={() => setShowOfflineModal(false)}
+        onSynced={fetchData}
       />
     </div>
   )
