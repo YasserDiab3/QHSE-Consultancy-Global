@@ -89,7 +89,16 @@ export const authOptions: NextAuthOptions = {
           }
 
           // Check if 2FA is required for this user
-          const is2FaRequired = user.role === 'ADMIN' && (await is2FaEnabledForUser(user.email))
+          // 2FA requires either an Authenticator app (TOTP) or an active SMTP server for delivery
+          const hasAuthenticatorApp = Boolean(user.twoFactorSecret)
+          const hasEmailDelivery = isEmailConfigured()
+          const is2FaEnforceable = hasAuthenticatorApp || hasEmailDelivery
+
+          const is2FaRequired =
+            user.role === 'ADMIN' &&
+            is2FaEnforceable &&
+            (await is2FaEnabledForUser(user.email))
+
           if (is2FaRequired) {
             const rawOtp = (credentials as any)?.otp?.trim()
             const hasSubmittedOtp = Boolean(
@@ -97,18 +106,15 @@ export const authOptions: NextAuthOptions = {
             )
 
             if (!hasSubmittedOtp) {
-              if (user.twoFactorSecret) {
+              if (hasAuthenticatorApp) {
                 // User has Authenticator app (TOTP) active.
                 // Optionally dispatch email OTP if SMTP is available, but do not block if unconfigured.
-                if (isEmailConfigured()) {
+                if (hasEmailDelivery) {
                   issueAdmin2FaOtp(user.email, user.language).catch(() => {})
                 }
                 throw new Error('2FA_REQUIRED')
-              } else {
-                const otpResult = await issueAdmin2FaOtp(user.email, user.language)
-                if (!otpResult.smtpConfigured) {
-                  throw new Error('2FA_SMTP_NOT_CONFIGURED')
-                }
+              } else if (hasEmailDelivery) {
+                await issueAdmin2FaOtp(user.email, user.language)
                 throw new Error('2FA_REQUIRED')
               }
             }
@@ -132,6 +138,7 @@ export const authOptions: NextAuthOptions = {
           if (
             dbError?.message === 'ACCOUNT_LOCKED' ||
             dbError?.message === '2FA_REQUIRED' ||
+            dbError?.message === '2FA_SMTP_NOT_CONFIGURED' ||
             dbError?.message?.startsWith('2FA_REQUIRED_DEV:') ||
             dbError?.message === 'INVALID_2FA_CODE'
           ) {
