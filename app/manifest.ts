@@ -35,8 +35,8 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: 'maskable',
       },
       {
-        src: '/icon.svg',
-        sizes: 'any',
+        src: '/brand/qhsse-logo-mark.svg',
+        sizes: '1024x1024',
         type: 'image/svg+xml',
         purpose: 'any',
       },

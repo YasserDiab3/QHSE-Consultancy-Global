@@ -11,9 +11,12 @@ const STATIC_ASSETS = [
   '/icon.svg',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
+  '/icons/icon-maskable-512.png',
   '/icons/apple-touch-icon.png',
-  '/public/locales/ar.json',
-  '/public/locales/en.json',
+  '/brand/qhsse-logo-header.svg',
+  '/brand/qhsse-logo-mark.svg',
+  '/locales/ar.json',
+  '/locales/en.json',
 ]
 
 // 1. Install Event: Pre-cache core shell assets

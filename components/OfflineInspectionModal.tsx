@@ -300,24 +300,24 @@ export default function OfflineInspectionModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-2 sm:p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-0 sm:p-4 backdrop-blur-sm">
       <div
-        className="flex h-[92vh] w-full max-w-4xl flex-col rounded-3xl bg-white shadow-2xl overflow-hidden"
+        className="flex h-full sm:h-[92vh] max-h-[100dvh] w-full max-w-4xl flex-col rounded-none sm:rounded-3xl bg-white shadow-2xl overflow-hidden pb-[env(safe-area-inset-bottom,0px)]"
         dir={dir}
       >
         {/* Header Bar */}
-        <div className="flex items-center justify-between border-b border-gray-100 bg-slate-900 p-4 sm:p-6 text-white">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 shadow-md">
-              <Camera className="h-6 w-6 text-white" />
+        <div className="flex items-center justify-between border-b border-gray-100 bg-slate-900 p-3.5 sm:p-6 text-white pt-[calc(0.875rem+env(safe-area-inset-top,0px))]">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-blue-600 to-emerald-500 shadow-md">
+              <Camera className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold">
-                  {isAr ? 'المعاينة الميدانية بدون إنترنت (Field Inspection)' : 'Offline Field Inspection'}
+                <h3 className="text-sm sm:text-lg font-bold">
+                  {isAr ? 'المعاينة الميدانية (أوفلاين)' : 'Offline Field Inspection'}
                 </h3>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                  className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-bold ${
                     isOnline ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
                   }`}
                 >
@@ -325,27 +325,27 @@ export default function OfflineInspectionModal({
                   {isOnline ? (isAr ? 'أونلاين' : 'Online') : (isAr ? 'أوفلاين' : 'Offline')}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 line-clamp-1 sm:line-clamp-none">
                 {isAr
-                  ? 'سجّل ملاحظات الفحص والتقط الصور مباشرة من الموقع؛ يتم الحفظ على جهازك والمزامنة تلقائياً'
+                  ? 'تسجيل الملاحظات والتقاط الصور مباشرة من الموقع بحفظ محلي ومزامنة سحابية'
                   : 'Capture inspection observations and photos directly on site with auto cloud sync'}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <button
               onClick={handleSyncAll}
               disabled={isSyncing || !isOnline}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow hover:bg-blue-500 disabled:opacity-40 transition"
+              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow hover:bg-blue-500 disabled:opacity-40 transition"
               title={isAr ? 'مزامنة المسودات مع السحابة' : 'Sync drafts to cloud'}
             >
               <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isAr ? 'مزامنة السحابة' : 'Cloud Sync'}</span>
+              <span className="hidden xs:inline">{isAr ? 'مزامنة السحابة' : 'Cloud Sync'}</span>
             </button>
             <button
               onClick={onClose}
-              className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition"
             >
               <X className="h-5 w-5" />
             </button>
@@ -403,7 +403,7 @@ export default function OfflineInspectionModal({
                 <select
                   value={clientId}
                   onChange={(e) => setClientId(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 bg-white p-3 text-base sm:text-sm focus:border-primary-500 focus:outline-none"
                 >
                   <option value="">{isAr ? '-- اختر العميل --' : '-- Select Client --'}</option>
                   {cachedClients.map((c) => (
@@ -423,7 +423,7 @@ export default function OfflineInspectionModal({
                   value={siteName}
                   onChange={(e) => setSiteName(e.target.value)}
                   placeholder={isAr ? 'مثال: خط التعبئة والتغليف 1' : 'e.g. Production Line 1'}
-                  className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 bg-white p-3 text-base sm:text-sm focus:border-primary-500 focus:outline-none"
                 />
               </div>
 
@@ -434,7 +434,7 @@ export default function OfflineInspectionModal({
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 bg-white p-3 text-base sm:text-sm focus:border-primary-500 focus:outline-none"
                 >
                   {CATEGORIES.map((c) => (
                     <option key={c.value} value={c.value}>
@@ -507,7 +507,8 @@ export default function OfflineInspectionModal({
 
                       <button
                         onClick={() => handleRemoveObservation(obs.id)}
-                        className="rounded-lg p-1 text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                        className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl p-2 text-gray-400 hover:bg-rose-50 hover:text-rose-600 transition"
+                        title={isAr ? 'حذف الملاحظة' : 'Remove observation'}
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -540,7 +541,7 @@ export default function OfflineInspectionModal({
                         ? 'مثال: وجود تسرّب زيوت على ممر المشاة الرئيسي أو عدم ارتداء السترة'
                         : 'e.g. Oil leakage on pedestrian path'
                     }
-                    className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-base sm:text-sm focus:border-primary-500 focus:outline-none"
                   />
                 </div>
 
@@ -551,7 +552,7 @@ export default function OfflineInspectionModal({
                   <select
                     value={obsRisk}
                     onChange={(e) => setObsRisk(e.target.value as any)}
-                    className="w-full rounded-xl border border-gray-200 bg-white p-2.5 text-xs sm:text-sm font-semibold focus:border-primary-500 focus:outline-none"
+                    className="w-full rounded-xl border border-gray-200 bg-white p-3 text-base sm:text-sm font-semibold focus:border-primary-500 focus:outline-none"
                   >
                     <option value="LOW">{isAr ? 'منخفضة (LOW)' : 'LOW'}</option>
                     <option value="MEDIUM">{isAr ? 'متوسطة (MEDIUM)' : 'MEDIUM'}</option>
@@ -570,7 +571,7 @@ export default function OfflineInspectionModal({
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center gap-2 rounded-xl border-2 border-dashed border-primary-300 bg-white px-4 py-2.5 text-xs font-bold text-primary-700 hover:bg-primary-50 transition"
+                    className="flex min-h-[44px] items-center gap-2 rounded-xl border-2 border-dashed border-primary-300 bg-white px-4 py-2.5 text-xs font-bold text-primary-700 hover:bg-primary-50 active:scale-95 transition"
                   >
                     <Camera className="h-4 w-4" />
                     <span>{isAr ? 'تصوير بالكاميرا أو اختيار صور' : 'Snap Photo / Choose Files'}</span>
@@ -588,15 +589,16 @@ export default function OfflineInspectionModal({
                   {obsImages.map((img, i) => (
                     <div
                       key={img.id}
-                      className="relative h-12 w-12 overflow-hidden rounded-xl border border-gray-300 shadow-sm"
+                      className="relative h-14 w-14 overflow-hidden rounded-xl border border-gray-300 shadow-sm"
                     >
                       <img src={img.dataUrl} alt={img.name} className="h-full w-full object-cover" />
                       <button
                         type="button"
                         onClick={() => setObsImages((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="absolute end-0.5 top-0.5 rounded-full bg-black/60 p-0.5 text-white hover:bg-black"
+                        className="absolute end-0 top-0 flex h-6 w-6 items-center justify-center rounded-bl-lg bg-black/70 text-white hover:bg-rose-600 transition"
+                        title="Delete photo"
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-3.5 w-3.5" />
                       </button>
                     </div>
                   ))}
@@ -607,7 +609,7 @@ export default function OfflineInspectionModal({
                 <button
                   type="button"
                   onClick={handleAddObservation}
-                  className="flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-primary-500 transition"
+                  className="flex min-h-[44px] items-center gap-2 rounded-xl bg-primary-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-primary-500 active:scale-95 transition"
                 >
                   <Plus className="h-4 w-4" />
                   <span>{isAr ? 'إدراج الملاحظة' : 'Add Observation'}</span>
@@ -625,7 +627,7 @@ export default function OfflineInspectionModal({
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder={isAr ? 'أي ملاحظات إضافية بخصوص بيئة العمل والسلامة...' : 'Any additional notes...'}
-                className="w-full rounded-xl border border-gray-200 p-2.5 text-xs sm:text-sm focus:border-primary-500 focus:outline-none"
+                className="w-full rounded-xl border border-gray-200 p-3 text-base sm:text-sm focus:border-primary-500 focus:outline-none"
               />
             </div>
           </div>
@@ -768,25 +770,25 @@ export default function OfflineInspectionModal({
 
         {/* Modal Bottom Footer */}
         {activeTab === 'NEW' && (
-          <div className="flex items-center justify-between border-t border-gray-100 bg-gray-50/80 px-4 py-3 sm:px-6">
-            <span className="text-xs text-gray-500">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-100 bg-gray-50/90 px-4 py-3 sm:px-6 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))]">
+            <span className="text-xs text-gray-500 order-2 sm:order-1 text-center sm:text-start">
               {isAr
                 ? 'يتم الحفظ المشفر في ذاكرة الهاتف الداخلية IndexedDB'
                 : 'Securely saved to local device IndexedDB'}
             </span>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 w-full sm:w-auto justify-end order-1 sm:order-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600 hover:bg-gray-100"
+                className="flex-1 sm:flex-none min-h-[44px] rounded-xl border border-gray-200 px-5 py-2.5 text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
               >
                 {isAr ? 'إلغاء' : 'Cancel'}
               </button>
               <button
                 type="button"
                 onClick={handleSaveReportDraft}
-                className="flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2 text-xs font-bold text-white shadow hover:bg-emerald-500 transition"
+                className="flex-[2] sm:flex-none min-h-[44px] flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-2.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-emerald-500 active:scale-95 transition"
               >
                 <CheckCircle2 className="h-4 w-4" />
                 <span>{isAr ? 'حفظ المسودة على الهاتف' : 'Save Draft Offline'}</span>

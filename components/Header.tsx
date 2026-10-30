@@ -71,7 +71,7 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 pt-[env(safe-area-inset-top,0px)] ${
         useSolidHeader ? 'border-b border-primary-100/80 bg-white/95 shadow-[0_10px_32px_rgba(15,76,129,0.08)] backdrop-blur-xl' : 'bg-gradient-to-b from-primary-950/85 via-primary-900/45 to-transparent'
       }`}
     >
@@ -183,7 +183,7 @@ export default function Header() {
               aria-expanded={mobileMenuOpen}
               aria-controls="mobile-navigation"
               aria-label={mobileMenuOpen ? (language === 'ar' ? 'إغلاق القائمة' : 'Close menu') : (language === 'ar' ? 'فتح القائمة' : 'Open menu')}
-              className={`rounded-lg p-2 transition-colors lg:hidden ${
+              className={`min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl p-2 transition-colors lg:hidden ${
                 useSolidHeader ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'
               }`}
             >
@@ -194,7 +194,7 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div id="mobile-navigation" dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-4 max-h-[calc(100vh-96px)] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg fade-in lg:hidden">
+          <div id="mobile-navigation" dir={language === 'ar' ? 'rtl' : 'ltr'} className="mb-4 max-h-[calc(100dvh-110px)] overflow-y-auto rounded-2xl border border-gray-200 bg-white shadow-2xl pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] fade-in lg:hidden">
             <nav className="p-4 space-y-1" aria-label={language === 'ar' ? 'التنقل الرئيسي' : 'Main navigation'}>
               {navLinks.map((link) => (
                 <Link

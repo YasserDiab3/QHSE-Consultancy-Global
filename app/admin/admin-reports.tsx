@@ -481,83 +481,163 @@ export default function AdminReports({
         </div>
       )}
 
-      {/* Reports Table */}
+      {/* Reports Display: Dual View (Desktop Table + Mobile Executive Cards) */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
         </div>
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full min-w-[700px]">
-            <thead>
-              <tr className="border-b border-gray-200">
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.siteName')}</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.date')}</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.category')}</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.status')}</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.observations')}</th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('common.actions')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.map((report) => (
-                <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="py-3 px-4 text-sm font-medium text-gray-900">{report.siteName}</td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{new Date(report.date).toLocaleDateString()}</td>
-                  <td className="py-3 px-4 text-sm">
-                    <span className={`badge ${getCategoryColor(report.category).bg} ${getCategoryColor(report.category).text}`}>
-                      {report.category}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
+        <>
+          {/* Mobile Executive Cards (Phones < md) */}
+          <div className="space-y-3.5 md:hidden">
+            {reports.map((report) => (
+              <div key={report.id} className="card p-4 space-y-3 border border-gray-200 shadow-sm rounded-2xl bg-white">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base font-bold text-gray-900 truncate">{report.siteName}</h3>
+                    <p className="text-xs text-gray-500 mt-0.5">{new Date(report.date).toLocaleDateString()}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
                     <span className={`badge ${getStatusColor(report.status).bg} ${getStatusColor(report.status).text}`}>
                       {report.status}
                     </span>
-                  </td>
-                  <td className="py-3 px-4 text-sm text-gray-600">{report.observations?.length || 0}</td>
-                  <td className="py-3 px-4 text-sm">
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setViewingReport(report)}
-                        className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => void downloadClientReportPdf(report, language)} className="p-1.5 rounded text-primary-600 hover:bg-primary-50" title={language === 'ar' ? 'تصدير PDF' : 'Export PDF'}>
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => {
-                          exportSingleReportObservationsToCsv(report as any, language)
-                          toast.success(language === 'ar' ? 'تم تصدير ملاحظات التقرير إلى Excel' : 'Exported observations to Excel')
-                        }}
-                        className="p-1.5 rounded text-emerald-600 hover:bg-emerald-50"
-                        title={language === 'ar' ? 'تصدير الملاحظات إلى Excel' : 'Export observations to Excel'}
-                      >
-                        <Download className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => startEdit(report)}
-                        className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(report.id)}
-                        className="p-1.5 rounded hover:bg-red-50 text-red-500"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </td>
+                    <span className={`badge ${getCategoryColor(report.category).bg} ${getCategoryColor(report.category).text}`}>
+                      {report.category}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-gray-600 border-t border-gray-100 pt-2.5">
+                  <span>{t('reports.observations')}: <strong className="text-gray-900 font-bold">{report.observations?.length || 0}</strong></span>
+                  {report.client?.companyName && (
+                    <span className="truncate max-w-[170px] text-gray-500 font-medium">{report.client.companyName}</span>
+                  )}
+                </div>
+
+                {/* Mobile Spacious Touch Action Bar (Min 44x44px) */}
+                <div className="grid grid-cols-5 gap-2 border-t border-gray-100 pt-3">
+                  <button
+                    onClick={() => setViewingReport(report)}
+                    className="min-h-[44px] flex items-center justify-center rounded-xl bg-gray-50 text-gray-700 hover:bg-gray-100 active:scale-95 transition"
+                    title={t('common.view')}
+                  >
+                    <Eye className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => void downloadClientReportPdf(report, language)}
+                    className="min-h-[44px] flex items-center justify-center rounded-xl bg-primary-50 text-primary-700 hover:bg-primary-100 active:scale-95 transition"
+                    title="PDF"
+                  >
+                    <Download className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      exportSingleReportObservationsToCsv(report as any, language)
+                      toast.success(language === 'ar' ? 'تم تصدير ملاحظات التقرير إلى Excel' : 'Exported observations to Excel')
+                    }}
+                    className="min-h-[44px] flex items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:scale-95 transition"
+                    title="Excel"
+                  >
+                    <FileText className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => startEdit(report)}
+                    className="min-h-[44px] flex items-center justify-center rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 active:scale-95 transition"
+                    title={t('common.edit')}
+                  >
+                    <Edit className="w-5 h-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(report.id)}
+                    className="min-h-[44px] flex items-center justify-center rounded-xl bg-rose-50 text-rose-600 hover:bg-rose-100 active:scale-95 transition"
+                    title={t('common.delete')}
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+            {reports.length === 0 && (
+              <div className="card text-center py-8 text-gray-500 rounded-2xl">{t('common.noData')}</div>
+            )}
+          </div>
+
+          {/* Desktop Table (Visible on md and up) */}
+          <div className="card overflow-x-auto hidden md:block">
+            <table className="w-full min-w-[700px]">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.siteName')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.date')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.category')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.status')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('reports.observations')}</th>
+                  <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">{t('common.actions')}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-          {reports.length === 0 && (
-            <div className="text-center py-8 text-gray-500">{t('common.noData')}</div>
-          )}
-        </div>
+              </thead>
+              <tbody>
+                {reports.map((report) => (
+                  <tr key={report.id} className="border-b border-gray-100 hover:bg-gray-50">
+                    <td className="py-3 px-4 text-sm font-medium text-gray-900">{report.siteName}</td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{new Date(report.date).toLocaleDateString()}</td>
+                    <td className="py-3 px-4 text-sm">
+                      <span className={`badge ${getCategoryColor(report.category).bg} ${getCategoryColor(report.category).text}`}>
+                        {report.category}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm">
+                      <span className={`badge ${getStatusColor(report.status).bg} ${getStatusColor(report.status).text}`}>
+                        {report.status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-sm text-gray-600">{report.observations?.length || 0}</td>
+                    <td className="py-3 px-4 text-sm">
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setViewingReport(report)}
+                          className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition"
+                          title={t('common.view')}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => void downloadClientReportPdf(report, language)} className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1.5 rounded-lg text-primary-600 hover:bg-primary-50 transition" title={language === 'ar' ? 'تصدير PDF' : 'Export PDF'}>
+                          <Download className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            exportSingleReportObservationsToCsv(report as any, language)
+                            toast.success(language === 'ar' ? 'تم تصدير ملاحظات التقرير إلى Excel' : 'Exported observations to Excel')
+                          }}
+                          className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition"
+                          title={language === 'ar' ? 'تصدير الملاحظات إلى Excel' : 'Export observations to Excel'}
+                        >
+                          <FileText className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => startEdit(report)}
+                          className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition"
+                          title={t('common.edit')}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(report.id)}
+                          className="min-h-[36px] min-w-[36px] flex items-center justify-center p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition"
+                          title={t('common.delete')}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {reports.length === 0 && (
+              <div className="text-center py-8 text-gray-500">{t('common.noData')}</div>
+            )}
+          </div>
+        </>
       )}
 
       {/* View Report Modal */}

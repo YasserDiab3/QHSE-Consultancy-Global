@@ -5,8 +5,11 @@ import { WifiOff, Wifi, RefreshCw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { initAutoSync, syncAllPendingOfflineReports } from '@/lib/offline-sync'
 import { getPendingSyncCount } from '@/lib/offline-reports-store'
+import { useLanguage } from '@/context'
 
 export default function PwaRegister() {
+  const { language, dir } = useLanguage()
+  const isAr = language === 'ar'
   const [isOffline, setIsOffline] = useState(false)
   const [pendingCount, setPendingCount] = useState(0)
   const [isSyncing, setIsSyncing] = useState(false)
@@ -128,14 +131,14 @@ export default function PwaRegister() {
   }
 
   return (
-    <div className="fixed bottom-4 start-4 z-40 max-w-sm transition-all duration-300">
+    <div className="fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] start-4 z-40 max-w-sm transition-all duration-300">
       <div
         className={`flex items-center gap-3 rounded-2xl px-4 py-3 shadow-xl backdrop-blur-md border ${
           isOffline
             ? 'bg-amber-950/90 text-amber-100 border-amber-800'
             : 'bg-slate-900/90 text-slate-100 border-slate-700'
         }`}
-        dir="rtl"
+        dir={dir}
       >
         <div
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
@@ -147,14 +150,16 @@ export default function PwaRegister() {
 
         <div className="flex-1 text-xs">
           <p className="font-bold">
-            {isOffline ? 'وضع المعاينة الميدانية بدون إنترنت' : 'متصل بالإنترنت'}
+            {isOffline
+              ? (isAr ? 'وضع المعاينة الميدانية بدون إنترنت' : 'Offline Field Inspection Mode')
+              : (isAr ? 'متصل بالإنترنت' : 'Connected')}
           </p>
           <p className="text-[11px] opacity-80">
             {pendingCount > 0
-              ? `يوجد ${pendingCount} تقرير معلق بانتظار المزامنة`
+              ? (isAr ? `يوجد ${pendingCount} تقرير معلق بانتظار المزامنة` : `${pendingCount} report(s) pending sync`)
               : isOffline
-              ? 'يتم حفظ المسودات والصور محلياً على الهاتف'
-              : 'جميع التقارير متزامنة'}
+              ? (isAr ? 'يتم حفظ المسودات والصور محلياً على الهاتف' : 'Drafts & photos saved locally')
+              : (isAr ? 'جميع التقارير متزامنة' : 'All reports synced')}
           </p>
         </div>
 
@@ -162,10 +167,10 @@ export default function PwaRegister() {
           <button
             onClick={handleManualSync}
             disabled={isSyncing}
-            className="flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white shadow transition hover:bg-blue-500 disabled:opacity-50"
+            className="flex min-h-[44px] items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white shadow transition hover:bg-blue-500 disabled:opacity-50 active:scale-95"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            <span>مزامنة</span>
+            <span>{isAr ? 'مزامنة' : 'Sync'}</span>
           </button>
         )}
       </div>

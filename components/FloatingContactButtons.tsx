@@ -5,7 +5,7 @@ import { MessageCircle, PhoneCall } from 'lucide-react'
 
 export default function FloatingContactButtons() {
   return (
-    <div className="fixed bottom-6 right-4 z-[60] flex flex-col gap-3 md:bottom-8 md:right-6">
+    <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom,0px))] right-4 z-[60] flex flex-col gap-3 md:bottom-8 md:right-6">
       <a
         href={CONTACT_INFO.whatsappUrl}
         target="_blank"
