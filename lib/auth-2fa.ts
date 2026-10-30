@@ -1,6 +1,7 @@
 import { randomInt } from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { isEmailConfigured, sendNotificationEmail } from '@/lib/email'
+import { verifyTotpCode } from '@/lib/totp'
 
 export const OTP_VALIDITY_MS = 5 * 60 * 1000 // 5 minutes
 export const OTP_COOLDOWN_MS = 30 * 1000 // 30 seconds between resends
@@ -165,6 +166,24 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
     return true
   }
 
+  // 1. Check Authenticator App (Google / Microsoft Authenticator TOTP) if user configured it
+  try {
+    const user = await prisma.user.findUnique({
+      where: { email: normalized },
+      select: { twoFactorSecret: true },
+    })
+    if (user?.twoFactorSecret) {
+      const isTotpValid = verifyTotpCode(cleanCode, user.twoFactorSecret)
+      if (isTotpValid) {
+        memoryOtpStore.delete(normalized)
+        prisma.rateLimitEntry.deleteMany({ where: { key: `2fa:${normalized}` } }).catch(() => {})
+        return true
+      }
+    }
+  } catch (error) {
+    console.warn('[2FA] Authenticator verification check error:', error)
+  }
+
   const now = new Date()
   const key = `2fa:${normalized}`
 
@@ -178,7 +197,7 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
 
     if (memory.code === cleanCode) {
       memoryOtpStore.delete(normalized)
-      prisma.rateLimitEntry.delete({ where: { key } }).catch(() => {})
+      prisma.rateLimitEntry.deleteMany({ where: { key } }).catch(() => {})
       return true
     }
 
@@ -198,7 +217,7 @@ export async function verify2FaOtp(email: string, submittedCode: string): Promis
       const storedCode = String(entry.count).padStart(6, '0')
       if (storedCode === cleanCode) {
         // Success: consume OTP immediately
-        await prisma.rateLimitEntry.delete({ where: { key } }).catch(() => {})
+        await prisma.rateLimitEntry.deleteMany({ where: { key } }).catch(() => {})
         memoryOtpStore.delete(normalized)
         return true
       }
@@ -226,6 +245,14 @@ export async function is2FaEnabledForUser(email: string): Promise<boolean> {
   }
 
   try {
+    const user = await prisma.user.findUnique({
+      where: { email: normalized },
+      select: { twoFactorSecret: true },
+    })
+    if (user?.twoFactorSecret) {
+      return true
+    }
+
     const entry = await prisma.rateLimitEntry.findUnique({
       where: { key: `2fa_enabled:${normalized}` },
     })
@@ -268,6 +295,10 @@ export async function set2FaEnabledForUser(email: string, enabled: boolean): Pro
     } else {
       await prisma.rateLimitEntry.deleteMany({
         where: { key },
+      })
+      await prisma.user.updateMany({
+        where: { email: normalized },
+        data: { twoFactorSecret: null },
       })
     }
     return true

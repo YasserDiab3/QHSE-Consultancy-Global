@@ -7,6 +7,7 @@ import { randomUUID } from 'crypto'
 import { enforceRateLimit } from '@/lib/rate-limit'
 import { checkAccountLockout, recordFailedAttempt, resetFailedAttempts } from '@/lib/auth-lockout'
 import { is2FaEnabledForUser, issueAdmin2FaOtp, verify2FaOtp } from '@/lib/auth-2fa'
+import { isEmailConfigured } from '@/lib/email'
 
 const AUTH_SERVICE_UNAVAILABLE = 'AUTH_SERVICE_UNAVAILABLE'
 
@@ -96,11 +97,20 @@ export const authOptions: NextAuthOptions = {
             )
 
             if (!hasSubmittedOtp) {
-              const otpResult = await issueAdmin2FaOtp(user.email, user.language)
-              if (!otpResult.smtpConfigured) {
-                throw new Error('2FA_SMTP_NOT_CONFIGURED')
+              if (user.twoFactorSecret) {
+                // User has Authenticator app (TOTP) active.
+                // Optionally dispatch email OTP if SMTP is available, but do not block if unconfigured.
+                if (isEmailConfigured()) {
+                  issueAdmin2FaOtp(user.email, user.language).catch(() => {})
+                }
+                throw new Error('2FA_REQUIRED')
+              } else {
+                const otpResult = await issueAdmin2FaOtp(user.email, user.language)
+                if (!otpResult.smtpConfigured) {
+                  throw new Error('2FA_SMTP_NOT_CONFIGURED')
+                }
+                throw new Error('2FA_REQUIRED')
               }
-              throw new Error('2FA_REQUIRED')
             }
 
             const isValidOtp = await verify2FaOtp(user.email, rawOtp)

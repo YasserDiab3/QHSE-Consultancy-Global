@@ -69,9 +69,9 @@ function LoginForm() {
             genericError: 'تعذر تسجيل الدخول. تحقق من الإعدادات ثم حاول مرة أخرى.',
             portal: 'CLIENT PORTAL',
             twoFactorTitle: 'التحقق الثنائي (2FA)',
-            twoFactorSubtitle: 'أدخل رمز الأمان المكون من 6 أرقام المرسل إلى بريدك الإلكتروني لتأكيد هويتك.',
-            invalidOtp: 'رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى المحاولة مرة أخرى.',
-            smtpNotConfigured: 'تنبيه أمني: خادم إرسال البريد (SMTP) غير مفعل في إعدادات النظام (.env). يرجى من مدير النظام ضبط إعدادات خادم البريد لاستلام رموز التحقق أو استخدام رمز الطوارئ الاحتياطي.',
+            twoFactorSubtitle: 'أدخل رمز الأمان المكون من 6 أرقام من تطبيق المصادقة (Google / Microsoft Authenticator) أو بريدك الإلكتروني لتأكيد هويتك.',
+            invalidOtp: 'رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى التأكد من الرمز والمحاولة مرة أخرى.',
+            smtpNotConfigured: 'تنبيه أمني: يتطلب الدخول إدخال رمز الأمان المكون من 6 أرقام من تطبيق المصادقة (Google / Microsoft Authenticator) أو رمز الطوارئ الاحتياطي.',
             verifyButton: 'تأكيد الدخول',
             resendCode: 'إعادة إرسال الرمز',
             backToLogin: 'الرجوع',
@@ -84,9 +84,9 @@ function LoginForm() {
             genericError: 'Unable to sign in. Please check the configuration and try again.',
             portal: 'CLIENT PORTAL',
             twoFactorTitle: 'Two-Factor Authentication',
-            twoFactorSubtitle: 'Enter the 6-digit verification code sent to your email to verify your identity.',
-            invalidOtp: 'Invalid or expired security code. Please try again.',
-            smtpNotConfigured: 'Security Notice: SMTP email service is not configured in .env. Verification code cannot be emailed. Please configure SMTP or enter emergency backup code.',
+            twoFactorSubtitle: 'Enter the 6-digit verification code from your Authenticator app (Google / Microsoft Authenticator) or your email.',
+            invalidOtp: 'Invalid or expired security code. Please check your authenticator code and try again.',
+            smtpNotConfigured: 'Security Notice: Please enter the 6-digit code from your Authenticator app or your emergency backup code.',
             verifyButton: 'Verify & Sign In',
             resendCode: 'Resend Code',
             backToLogin: 'Back to Login',
@@ -259,14 +259,14 @@ function LoginForm() {
                     <ShieldCheck className="h-6 w-6" />
                   </div>
                   <p className="text-xs font-medium text-slate-600">
-                    {language === 'ar' ? 'تم إرسال الرمز إلى:' : 'Security code sent to:'}
+                    {language === 'ar' ? 'أدخل الرمز من تطبيق المصادقة أو البريد الإلكتروني لـ:' : 'Enter code from Authenticator app or email for:'}
                   </p>
                   <p className="font-semibold text-primary-700">{email}</p>
                 </div>
 
                 <div>
                   <label htmlFor="otp-input" className="label-field text-center text-slate-700">
-                    {language === 'ar' ? 'رمز الأمان (6 أرقام)' : 'Security Code (6 digits)'}
+                    {language === 'ar' ? 'رمز الأمان (6 أرقام من Authenticator أو الإيميل)' : 'Security Code (6 digits from Authenticator or Email)'}
                   </label>
                   <input
                     id="otp-input"

@@ -16,6 +16,7 @@ model User {
   phone         String?
   role          String    @default("CLIENT")
   language      String    @default("en")
+  twoFactorSecret String?   @map("twofactorsecret")
   createdAt     DateTime  @default(now()) @map("createdat")
   updatedAt     DateTime  @default(now()) @updatedAt @map("updatedat")
   client        Client?

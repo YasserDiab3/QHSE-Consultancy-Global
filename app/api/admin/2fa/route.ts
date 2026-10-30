@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { is2FaEnabledForUser, set2FaEnabledForUser } from '@/lib/auth-2fa'
 import { isEmailConfigured } from '@/lib/email'
 import { createActivityLogRecord } from '@/lib/activity-log-records'
@@ -14,16 +15,25 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const enabled = await is2FaEnabledForUser(session.user.email)
+    const normalizedEmail = session.user.email.toLowerCase().trim()
+    const enabled = await is2FaEnabledForUser(normalizedEmail)
     const smtpConfigured = isEmailConfigured()
+
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { twoFactorSecret: true },
+    })
+
+    const hasAuthenticator = Boolean(user?.twoFactorSecret)
 
     return NextResponse.json({
       enabled,
+      hasAuthenticator,
       smtpConfigured,
       email: session.user.email,
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: error?.message || 'Internal error' }, { status: 500 })
   }
 }
 
@@ -34,10 +44,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const normalizedEmail = session.user.email.toLowerCase().trim()
     const body = await req.json().catch(() => ({}))
     const enable = Boolean(body.enabled)
 
-    const success = await set2FaEnabledForUser(session.user.email, enable)
+    if (!enable) {
+      // If disabling 2FA completely, clear authenticator secret as well
+      await prisma.user.updateMany({
+        where: { email: normalizedEmail },
+        data: { twoFactorSecret: null },
+      })
+    }
+
+    const success = await set2FaEnabledForUser(normalizedEmail, enable)
     if (!success) {
       return NextResponse.json({ error: 'Failed to update 2FA status' }, { status: 500 })
     }
@@ -51,12 +70,18 @@ export async function POST(req: Request) {
         : 'Admin disabled Two-Factor Authentication (2FA)',
     }).catch(() => {})
 
+    const user = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+      select: { twoFactorSecret: true },
+    })
+
     return NextResponse.json({
       success: true,
       enabled: enable,
+      hasAuthenticator: Boolean(user?.twoFactorSecret),
       smtpConfigured: isEmailConfigured(),
     })
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || 'Internal error' }, { status: 500 })
+    return NextResponse.json({ error: error?.message || 'Internal error' }, { status: 500 })
   }
 }

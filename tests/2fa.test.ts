@@ -66,3 +66,39 @@ test('issueAdmin2FaOtp and verify2FaOtp allow successful authentication with sin
   const reuseResult = await verify2FaOtp(testEmail, issueResult.code!)
   assert.equal(reuseResult, false)
 })
+
+test('verify2FaOtp validates Authenticator TOTP token when secret exists in database', async () => {
+  const { prisma } = await import('../lib/prisma')
+  const { generateTotpSecret, generateTotpCode } = await import('../lib/totp')
+
+  const testEmail = 'totp-auth-test@safetyglobal.com'
+  const secret = generateTotpSecret(20)
+
+  // Ensure user exists or is created with twoFactorSecret
+  const user = await prisma.user.upsert({
+    where: { email: testEmail },
+    create: {
+      name: 'TOTP Tester',
+      email: testEmail,
+      password: 'hashed-password',
+      role: 'ADMIN',
+      twoFactorSecret: secret,
+    },
+    update: {
+      twoFactorSecret: secret,
+    },
+  })
+
+  const isEnabled = await is2FaEnabledForUser(testEmail)
+  assert.equal(isEnabled, true)
+
+  const currentCode = generateTotpCode(secret)
+  const isValid = await verify2FaOtp(testEmail, currentCode)
+  assert.equal(isValid, true)
+
+  const isInvalid = await verify2FaOtp(testEmail, '999999')
+  assert.equal(isInvalid, false)
+
+  // Cleanup
+  await prisma.user.delete({ where: { id: user.id } }).catch(() => {})
+})
