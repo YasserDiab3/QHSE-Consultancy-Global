@@ -51,7 +51,9 @@ async function sendViaGraphApi(input: SendEmailInput) {
   const tenantId = process.env.AZURE_TENANT_ID!.trim().replace(/^["']|["']$/g, '')
   const clientId = process.env.AZURE_CLIENT_ID!.trim().replace(/^["']|["']$/g, '')
   const clientSecret = process.env.AZURE_CLIENT_SECRET!.trim().replace(/^["']|["']$/g, '')
-  const senderEmail = sanitizeHeader(process.env.SMTP_FROM || process.env.SMTP_USER || '').replace(/^["']|["']$/g, '')
+  const senderEmail = sanitizeHeader(
+    process.env.AZURE_SENDER_EMAIL || process.env.SMTP_FROM || process.env.SMTP_USER || 'support@qhsseconsultant.onmicrosoft.com'
+  ).replace(/^["']|["']$/g, '')
 
   const tokenUrl = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`
   const tokenParams = new URLSearchParams({
