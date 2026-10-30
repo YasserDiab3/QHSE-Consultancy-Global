@@ -187,11 +187,11 @@ export default function AdminDashboardClient() {
   }, [activateTab])
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white w-full max-w-full overflow-x-hidden">
       <Header />
 
-      <main className="bg-white pb-12 pt-24">
-        <div className="w-full px-4 sm:px-6 lg:px-10">
+      <main className="bg-white pb-12 pt-[calc(5.5rem+env(safe-area-inset-top,0px))] w-full max-w-full overflow-x-hidden">
+        <div className="w-full max-w-full px-3.5 sm:px-6 lg:px-10 overflow-x-hidden">
           <div ref={contentAnchorRef} />
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>
@@ -204,8 +204,8 @@ export default function AdminDashboardClient() {
                 >
                   {isSuper
                     ? language === 'ar'
-                      ? 'مدير عام النظام'
-                      : 'Super Admin'
+                    ? 'مدير عام النظام'
+                    : 'Super Admin'
                     : language === 'ar'
                     ? 'مدخل بيانات (Data Entry)'
                     : 'Data Entry Clerk'}
@@ -218,13 +218,13 @@ export default function AdminDashboardClient() {
             <DashboardSignOutButton />
           </div>
 
-          <div className="mb-8 flex w-fit items-center gap-1 overflow-x-auto rounded-xl border border-gray-200 bg-white p-1">
+          <div className="mb-6 sm:mb-8 flex w-full max-w-full items-center gap-1.5 overflow-x-auto rounded-2xl border border-gray-200 bg-gray-50/80 p-1.5 scrollbar-none">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => activateTab(tab.id)}
-                className={`flex items-center gap-2 whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                  activeTab === tab.id ? 'bg-primary-500 text-white' : 'text-gray-600 hover:bg-gray-100'
+                className={`min-h-[44px] flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs sm:text-sm font-semibold transition-all shrink-0 ${
+                  activeTab === tab.id ? 'bg-primary-600 text-white shadow-sm' : 'text-gray-600 hover:bg-white hover:text-gray-900'
                 }`}
               >
                 <tab.icon className="h-4 w-4" />

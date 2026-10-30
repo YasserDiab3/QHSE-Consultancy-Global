@@ -129,8 +129,8 @@ export default async function RootLayout({
   const { language, dir } = await getServerI18n()
 
   return (
-    <html lang={language} dir={dir} suppressHydrationWarning>
-      <body className={`${inter.variable} ${cairo.variable}`}>
+    <html lang={language} dir={dir} suppressHydrationWarning className="overflow-x-hidden max-w-full">
+      <body className={`${inter.variable} ${cairo.variable} overflow-x-hidden w-full max-w-full min-w-0`}>
         <Providers initialLanguage={language}>
           <a href="#main-content" className="skip-link">
             {language === 'ar' ? 'تخطَّ إلى المحتوى الرئيسي' : 'Skip to main content'}
@@ -139,7 +139,7 @@ export default async function RootLayout({
           <UserPresenceTracker />
           <PwaRegister />
           <PwaInstallPrompt />
-          <div id="main-content" tabIndex={-1}>
+          <div id="main-content" tabIndex={-1} className="overflow-x-hidden w-full max-w-full min-w-0">
             {children}
           </div>
           <FloatingContactButtons />

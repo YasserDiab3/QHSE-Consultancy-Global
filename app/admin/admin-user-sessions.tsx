@@ -400,8 +400,8 @@ export default function AdminUserSessions() {
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm w-full max-w-full">
+          <div className="w-full max-w-full overflow-x-auto">
             <table className="w-full min-w-[950px] border-collapse text-start">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/80 text-xs font-semibold text-slate-600 uppercase tracking-wider">

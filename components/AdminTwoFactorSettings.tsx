@@ -299,7 +299,7 @@ export default function AdminTwoFactorSettings() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full max-w-full overflow-hidden">
       {/* Security Hub Control Header */}
       <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -385,7 +385,7 @@ export default function AdminTwoFactorSettings() {
       </div>
 
       {/* 2-Column Responsive Grid Cards */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full max-w-full overflow-hidden">
         {/* Card 1: Authenticator App (Google / Microsoft Authenticator) */}
         <div
           className={`relative flex flex-col justify-between rounded-2xl border p-5 sm:p-6 transition shadow-sm hover:shadow-md ${
@@ -471,13 +471,13 @@ export default function AdminTwoFactorSettings() {
           </div>
 
           {/* Action Footer */}
-          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 w-full">
             {hasAuthenticator ? (
               <>
                 <button
                   type="button"
                   onClick={handleOpenSetup}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none"
+                  className="flex-1 sm:flex-none min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none"
                 >
                   <QrCode className="h-3.5 w-3.5 text-primary-600" />
                   <span>{isAr ? 'إعادة مسح QR جديد' : 'Re-configure QR'}</span>
@@ -486,7 +486,7 @@ export default function AdminTwoFactorSettings() {
                   type="button"
                   onClick={handleUnlinkAuthenticator}
                   disabled={unlinking}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-danger-200 bg-white px-3 py-2 text-xs font-bold text-danger-700 shadow-sm transition hover:bg-danger-50 focus:outline-none disabled:opacity-60"
+                  className="flex-1 sm:flex-none min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-danger-200 bg-white px-3 py-2 text-xs font-bold text-danger-700 shadow-sm transition hover:bg-danger-50 focus:outline-none disabled:opacity-60"
                 >
                   {unlinking ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -500,7 +500,7 @@ export default function AdminTwoFactorSettings() {
               <button
                 type="button"
                 onClick={handleOpenSetup}
-                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none shadow-primary-600/20 shadow-md"
+                className="w-full min-h-[44px] inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none shadow-primary-600/20 shadow-md"
               >
                 <QrCode className="h-4 w-4" />
                 <span>{isAr ? 'ربط تطبيق المصادقة الآن (QR Code)' : 'Link Authenticator App Now'}</span>
@@ -614,12 +614,12 @@ export default function AdminTwoFactorSettings() {
           </div>
 
           {/* Action Footer */}
-          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+          <div className="mt-5 pt-4 border-t border-slate-100 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 w-full">
             <button
               type="button"
               onClick={handleTestSmtpConnection}
               disabled={testingEmail}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none disabled:opacity-60"
+              className="flex-1 sm:flex-none min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none disabled:opacity-60"
             >
               {testingEmail ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -634,7 +634,7 @@ export default function AdminTwoFactorSettings() {
                 type="button"
                 onClick={handleSendTestEmail}
                 disabled={sendingTestMail}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none disabled:opacity-60"
+                className="flex-1 sm:flex-none min-h-[44px] inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none disabled:opacity-60"
               >
                 {sendingTestMail ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />

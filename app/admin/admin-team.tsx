@@ -282,8 +282,8 @@ export default function AdminTeam({
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm w-full max-w-full">
+          <div className="w-full max-w-full overflow-x-auto">
             <table className="w-full text-start text-sm">
               <thead className="border-b border-gray-200 bg-gray-50/80 text-xs font-semibold text-gray-600">
                 <tr>

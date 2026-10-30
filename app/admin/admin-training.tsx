@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
@@ -390,9 +390,9 @@ export default function AdminTraining({ onDataChanged }: { onDataChanged?: () =>
             ) : <p className="py-8 text-center text-gray-500">{copy.noCourses}</p>}
           </section>
 
-          <section className="card p-6">
+          <section className="card p-4 sm:p-6 w-full max-w-full overflow-hidden">
             <h3 className="mb-5 text-lg font-bold text-gray-900">{copy.trainees}</h3>
-            <div className="overflow-x-auto">
+            <div className="w-full max-w-full overflow-x-auto">
               <table className="w-full min-w-[860px]">
                 <thead>
                   <tr className="border-b border-gray-200 text-sm text-gray-500">

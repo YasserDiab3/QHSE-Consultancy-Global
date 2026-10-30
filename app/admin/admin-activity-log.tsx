@@ -82,8 +82,8 @@ export default function AdminActivityLog() {
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
         </div>
       ) : (
-        <div className="card">
-          <div className="overflow-x-auto">
+        <div className="card overflow-hidden w-full max-w-full">
+          <div className="w-full max-w-full overflow-x-auto">
             <table className="w-full min-w-[600px]">
               <thead>
                 <tr className="border-b border-gray-200">

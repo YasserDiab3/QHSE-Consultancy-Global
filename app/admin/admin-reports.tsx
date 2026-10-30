@@ -277,24 +277,24 @@ export default function AdminReports({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 w-full max-w-full">
         <h2 className="text-xl font-bold text-gray-900">{t('admin.manageReports')}</h2>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
           <button
             onClick={() => setShowOfflineModal(true)}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-emerald-600 px-4 py-2 text-xs sm:text-sm font-bold text-white shadow hover:opacity-95 transition"
+            className="flex-1 sm:flex-none min-h-[44px] flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-emerald-600 px-3.5 py-2.5 text-xs sm:text-sm font-bold text-white shadow hover:opacity-95 transition"
             title={language === 'ar' ? 'معاينة ميدانية بدون إنترنت وتصوير بالكاميرا' : 'Offline Field Inspection & Camera'}
           >
             <Camera className="w-4 h-4 text-white" />
-            {language === 'ar' ? 'معاينة ميدانية (أوفلاين)' : 'Field Inspection (Offline)'}
+            <span>{language === 'ar' ? 'معاينة ميدانية (أوفلاين)' : 'Field Inspection (Offline)'}</span>
           </button>
           <button
             onClick={() => setShowExecutiveReport(true)}
-            className="btn-secondary"
+            className="flex-1 sm:flex-none min-h-[44px] btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
             title={language === 'ar' ? 'عرض التقرير التنفيذي الشامل للسلامة' : 'View Executive Safety Report'}
           >
             <FileText className="w-4 h-4 text-primary-600" />
-            {language === 'ar' ? 'التقرير التنفيذي' : 'Executive Report'}
+            <span>{language === 'ar' ? 'التقرير التنفيذي' : 'Executive Report'}</span>
           </button>
           <button
             onClick={() => {
@@ -305,15 +305,18 @@ export default function AdminReports({
               exportAllReportsObservationsToCsv(reports as any, language)
               toast.success(language === 'ar' ? 'تم تصدير مصفوفة الملاحظات إلى Excel بنجاح' : 'Safety matrix exported to Excel')
             }}
-            className="btn-secondary"
+            className="flex-1 sm:flex-none min-h-[44px] btn-secondary text-xs sm:text-sm px-3.5 py-2.5 justify-center"
             title={language === 'ar' ? 'تصدير مصفوفة الملاحظات لجميع التقارير إلى Excel' : 'Export safety matrix to Excel'}
           >
             <Download className="w-4 h-4 text-emerald-600" />
-            {language === 'ar' ? 'تصدير مصفوفة الملاحظات (Excel)' : 'Export Safety Matrix (Excel)'}
+            <span>{language === 'ar' ? 'تصدير Excel' : 'Export Excel'}</span>
           </button>
-          <button onClick={() => { resetForm(); setShowForm(true) }} className="btn-primary">
+          <button
+            onClick={() => { resetForm(); setShowForm(true) }}
+            className="w-full sm:w-auto min-h-[44px] btn-primary text-xs sm:text-sm px-4 py-2.5 justify-center"
+          >
             <Plus className="w-4 h-4" />
-            {t('admin.addReport')}
+            <span>{t('admin.addReport')}</span>
           </button>
         </div>
       </div>
