@@ -300,237 +300,333 @@ export default function AdminTwoFactorSettings() {
 
   return (
     <div className="space-y-4">
-      {/* 2FA Main Status Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
+      {/* Security Hub Control Header */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3.5">
+          <div className="flex items-center gap-3.5">
             <div
-              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${
-                enabled
-                  ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+              className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-sm transition ${
+                enabled && hasAuthenticator
+                  ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-emerald-500/20'
+                  : enabled
+                  ? 'bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-primary-500/20'
                   : 'bg-slate-100 text-slate-500 border border-slate-200'
               }`}
             >
               {enabled ? <ShieldCheck className="h-6 w-6" /> : <Shield className="h-6 w-6" />}
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h3 className="text-base font-bold text-slate-900">
-                  {isAr ? 'التحقق الثنائي لتسجيل الدخول (2FA)' : 'Two-Factor Authentication (2FA)'}
+                  {isAr ? 'مركز أمان الدخول والمصادقة (2FA Hub)' : 'Security & Authentication Hub (2FA)'}
                 </h3>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                     enabled
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-100 text-slate-600'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-600 border border-slate-200'
                   }`}
                 >
-                  {enabled ? (
-                    <>
-                      <CheckCircle2 className="h-3 w-3" />
-                      {isAr ? 'مُفعّل' : 'Active'}
-                    </>
-                  ) : (
-                    <>
-                      <ShieldAlert className="h-3 w-3" />
-                      {isAr ? 'معطّل (دخول مباشر)' : 'Disabled (Direct Login)'}
-                    </>
-                  )}
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      enabled ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                    }`}
+                  />
+                  {enabled
+                    ? isAr
+                      ? 'التحقق الثنائي نشط'
+                      : '2FA Active'
+                    : isAr
+                    ? 'التحقق الثنائي معطل'
+                    : '2FA Disabled'}
                 </span>
+                {hasAuthenticator && enabled ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-[11px] font-semibold text-primary-700 border border-primary-200">
+                    <CheckCircle2 className="h-3 w-3 text-primary-600" />
+                    {isAr ? 'تطبيق Authenticator محمي' : 'TOTP Protected'}
+                  </span>
+                ) : null}
               </div>
-              <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-xl">
-                {enabled
-                  ? isAr
-                    ? 'التحقق الثنائي نشط لحسابك. سيُطلب رمز أمان مؤقت مكون من 6 أرقام عند كل تسجيل دخول لضمان أعلى مستوى من الحماية.'
-                    : 'Two-factor authentication is active. A 6-digit one-time code will be requested upon login.'
-                  : isAr
-                  ? 'التحقق الثنائي معطل حالياً، ويمكنك تسجيل الدخول مباشرة ببريدك وكلمة المرور. يمكنك تفعيله لزيادة أمان الحساب.'
-                  : '2FA is currently disabled. You can log in directly with your email and password. Enable it for heightened security.'}
+              <p className="mt-1 text-xs text-slate-500 leading-relaxed max-w-2xl">
+                {isAr
+                  ? 'إدارة طبقات الحماية المتعددة لحسابات الإدارة وقنوات تسليم أكواد التحقق والتنبيهات الأمنية.'
+                  : 'Manage multi-factor security layers for administrator accounts and notification channels.'}
               </p>
             </div>
           </div>
 
-          <div className="shrink-0 pt-2 sm:pt-0">
+          <div className="shrink-0 flex items-center gap-3 self-end sm:self-center">
             <button
               type="button"
               onClick={handleToggle}
               disabled={updating}
-              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold shadow-sm transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-sm transition focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 ${
                 enabled
                   ? 'border border-danger-200 bg-white text-danger-700 hover:bg-danger-50 focus-visible:ring-danger-500'
-                  : 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500'
+                  : 'bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500 shadow-primary-600/20 shadow-md'
               }`}
             >
               {updating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : enabled ? (
-                isAr ? 'تعطيل التحقق الثنائي' : 'Disable 2FA'
+                <>
+                  <ShieldAlert className="h-3.5 w-3.5 text-danger-600" />
+                  <span>{isAr ? 'تعطيل التحقق الثنائي' : 'Disable 2FA'}</span>
+                </>
               ) : (
-                isAr ? 'تفعيل التحقق الثنائي (2FA)' : 'Enable 2FA'
+                <>
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>{isAr ? 'تفعيل التحقق الثنائي' : 'Enable 2FA'}</span>
+                </>
               )}
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Authenticator App (TOTP) Section */}
-        <div className="mt-5 pt-5 border-t border-slate-100">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-xl bg-slate-50/80 border border-slate-200 p-4">
-            <div className="flex items-start gap-3">
-              <div
-                className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+      {/* 2-Column Responsive Grid Cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Card 1: Authenticator App (Google / Microsoft Authenticator) */}
+        <div
+          className={`relative flex flex-col justify-between rounded-2xl border p-5 sm:p-6 transition shadow-sm hover:shadow-md ${
+            hasAuthenticator
+              ? 'border-emerald-200 bg-gradient-to-b from-emerald-50/20 via-white to-white'
+              : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition ${
+                    hasAuthenticator
+                      ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm shadow-emerald-500/20'
+                      : 'bg-primary-50 text-primary-600 border-primary-200'
+                  }`}
+                >
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary-700 bg-primary-50 px-2 py-0.5 rounded-md border border-primary-200/50">
+                      {isAr ? 'المسار الأساسي (موصى به)' : 'PRIMARY METHOD'}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 mt-1">
+                    {isAr
+                      ? 'تطبيق المصادقة (Authenticator TOTP)'
+                      : 'Authenticator App (TOTP)'}
+                  </h4>
+                </div>
+              </div>
+
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${
                   hasAuthenticator
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-primary-100 text-primary-700'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                 }`}
               >
-                <Smartphone className="h-5 w-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-bold text-slate-900">
-                    {isAr
-                      ? 'تطبيق المصادقة (Google / Microsoft Authenticator)'
-                      : 'Authenticator App (Google / Microsoft Authenticator)'}
-                  </h4>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${
-                      hasAuthenticator
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-slate-200 text-slate-700'
-                    }`}
-                  >
-                    {hasAuthenticator
-                      ? isAr
-                        ? 'مربوط ونشط'
-                        : 'Linked & Active'
-                      : isAr
-                      ? 'غير مربوط'
-                      : 'Not Linked'}
-                  </span>
-                </div>
-                <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-lg">
-                  {hasAuthenticator
-                    ? isAr
-                      ? 'تطبيق المصادقة الخاص بك جاهز. يتم توليد رمز الأمان محلياً على هاتفك كل 30 ثانية دون الحاجة لأي خادم بريد.'
-                      : 'Your authenticator app is configured. 6-digit codes are generated on your phone every 30 seconds without requiring email.'
-                    : isAr
-                    ? 'اربط تطبيق الهاتف (Google Authenticator أو Microsoft Authenticator) عبر مسح رمز QR للحصول على رموز التحقق فورياً وبأعلى درجات الأمان.'
-                    : 'Link your mobile authenticator app via QR code to generate 2FA security codes locally on your device.'}
-                </p>
-              </div>
+                {hasAuthenticator ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>{isAr ? 'مربوط وجاهز' : 'Linked & Ready'}</span>
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                    <span>{isAr ? 'غير مربوط' : 'Not Linked'}</span>
+                  </>
+                )}
+              </span>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              {hasAuthenticator ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={handleOpenSetup}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none"
-                  >
-                    <QrCode className="h-3.5 w-3.5 text-primary-600" />
-                    {isAr ? 'إعادة مسح QR جديد' : 'Re-configure QR'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleUnlinkAuthenticator}
-                    disabled={unlinking}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-danger-200 bg-white px-3 py-2 text-xs font-semibold text-danger-700 shadow-sm transition hover:bg-danger-50 focus:outline-none disabled:opacity-60"
-                  >
-                    {unlinking ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <X className="h-3.5 w-3.5" />
-                    )}
-                    {isAr ? 'فصل التطبيق' : 'Unlink'}
-                  </button>
-                </>
-              ) : (
+            {/* Description */}
+            <p className="mt-3.5 text-xs leading-relaxed text-slate-600">
+              {hasAuthenticator
+                ? isAr
+                  ? 'تطبيقك مهيأ ومؤمّن بالكامل. يتم توليد رمز الأمان محلياً على هاتفك كل 30 ثانية بدون الحاجة إلى خادم بريد أو اتصال بالإنترنت.'
+                  : 'Your authenticator is fully linked. 6-digit codes generate locally every 30 seconds with zero dependency on email or internet connectivity.'
+                : isAr
+                ? 'اربط تطبيق Google Authenticator أو Microsoft Authenticator للحصول على أعلى درجات الأمان وتسجيل الدخول الفوري عبر مسح رمز QR.'
+                : 'Link Google or Microsoft Authenticator for top security and instant offline code generation via QR code.'}
+            </p>
+
+            {/* Feature Badges */}
+            <div className="mt-4 flex flex-wrap gap-1.5 text-[11px] text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 border border-slate-200 px-2 py-1 font-medium">
+                <Check className="h-3 w-3 text-emerald-600" />
+                <span>Google Authenticator</span>
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 border border-slate-200 px-2 py-1 font-medium">
+                <Check className="h-3 w-3 text-emerald-600" />
+                <span>Microsoft Authenticator</span>
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-lg bg-slate-50 border border-slate-200 px-2 py-1 font-medium">
+                <Check className="h-3 w-3 text-emerald-600" />
+                <span>{isAr ? 'توليد أوفلاين (RFC 6238)' : 'Offline RFC 6238'}</span>
+              </span>
+            </div>
+          </div>
+
+          {/* Action Footer */}
+          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
+            {hasAuthenticator ? (
+              <>
                 <button
                   type="button"
                   onClick={handleOpenSetup}
-                  className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none"
                 >
-                  <QrCode className="h-4 w-4" />
-                  {isAr ? 'ربط تطبيق المصادقة (QR Code)' : 'Link Authenticator App'}
+                  <QrCode className="h-3.5 w-3.5 text-primary-600" />
+                  <span>{isAr ? 'إعادة مسح QR جديد' : 'Re-configure QR'}</span>
                 </button>
-              )}
-            </div>
+                <button
+                  type="button"
+                  onClick={handleUnlinkAuthenticator}
+                  disabled={unlinking}
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-danger-200 bg-white px-3 py-2 text-xs font-bold text-danger-700 shadow-sm transition hover:bg-danger-50 focus:outline-none disabled:opacity-60"
+                >
+                  {unlinking ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <X className="h-3.5 w-3.5" />
+                  )}
+                  <span>{isAr ? 'فصل التطبيق' : 'Unlink'}</span>
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={handleOpenSetup}
+                className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-primary-700 focus:outline-none shadow-primary-600/20 shadow-md"
+              >
+                <QrCode className="h-4 w-4" />
+                <span>{isAr ? 'ربط تطبيق المصادقة الآن (QR Code)' : 'Link Authenticator App Now'}</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {enabled && !smtpConfigured && !hasAuthenticator ? (
-          <div className="mt-4 flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
-            <p>
-              {isAr
-                ? 'تنبيه: خادم البريد (SMTP) غير مفعل ولم تقم بربط تطبيق Authenticator بعد. نوصي بشدة بربط تطبيق المصادقة الآن عبر الزر أعلاه لتسجيل الدخول بسهولة وأمان دون الحاجة لخادم البريد.'
-                : 'Notice: SMTP email server is not configured and Authenticator app is not linked yet. We strongly recommend linking an Authenticator app above to generate login codes securely.'}
-            </p>
-          </div>
-        ) : null}
-      </div>
-
-      {/* SMTP & Microsoft 365 Diagnostics Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:shadow-md sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-sky-50 text-sky-600 border border-sky-200">
-              <Mail className="h-6 w-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-slate-900">
-                  {isAr ? 'خادم البريد الرسمي (Microsoft 365 SMTP)' : 'Live Email Server (Microsoft 365)'}
-                </h3>
-                <span
-                  className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+        {/* Card 2: Live Mail Server (Microsoft 365 SMTP) */}
+        <div
+          className={`relative flex flex-col justify-between rounded-2xl border p-5 sm:p-6 transition shadow-sm hover:shadow-md ${
+            smtpStatus.status === 'connected'
+              ? 'border-sky-200 bg-gradient-to-b from-sky-50/20 via-white to-white'
+              : 'border-slate-200 bg-white'
+          }`}
+        >
+          <div>
+            {/* Header */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition ${
                     smtpStatus.status === 'connected'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : smtpStatus.status === 'error'
-                      ? 'bg-amber-100 text-amber-800'
-                      : 'bg-slate-100 text-slate-600'
+                      ? 'bg-sky-500 text-white border-sky-600 shadow-sm shadow-sky-500/20'
+                      : 'bg-sky-50 text-sky-600 border-sky-200'
                   }`}
                 >
-                  {smtpStatus.status === 'connected' ? (
-                    <>
-                      <CheckCircle2 className="h-3 w-3" />
-                      {isAr ? 'متصل وجاهز' : 'Connected & Ready'}
-                    </>
-                  ) : smtpStatus.status === 'error' ? (
-                    <>
-                      <AlertTriangle className="h-3 w-3" />
-                      {isAr ? 'بحاجة لمصادقة M365' : 'Needs M365 Auth'}
-                    </>
-                  ) : (
-                    <>
-                      <Info className="h-3 w-3" />
-                      {isAr ? 'غير مفحوص' : 'Untested'}
-                    </>
-                  )}
+                  <Mail className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200/50">
+                      {isAr ? 'قناة الإشعارات والبريد' : 'RELAY NOTIFICATIONS'}
+                    </span>
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 mt-1">
+                    {isAr ? 'خادم البريد (Microsoft 365)' : 'Mail Server (Microsoft 365)'}
+                  </h4>
+                </div>
+              </div>
+
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold shrink-0 ${
+                  smtpStatus.status === 'connected'
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : smtpStatus.status === 'error'
+                    ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}
+              >
+                {smtpStatus.status === 'connected' ? (
+                  <>
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                    <span>{isAr ? 'متصل وجاهز' : 'Connected'}</span>
+                  </>
+                ) : smtpStatus.status === 'error' ? (
+                  <>
+                    <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+                    <span>{isAr ? 'بحاجة لضبط المتغيرات' : 'Needs Config'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Info className="h-3.5 w-3.5 text-slate-500" />
+                    <span>{isAr ? 'غير مفحوص' : 'Untested'}</span>
+                  </>
+                )}
+              </span>
+            </div>
+
+            {/* Description */}
+            <p className="mt-3.5 text-xs leading-relaxed text-slate-600">
+              {isAr
+                ? 'يستخدم لإرسال تنبيهات المخاطر الحرجة الفورية لفريق السلامة، إشعارات الـ SLA، تحديثات خطط الإجراءات، ورموز الأمان الاحتياطية.'
+                : 'Dispatches instant critical risk alerts, SLA escalation notifications, CAPA updates, and fallback security tokens.'}
+            </p>
+
+            {/* Status / Alert Message */}
+            {!smtpConfigured && smtpStatus.status === 'idle' ? (
+              <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50/80 p-2.5 text-[11px] text-amber-900 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                <span className="leading-snug">
+                  {isAr
+                    ? 'خادم البريد (SMTP) غير مفعل في متغيرات البيئة. لا يؤثر ذلك على تسجيل الدخول طالما أن تطبيق Authenticator مربوط.'
+                    : 'SMTP is unconfigured in .env. Login remains secure and uninterrupted via Authenticator app.'}
                 </span>
               </div>
-              <p className="mt-1 text-xs text-slate-600 leading-relaxed max-w-xl">
-                {isAr
-                  ? 'يستخدم لإرسال تنبيهات المخاطر الحرجة الفورية، إشعارات الـ SLA، تحديثات الإجراءات التصحيحية، ورموز التحقق الثنائي الاحتياطية.'
-                  : 'Used for immediate critical hazard alerts, SLA notifications, CAPA updates, and fallback 2FA verification codes.'}
-              </p>
-            </div>
+            ) : null}
+            {smtpStatus.status === 'error' && smtpStatus.message ? (
+              <div className="mt-3 rounded-xl border border-rose-200 bg-rose-50/80 p-2.5 text-[11px] text-rose-800 flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+                <span className="leading-snug">{smtpStatus.message}</span>
+              </div>
+            ) : smtpStatus.status === 'connected' && smtpStatus.message ? (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50/80 p-2.5 text-[11px] text-emerald-800 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{smtpStatus.message}</span>
+              </div>
+            ) : null}
+
+            {/* M365 Guidance */}
+            {smtpStatus.guidance?.isM365AuthIssue ? (
+              <div className="mt-2.5 rounded-xl border border-amber-300 bg-amber-50/90 p-2.5 text-[11px] text-amber-900">
+                <p className="font-bold mb-1">{smtpStatus.guidance.reason}</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {smtpStatus.guidance.solutions.slice(0, 2).map((sol, idx) => (
+                    <li key={idx}>{sol}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0">
+          {/* Action Footer */}
+          <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between gap-2">
             <button
               type="button"
               onClick={handleTestSmtpConnection}
               disabled={testingEmail}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50 focus:outline-none disabled:opacity-60"
             >
               {testingEmail ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <RefreshCw className="h-3.5 w-3.5 text-slate-500" />
               )}
-              {isAr ? 'فحص الاتصال' : 'Test Connection'}
+              <span>{isAr ? 'فحص الاتصال' : 'Test Connection'}</span>
             </button>
 
             {smtpStatus.status === 'connected' ? (
@@ -538,54 +634,18 @@ export default function AdminTwoFactorSettings() {
                 type="button"
                 onClick={handleSendTestEmail}
                 disabled={sendingTestMail}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none disabled:opacity-60"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none disabled:opacity-60"
               >
                 {sendingTestMail ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                 ) : (
                   <Send className="h-3.5 w-3.5" />
                 )}
-                {isAr ? 'إرسال بريد تجريبي' : 'Send Test Mail'}
+                <span>{isAr ? 'إرسال بريد تجريبي' : 'Send Test Mail'}</span>
               </button>
             ) : null}
           </div>
         </div>
-
-        {/* Guidance when M365 rejected auth */}
-        {smtpStatus.guidance?.isM365AuthIssue ? (
-          <div className="mt-4 rounded-xl border border-amber-300 bg-amber-50/90 p-4 text-xs text-amber-950">
-            <div className="flex items-start gap-2.5">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-              <div>
-                <p className="font-bold text-amber-900 mb-1">{smtpStatus.guidance.reason}</p>
-                <p className="text-amber-800 mb-2">
-                  {isAr
-                    ? 'في حسابات Microsoft 365 الحديثة، تتطلب خوادم Exchange Online تفعيل المصادقة أو استخدام كلمة مرور تطبيق:'
-                    : 'In modern Microsoft 365 tenants, Exchange Online requires Authenticated SMTP or an App Password:'}
-                </p>
-                <ul className="list-disc list-inside space-y-1.5 text-amber-900 font-medium leading-relaxed">
-                  {smtpStatus.guidance.solutions.map((sol, idx) => (
-                    <li key={idx}>{sol}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {smtpStatus.status === 'error' && smtpStatus.message && !smtpStatus.guidance?.isM365AuthIssue ? (
-          <div className="mt-4 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
-            <span>{smtpStatus.message}</span>
-          </div>
-        ) : null}
-
-        {smtpStatus.status === 'connected' && smtpStatus.message ? (
-          <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50/70 p-3 text-xs text-emerald-800 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-            <span>{smtpStatus.message}</span>
-          </div>
-        ) : null}
       </div>
 
       {/* Setup Modal */}
